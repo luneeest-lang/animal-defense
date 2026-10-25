@@ -9,7 +9,7 @@ export const CONFIG = {
   startGold: 150,
   sellRate: 0.7,
   firstCountdown: 10,
-  waveGap: 15,
+  waveGap: 8,
   maxSubstep: 0.05,
 };
 

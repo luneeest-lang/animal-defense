@@ -102,12 +102,12 @@ test('보너스는 남은 카운트다운을 올림한 값이다', () => {
   assert.equal(g.gold, 157);
 });
 
-test('카운트다운이 끝나면 웨이브가 자동 시작되고, 스폰이 끝나면 15초 카운트다운이 시작된다', () => {
+test('카운트다운이 끝나면 웨이브가 자동 시작되고, 스폰이 끝나면 웨이브 간격 카운트다운이 시작된다', () => {
   const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
   step(g, 10.1);
   assert.equal(g.waveNumber, 1);
   assert.equal(g.enemies.length, 1);
-  assert.ok(g.countdown > 14 && g.countdown <= 15);
+  assert.ok(g.countdown > CONFIG.waveGap - 1 && g.countdown <= CONFIG.waveGap);
 });
 
 test('마지막 웨이브를 시작하면 카운트다운이 더 이상 생기지 않는다', () => {

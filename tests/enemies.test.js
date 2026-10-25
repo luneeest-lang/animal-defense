@@ -26,7 +26,7 @@ test('적 기본 수치', () => {
 test('웨이브 번호에 따라 체력이 늘어난다', () => {
   assert.equal(hpScale(1), 1);
   assert.equal(createEnemy(1, 'soldier', 1).hp, 40);
-  assert.equal(createEnemy(1, 'soldier', 11).hp, 100);
+  assert.equal(createEnemy(1, 'soldier', 11).hp, 120);
   const e = createEnemy(7, 'soldier', 1);
   assert.deepEqual(
     { id: e.id, type: e.type, waveNumber: e.waveNumber, maxHp: e.maxHp, dist: e.dist, slow: e.slow, poison: e.poison },

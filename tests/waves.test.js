@@ -50,13 +50,13 @@ test('spawnSchedule은 시간순이고 모든 적을 포함하며 0초에 시작
   }
 });
 
-test('그룹 사이에는 2초 간격이 있다', () => {
+test('그룹 사이에는 1.5초 간격이 있다', () => {
   const schedule = spawnSchedule({ number: 1, groups: [
     { type: 'soldier', count: 3, interval: 1 },
     { type: 'runner', count: 2, interval: 0.5 },
   ] });
   assert.deepEqual(schedule, [
     { at: 0, type: 'soldier' }, { at: 1, type: 'soldier' }, { at: 2, type: 'soldier' },
-    { at: 4, type: 'runner' }, { at: 4.5, type: 'runner' },
+    { at: 3.5, type: 'runner' }, { at: 4, type: 'runner' },
   ]);
 });

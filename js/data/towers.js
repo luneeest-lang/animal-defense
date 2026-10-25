@@ -3,7 +3,7 @@
 export const TOWERS = {
   squirrel: {
     name: '다람쥐', emoji: '🐿️', cost: 50, kind: 'single',
-    base: { damage: 8, range: 2.5, cooldown: 0.5 },
+    base: { damage: 8, range: 2.5, cooldown: 0.6 },
   },
   elephant: {
     name: '코끼리', emoji: '🐘', cost: 90, kind: 'splash',
