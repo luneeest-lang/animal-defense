@@ -1,23 +1,14 @@
 import { TOWERS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells, canBuild } from '../core/path.js';
+import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
+import { bakeSprites } from './pixel.js';
 
 const FRAME = 64;
 const FX_MS = 160;
 const TOWER_COLORS = {
   squirrel: '#ffe08a', elephant: '#ffb37a', penguin: '#9fd8ff', eagle: '#ffffff', snake: '#9bf06a',
 };
-// 적 모양: 색과 반지름(칸 단위)
-const ENEMY_LOOK = {
-  soldier: { color: '#c0392b', r: 0.28 },
-  runner: { color: '#e67e22', r: 0.22 },
-  tank: { color: '#5d6d7e', r: 0.36 },
-  shield: { color: '#2e86c1', r: 0.3 },
-  splitter: { color: '#8e44ad', r: 0.32 },
-  mini: { color: '#af7ac5', r: 0.2 },
-  boss: { color: '#262626', r: 0.46 },
-};
-
 export function loadAnimals() {
   const load = (id) => new Promise((resolve) => {
     const img = new Image();
@@ -36,6 +27,8 @@ export function createRenderer(canvas, animals) {
   let height = 0;
   let fx = [];
   let lastEvents = null;
+  const sprites = bakeSprites();
+  const facing = new WeakMap();
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -122,34 +115,50 @@ export function createRenderer(canvas, animals) {
   function drawEnemy(game, e, cell) {
     const look = ENEMY_LOOK[e.type];
     const p = positionAt(game.points, e.dist);
-    const x = p.x * cell;
-    const y = p.y * cell;
-    const r = look.r * cell;
+    const prev = positionAt(game.points, Math.max(0, e.dist - 0.08));
+    let face = facing.get(e) ?? 1;
+    if (p.x - prev.x > 0.001) face = 1;
+    else if (p.x - prev.x < -0.001) face = -1;
+    facing.set(e, face);
+
+    // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
+    const dpr = window.devicePixelRatio || 1;
+    const unit = Math.max(1, Math.round((look.size * cell * dpr) / SPRITE_SIZE)) / dpr;
+    const s = unit * SPRITE_SIZE;
+    const cx = Math.round(p.x * cell * dpr) / dpr;
+    const cy = Math.round(p.y * cell * dpr) / dpr;
+    const feet = cy + s * 0.32;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = look.color;
+    ctx.ellipse(cx, feet, s * 0.36, s * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = e.poison ? '#58d65c' : e.slow ? '#7fd0ff' : 'rgba(0,0,0,0.55)';
-    ctx.stroke();
-    if (e.type === 'shield') {
+    if (e.poison || e.slow) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = e.poison ? '#58d65c' : '#7fd0ff';
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.55, -Math.PI / 2, Math.PI / 2);
-      ctx.strokeStyle = '#d6eaf8';
-      ctx.lineWidth = 3;
+      ctx.ellipse(cx, feet, s * 0.42, s * 0.14, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(x - r * 0.35, y - r * 0.15, r * 0.2, 0, Math.PI * 2);
-    ctx.arc(x + r * 0.35, y - r * 0.15, r * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    const w = Math.max(cell * 0.6, r * 2);
+
+    const frameIndex = Math.floor(e.dist * 4) % 2;
+    const frame = sprites[look.sprite][frameIndex];
+    // 슬라임은 몸이 눌리는 프레임이 있어서 위아래 통통거림은 다른 적에게만 준다
+    const bob = frameIndex === 1 && look.sprite !== 'splitter' ? unit : 0;
+    ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.translate(cx, cy - s * 0.12 - bob);
+    if (face < 0) ctx.scale(-1, 1);
+    ctx.drawImage(frame, -s / 2, -s / 2, s, s);
+    ctx.restore();
+
+    const w = Math.max(cell * 0.6, s * 0.7);
     const ratio = Math.max(0, e.hp / e.maxHp);
+    const barY = cy - s * 0.62 - cell * 0.1;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(x - w / 2, y - r - cell * 0.18, w, cell * 0.09);
+    ctx.fillRect(cx - w / 2, barY, w, cell * 0.09);
     ctx.fillStyle = ratio > 0.5 ? '#4cd964' : ratio > 0.25 ? '#ffcc00' : '#ff3b30';
-    ctx.fillRect(x - w / 2, y - r - cell * 0.18, w * ratio, cell * 0.09);
+    ctx.fillRect(cx - w / 2, barY, w * ratio, cell * 0.09);
   }
 
   function collectEvents(game, now) {
