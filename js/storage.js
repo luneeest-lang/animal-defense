@@ -1,0 +1,70 @@
+import { MAPS } from './data/maps.js';
+import { WAVE_COUNT } from './core/waves.js';
+
+export const SAVE_KEY = 'td-save-v1';
+
+export function defaultSave() {
+  return { version: 1, unlocked: 1, records: {} };
+}
+
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const isNum = (n) => typeof n === 'number' && Number.isFinite(n);
+
+function cleanRecords(raw) {
+  const records = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return records;
+  for (const map of MAPS) {
+    const r = raw[map.id];
+    if (!r || !isNum(r.bestWave) || !isNum(r.stars)) continue;
+    records[map.id] = {
+      bestWave: clamp(Math.floor(r.bestWave), 0, WAVE_COUNT),
+      stars: clamp(Math.floor(r.stars), 0, 3),
+    };
+  }
+  return records;
+}
+
+export function loadSave(store) {
+  try {
+    const raw = store.getItem(SAVE_KEY);
+    if (raw === null || raw === undefined) return defaultSave();
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return defaultSave();
+    if (data.version !== 1 || !isNum(data.unlocked)) return defaultSave();
+    return {
+      version: 1,
+      unlocked: clamp(Math.floor(data.unlocked), 1, MAPS.length),
+      records: cleanRecords(data.records),
+    };
+  } catch {
+    return defaultSave();
+  }
+}
+
+export function writeSave(store, save) {
+  try {
+    store.setItem(SAVE_KEY, JSON.stringify(save));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function starsFor(lives) {
+  if (lives >= 15) return 3;
+  if (lives >= 8) return 2;
+  return 1;
+}
+
+export function recordResult(save, mapId, { wave, lives, won }) {
+  const index = MAPS.findIndex((m) => m.id === mapId);
+  const next = { version: 1, unlocked: save.unlocked, records: { ...save.records } };
+  if (index < 0) return next;
+  const prev = save.records[mapId] ?? { bestWave: 0, stars: 0 };
+  next.records[mapId] = {
+    bestWave: Math.max(prev.bestWave, wave),
+    stars: won ? Math.max(prev.stars, starsFor(lives)) : prev.stars,
+  };
+  if (won) next.unlocked = Math.max(next.unlocked, Math.min(index + 2, MAPS.length));
+  return next;
+}
