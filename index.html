@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>동물 타워 디펜스</title>
+  <meta name="description" content="귀여운 동물 타워로 적을 막아 내는 무료 브라우저 타워 디펜스 게임">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <section id="screen-menu" class="screen">
+      <h1>🐿️ 동물 타워 디펜스</h1>
+      <p class="lead">동물 타워를 세워 길을 따라 오는 적을 막아 보세요.</p>
+      <div id="map-list"></div>
+      <p class="hint">가로 화면에서 하면 더 편해요.</p>
+      <p id="save-warning" class="warn" hidden>이 브라우저에서는 기록을 저장할 수 없어요. 게임은 그대로 할 수 있어요.</p>
+      <div class="ad-slot" aria-hidden="true"></div>
+    </section>
+
+    <section id="screen-game" class="screen" hidden>
+      <header id="infobar">
+        <span id="stat-lives" class="stat">❤️ 20</span>
+        <span id="stat-gold" class="stat">🪙 150</span>
+        <span id="stat-wave" class="stat">웨이브 0/15</span>
+        <button id="btn-wave" class="btn primary" type="button">▶ 다음 웨이브</button>
+        <button id="btn-speed" class="btn" type="button" aria-label="배속">1x</button>
+        <button id="btn-pause" class="btn" type="button" aria-label="일시정지">⏸</button>
+        <button id="btn-menu" class="btn" type="button" aria-label="맵 선택">☰</button>
+      </header>
+
+      <main id="stage">
+        <canvas id="board" aria-label="게임 화면"></canvas>
+        <div id="pause-label" hidden>일시정지</div>
+
+        <div id="tower-info" hidden>
+          <div id="ti-title"></div>
+          <div id="ti-stats"></div>
+          <div class="ti-buttons">
+            <button id="btn-upgrade" class="btn primary" type="button">업그레이드</button>
+            <button id="btn-sell" class="btn" type="button">판매</button>
+            <button id="btn-close-info" class="btn" type="button" aria-label="닫기">✕</button>
+          </div>
+        </div>
+
+        <div id="result" hidden>
+          <div class="result-card">
+            <h2 id="result-title"></h2>
+            <div id="result-stars"></div>
+            <p id="result-detail"></p>
+            <div class="result-buttons">
+              <button id="btn-retry" class="btn primary" type="button">다시 하기</button>
+              <button id="btn-result-menu" class="btn" type="button">맵 선택</button>
+            </div>
+            <div class="ad-slot" aria-hidden="true"></div>
+          </div>
+        </div>
+      </main>
+
+      <nav id="panel" aria-label="동물 선택"></nav>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
