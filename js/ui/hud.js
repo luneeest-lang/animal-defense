@@ -112,7 +112,7 @@ export function createHud(root, handlers) {
     showResult({ won, wave, lives, starCount }) {
       setText(el.resultTitle, won ? '🎉 승리!' : '💔 패배');
       setText(el.resultStars, won ? stars(starCount) : '');
-      setText(el.resultDetail, won ? `남은 생명 ${lives}` : `웨이브 ${wave}/${WAVE_COUNT}까지 막았어요`);
+      setText(el.resultDetail, won ? `남은 생명 ${lives}` : wave > 0 ? `웨이브 ${wave}/${WAVE_COUNT}까지 막았어요` : '첫 웨이브를 막지 못했어요');
       el.result.hidden = false;
     },
     hideResult() { el.result.hidden = true; },

@@ -87,12 +87,16 @@ export function callNextWave(game) {
 function fireTowers(game, dt) {
   const targets = game.enemies.filter((e) => e.hp > 0 && e.dist < game.length);
   for (const tower of game.towers) {
-    tower.cooldown = Math.max(0, tower.cooldown - dt);
+    tower.cooldown -= dt;
     if (tower.cooldown > 0) continue;
     const target = findTarget(tower, targets, game.points);
-    if (!target) continue;
+    if (!target) {
+      tower.cooldown = 0;
+      continue;
+    }
     fire(tower, target, targets, game.points);
-    tower.cooldown = towerStats(tower.type, tower.level).cooldown;
+    // 남은 시간(음수)을 이월해 프레임 크기와 상관없이 공격 간격을 지킨다
+    tower.cooldown += towerStats(tower.type, tower.level).cooldown;
     game.events.push({
       type: 'shot',
       tower: tower.type,

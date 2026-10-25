@@ -33,6 +33,7 @@ export function findTarget(tower, enemies, points) {
   const from = center(tower);
   let best = null;
   for (const e of enemies) {
+    if (e.hp <= 0) continue;
     if (dist2(from, positionAt(points, e.dist)) > range * range) continue;
     if (!best || e.dist > best.dist) best = e;
   }

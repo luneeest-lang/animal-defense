@@ -134,7 +134,8 @@ function goMenu() {
 function finish() {
   finished = true;
   const won = game.status === 'won';
-  const wave = game.waveNumber;
+  // 패배한 웨이브는 막지 못한 것이므로 직전 웨이브까지만 기록한다
+  const wave = won ? game.waveNumber : Math.max(0, game.waveNumber - 1);
   save = recordResult(save, mapId, { wave, lives: game.lives, won });
   hud.showSaveWarning(!writeSave(store, save));
   hud.showResult({ won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0 });
@@ -179,7 +180,17 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-window.addEventListener('resize', () => renderer.resize());
+// 화면 가로 크기가 크게 바뀌면(회전, 창 크기 조절) 자동 일시정지한다.
+// 모바일 주소창 때문에 세로만 바뀌는 경우는 무시한다.
+let lastWidth = window.innerWidth;
+window.addEventListener('resize', () => {
+  renderer.resize();
+  if (Math.abs(window.innerWidth - lastWidth) > 40 && game && game.status === 'running') {
+    ui.paused = true;
+    autoPaused = false;
+  }
+  lastWidth = window.innerWidth;
+});
 new ResizeObserver(() => renderer.resize()).observe(document.getElementById('board'));
 
 hud.showSaveWarning(!writeSave(store, save));

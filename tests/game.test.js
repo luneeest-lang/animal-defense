@@ -192,3 +192,41 @@ test('매우 큰 dt도 작은 dt를 반복한 것과 같은 결과다', () => {
   assert.ok(big.waveNumber >= 1);
   assert.ok(CONFIG.maxSubstep <= 0.05);
 });
+
+test('같은 틱에 한 타워가 죽인 적을 다른 타워가 또 노리지 않는다', () => {
+  const g = createGame(meadow);
+  placeTower(g, 'squirrel', 5, 3);
+  placeTower(g, 'squirrel', 6, 3);
+  inject(g, 'soldier', 5, 8);
+  inject(g, 'soldier', 4.5, 8);
+  const gold = g.gold;
+  step(g, 0.05);
+  assert.equal(g.enemies.length, 0);
+  assert.equal(g.gold, gold + 10);
+});
+
+test('타워는 정해진 공격 간격대로 쏜다 (프레임 크기에 따라 느려지지 않는다)', () => {
+  const g = createGame(meadow);
+  g.countdown = null; // 웨이브가 시작되어 다른 적을 노리지 않게 한다
+  placeTower(g, 'squirrel', 5, 3);
+  const target = inject(g, 'boss', 5, 1e9);
+  for (let i = 0; i < 2000; i++) {
+    target.dist = 5;
+    step(g, 0.05);
+  }
+  const shots = (1e9 - target.hp) / 8;
+  assert.ok(shots >= 165 && shots <= 168, `shots ${shots}`);
+});
+
+test('게임이 끝난 뒤에는 호출, 설치, 업그레이드, 판매가 모두 거절된다', () => {
+  const g = createGame(meadow);
+  const t = placeTower(g, 'squirrel', 5, 4);
+  g.gold = 1000;
+  g.status = 'lost';
+  assert.equal(callNextWave(g), 0);
+  assert.equal(placeTower(g, 'squirrel', 6, 4), null);
+  assert.equal(upgradeTower(g, t.id), false);
+  assert.equal(sellTower(g, t.id), 0);
+  assert.equal(g.towers.length, 1);
+  assert.equal(g.gold, 1000);
+});

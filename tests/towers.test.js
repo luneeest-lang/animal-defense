@@ -81,3 +81,11 @@ test('eagle은 보스에게 1.5배 피해를 준다', () => {
   fire(tower('eagle'), soldier, [soldier], points);
   assert.equal(soldier.hp, 110);
 });
+
+test('findTarget은 이미 죽은(hp <= 0) 적을 무시한다', () => {
+  const dead = enemyAt(1, 'soldier', 6);
+  dead.hp = 0;
+  const alive = enemyAt(2, 'soldier', 5);
+  assert.equal(findTarget(tower('squirrel'), [dead, alive], points), alive);
+  assert.equal(findTarget(tower('squirrel'), [dead], points), null);
+});
