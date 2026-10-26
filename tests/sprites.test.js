@@ -37,3 +37,20 @@ test('두 프레임은 서로 다르고 그림이 비어 있지 않다', () => {
     assert.ok(a.join('').replace(/\./g, '').length > 30, `${name} nearly empty`);
   }
 });
+
+test('동물 타워 도트는 타워마다 레벨 0~3 네 장이고 형식이 맞다', async () => {
+  const { ANIMAL_SPRITES } = await import('../js/data/animals.js');
+  const { TOWERS } = await import('../js/data/towers.js');
+  assert.deepEqual(Object.keys(ANIMAL_SPRITES).sort(), Object.keys(TOWERS).sort());
+  for (const [name, def] of Object.entries(ANIMAL_SPRITES)) {
+    assert.equal(def.levels.length, 4, `${name} levels`);
+    for (const rows of def.levels) {
+      assert.equal(rows.length, SPRITE_SIZE);
+      for (const row of rows) {
+        assert.equal(row.length, SPRITE_SIZE, `${name} width`);
+        for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown ${ch}`);
+      }
+    }
+    for (let i = 1; i < 4; i++) assert.notDeepEqual(def.levels[i], def.levels[i - 1], `${name} level ${i} looks the same`);
+  }
+});

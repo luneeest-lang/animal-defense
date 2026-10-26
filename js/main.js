@@ -3,7 +3,7 @@ import { TOWERS } from './data/towers.js';
 import { createGame, placeTower, upgradeTower, sellTower, callNextWave, step } from './core/game.js';
 import { canBuild } from './core/path.js';
 import { loadSave, writeSave, recordResult, starsFor } from './storage.js';
-import { loadAnimals, createRenderer } from './ui/render.js';
+import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
 import { createHud } from './ui/hud.js';
 
@@ -33,8 +33,7 @@ let autoPaused = false;
 let finished = false;
 let lastTs = 0;
 
-const animals = await loadAnimals();
-const renderer = createRenderer(document.getElementById('board'), animals);
+const renderer = createRenderer(document.getElementById('board'));
 
 const hud = createHud(document.getElementById('app'), {
   onPickType: pickType,

@@ -230,3 +230,12 @@ test('게임이 끝난 뒤에는 호출, 설치, 업그레이드, 판매가 모�
   assert.equal(g.towers.length, 1);
   assert.equal(g.gold, 1000);
 });
+
+test('발사 이벤트에는 쏜 타워의 id가 담긴다', () => {
+  const g = createGame(meadow);
+  const t = placeTower(g, 'squirrel', 5, 3);
+  inject(g, 'tank', 5);
+  step(g, 0.05);
+  const shot = g.events.find((e) => e.type === 'shot');
+  assert.equal(shot.towerId, t.id);
+});

@@ -100,6 +100,7 @@ function fireTowers(game, dt) {
     game.events.push({
       type: 'shot',
       tower: tower.type,
+      towerId: tower.id,
       from: { x: tower.col + 0.5, y: tower.row + 0.5 },
       to: positionAt(game.points, target.dist),
     });

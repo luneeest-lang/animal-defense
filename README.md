@@ -26,7 +26,7 @@ Node 18 이상이 필요합니다. `js/core`, `js/data`, `js/storage.js`의 게�
 - `js/data/`: 맵, 타워, 적의 수치. 밸런스는 여기서만 조정합니다.
 - `js/ui/`: 캔버스 그리기, 마우스·터치 입력, 화면 요소
 - `js/storage.js`: 최고 기록 저장 (`localStorage`, 키 `td-save-v1`)
-- `assets/animals/`: 동물 스프라이트 시트 SVG (64×64 프레임 4개: 레벨 0~3)
+- `js/data/animals.js`, `sprites.js`, `tiles.js`: 동물 타워, 적, 맵 바닥의 16×16 도트 그림. 문자 하나가 도트 한 칸이고, 색은 `palette`에서 정합니다.
 
 ## 밸런스 메모
 

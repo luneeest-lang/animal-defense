@@ -3,6 +3,7 @@ import { TOWERS } from '../data/towers.js';
 import { towerStats, upgradeCost } from '../core/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG } from '../core/game.js';
+import { bakeAnimals } from './pixel.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -20,6 +21,7 @@ export function createHud(root, handlers) {
   };
   let shownTower = null;
   const typeButtons = {};
+  const icons = bakeAnimals();
 
   const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
 
@@ -29,7 +31,7 @@ export function createHud(root, handlers) {
     b.className = 'animal-btn';
     b.dataset.type = id;
     b.innerHTML = `<span class="key">${i + 1}</span>`
-      + `<span class="icon" style="background-image:url(assets/animals/${id}.svg)"></span>`
+      + `<span class="icon" style="background-image:url(${icons[id][0].toDataURL()})"></span>`
       + `<span class="text"><span class="name">${def.name}</span><span class="cost">🪙 ${def.cost}</span></span>`;
     b.addEventListener('click', () => handlers.onPickType(id));
     el.panel.appendChild(b);

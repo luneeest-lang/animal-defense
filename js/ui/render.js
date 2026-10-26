@@ -2,9 +2,8 @@ import { TOWERS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells, canBuild } from '../core/path.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites, bakeTiles } from './pixel.js';
+import { bakeSprites, bakeTiles, bakeAnimals } from './pixel.js';
 
-const FRAME = 64;
 const FX_MS = 160;
 const TOWER_COLORS = {
   squirrel: '#ffe08a', elephant: '#ffb37a', penguin: '#9fd8ff', eagle: '#ffffff', snake: '#9bf06a',
@@ -16,19 +15,7 @@ const FOREST_GRASS_WEIGHTS = [8, 3, 1, 2, 6];
 // 칸 좌표로 정해지는 의사 난수. 같은 칸은 늘 같은 무늬가 나온다.
 const cellHash = (c, r) => (((c * 73856093) ^ (r * 19349663)) >>> 0);
 
-export function loadAnimals() {
-  const load = (id) => new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = `assets/animals/${id}.svg`;
-  });
-  return Promise.all(Object.keys(TOWERS).map(load)).then((imgs) => (
-    Object.fromEntries(Object.keys(TOWERS).map((id, i) => [id, imgs[i]]))
-  ));
-}
-
-export function createRenderer(canvas, animals) {
+export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   let width = 0;
   let height = 0;
@@ -36,6 +23,8 @@ export function createRenderer(canvas, animals) {
   let lastEvents = null;
   const sprites = bakeSprites();
   const tiles = bakeTiles();
+  const animals = bakeAnimals();
+  const towerFacing = new Map();
   const facing = new WeakMap();
 
   function resize() {
@@ -161,27 +150,23 @@ export function createRenderer(canvas, animals) {
   function drawTower(tower, cell, selected, theme) {
     const x = tower.col * cell;
     const y = tower.row * cell;
-    if (theme === 'sea') {
-      ctx.imageSmoothingEnabled = false;
-      drawTile(tiles.seaIslet[0][0], tower.col, tower.row, cell);
-      ctx.imageSmoothingEnabled = true;
-    }
+    if (theme === 'sea') drawTile(tiles.seaIslet[0][0], tower.col, tower.row, cell);
     if (selected) {
       const s = towerStats(tower.type, tower.level);
       rangeCircle(x + cell / 2, y + cell / 2, s.range, cell, true);
     }
-    const img = animals[tower.type];
-    if (img) {
-      ctx.drawImage(img, tower.level * FRAME, 0, FRAME, FRAME, x, y, cell, cell);
-    } else {
-      ctx.font = `${cell * 0.7}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(TOWERS[tower.type].emoji, x + cell / 2, y + cell / 2);
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold ${cell * 0.28}px sans-serif`;
-      if (tower.level > 0) ctx.fillText('★'.repeat(tower.level), x + cell / 2, y + cell * 0.9);
-    }
+    // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
+    const dpr = window.devicePixelRatio || 1;
+    const unit = Math.max(1, Math.round((0.95 * cell * dpr) / SPRITE_SIZE)) / dpr;
+    const s = unit * SPRITE_SIZE;
+    const cx = Math.round((x + cell / 2) * dpr) / dpr;
+    const cy = Math.round((y + cell / 2) * dpr) / dpr;
+    ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+    ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
+    ctx.restore();
     if (selected) {
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#ffd23f';
@@ -241,7 +226,11 @@ export function createRenderer(canvas, animals) {
   function collectEvents(game, now) {
     if (game.events === lastEvents) return;
     lastEvents = game.events;
-    for (const ev of game.events) fx.push({ ...ev, t: now });
+    for (const ev of game.events) {
+      fx.push({ ...ev, t: now });
+      // 타워는 마지막으로 쏜 적 쪽을 바라본다
+      if (ev.type === 'shot' && Math.abs(ev.to.x - ev.from.x) > 0.05) towerFacing.set(ev.towerId, ev.to.x < ev.from.x ? -1 : 1);
+    }
     if (fx.length > 200) fx = fx.slice(-200);
   }
 
@@ -279,8 +268,6 @@ export function createRenderer(canvas, animals) {
       const range = TOWERS[view.selectedType].base.range;
       rangeCircle((view.hover.col + 0.5) * cell, (view.hover.row + 0.5) * cell, range, cell, ok);
     }
-    // 동물 그림은 벡터라 부드럽게, 도트(바닥, 적)는 또렷하게 그린다
-    ctx.imageSmoothingEnabled = true;
     for (const t of game.towers) drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme);
     for (const e of game.enemies) drawEnemy(game, e, cell);
     collectEvents(game, now);
