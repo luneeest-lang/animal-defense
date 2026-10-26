@@ -2,13 +2,20 @@ import { TOWERS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells, canBuild } from '../core/path.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites } from './pixel.js';
+import { bakeSprites, bakeTiles } from './pixel.js';
 
 const FRAME = 64;
 const FX_MS = 160;
 const TOWER_COLORS = {
   squirrel: '#ffe08a', elephant: '#ffb37a', penguin: '#9fd8ff', eagle: '#ffffff', snake: '#9bf06a',
 };
+const WATER_FRAME_MS = 700;
+// 숲 바닥 무늬 비율: 기본, 풀포기, 버섯, 낙엽, 기본2 (버섯은 드물게)
+const FOREST_GRASS_WEIGHTS = [8, 3, 1, 2, 6];
+
+// 칸 좌표로 정해지는 의사 난수. 같은 칸은 늘 같은 무늬가 나온다.
+const cellHash = (c, r) => (((c * 73856093) ^ (r * 19349663)) >>> 0);
+
 export function loadAnimals() {
   const load = (id) => new Promise((resolve) => {
     const img = new Image();
@@ -28,6 +35,7 @@ export function createRenderer(canvas, animals) {
   let fx = [];
   let lastEvents = null;
   const sprites = bakeSprites();
+  const tiles = bakeTiles();
   const facing = new WeakMap();
 
   function resize() {
@@ -40,10 +48,35 @@ export function createRenderer(canvas, animals) {
     return { width, height };
   }
 
-  function drawBoard(game, cell, view) {
-    const { map } = game;
-    const path = pathCells(map);
-    const occupied = new Set(game.towers.map((t) => `${t.col},${t.row}`));
+  // 칸 하나를 타일로 덮는다. 칸 경계에 틈이 생기지 않도록 정수 좌표로 맞춘다.
+  function drawTile(img, c, r, cell, rotate = false) {
+    const x0 = Math.floor(c * cell);
+    const y0 = Math.floor(r * cell);
+    const w = Math.floor((c + 1) * cell) - x0;
+    const h = Math.floor((r + 1) * cell) - y0;
+    if (!rotate) {
+      ctx.drawImage(img, x0, y0, w, h);
+      return;
+    }
+    ctx.save();
+    ctx.translate(x0 + w / 2, y0 + h / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(img, -h / 2, -w / 2, h, w);
+    ctx.restore();
+  }
+
+  // 여러 무늬 중 하나를 고른다. weights가 있으면 그 비율대로, 없으면 첫 무늬가 절반쯤 나온다.
+  function pickVariant(variants, c, r, weights) {
+    const w = weights ?? variants.map((_, i) => (i === 0 ? variants.length - 1 || 1 : 1));
+    let h = cellHash(c, r) % w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < w.length; i++) {
+      if (h < w[i]) return variants[i];
+      h -= w[i];
+    }
+    return variants[0];
+  }
+
+  function drawMeadow(map, path, cell) {
     for (let r = 0; r < map.rows; r++) {
       for (let c = 0; c < map.cols; c++) {
         const onPath = path.has(`${c},${r}`);
@@ -61,6 +94,45 @@ export function createRenderer(canvas, animals) {
       ctx.ellipse((c + 0.42) * cell, (r + 0.5) * cell, cell * 0.14, cell * 0.1, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  function drawForest(map, path, cell) {
+    for (let r = 0; r < map.rows; r++) {
+      for (let c = 0; c < map.cols; c++) {
+        const frames = path.has(`${c},${r}`)
+          ? pickVariant(tiles.forestPath, c, r)
+          : pickVariant(tiles.forestGrass, c, r, FOREST_GRASS_WEIGHTS);
+        drawTile(frames[0], c, r, cell);
+      }
+    }
+    for (const [c, r] of map.blocked) drawTile(tiles.forestTree[0][0], c, r, cell);
+  }
+
+  function drawSea(map, path, cell, now) {
+    const tick = Math.floor(now / WATER_FRAME_MS);
+    for (let r = 0; r < map.rows; r++) {
+      for (let c = 0; c < map.cols; c++) {
+        if (path.has(`${c},${r}`)) {
+          // 세로로 이어진 길이면 판자를 돌려서 진행 방향과 엇갈리게 놓는다
+          const horizontal = path.has(`${c - 1},${r}`) || path.has(`${c + 1},${r}`);
+          drawTile(tiles.seaPlank[0][0], c, r, cell, !horizontal);
+        } else {
+          const frames = pickVariant(tiles.seaWater, c, r);
+          drawTile(frames[(tick + c + r) % frames.length], c, r, cell);
+        }
+      }
+    }
+    for (const [c, r] of map.blocked) drawTile(tiles.seaReef[0][0], c, r, cell);
+  }
+
+  function drawBoard(game, cell, view, now) {
+    const { map } = game;
+    const path = pathCells(map);
+    const occupied = new Set(game.towers.map((t) => `${t.col},${t.row}`));
+    ctx.imageSmoothingEnabled = false;
+    if (map.theme === 'forest') drawForest(map, path, cell);
+    else if (map.theme === 'sea') drawSea(map, path, cell, now);
+    else drawMeadow(map, path, cell);
     const end = game.points[game.points.length - 1];
     ctx.font = `${cell * 0.7}px sans-serif`;
     ctx.textAlign = 'center';
@@ -86,9 +158,14 @@ export function createRenderer(canvas, animals) {
     ctx.stroke();
   }
 
-  function drawTower(tower, cell, selected) {
+  function drawTower(tower, cell, selected, theme) {
     const x = tower.col * cell;
     const y = tower.row * cell;
+    if (theme === 'sea') {
+      ctx.imageSmoothingEnabled = false;
+      drawTile(tiles.seaIslet[0][0], tower.col, tower.row, cell);
+      ctx.imageSmoothingEnabled = true;
+    }
     if (selected) {
       const s = towerStats(tower.type, tower.level);
       rangeCircle(x + cell / 2, y + cell / 2, s.range, cell, true);
@@ -195,14 +272,16 @@ export function createRenderer(canvas, animals) {
     const cell = width / game.map.cols;
     const now = performance.now();
     ctx.clearRect(0, 0, width, height);
-    drawBoard(game, cell, view);
+    drawBoard(game, cell, view, now);
     if (view.selectedType && view.hover) {
       const occupied = new Set(game.towers.map((t) => `${t.col},${t.row}`));
       const ok = canBuild(game.map, view.hover.col, view.hover.row, occupied);
       const range = TOWERS[view.selectedType].base.range;
       rangeCircle((view.hover.col + 0.5) * cell, (view.hover.row + 0.5) * cell, range, cell, ok);
     }
-    for (const t of game.towers) drawTower(t, cell, t.id === view.selectedTowerId);
+    // 동물 그림은 벡터라 부드럽게, 도트(바닥, 적)는 또렷하게 그린다
+    ctx.imageSmoothingEnabled = true;
+    for (const t of game.towers) drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme);
     for (const e of game.enemies) drawEnemy(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);

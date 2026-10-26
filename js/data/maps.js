@@ -1,8 +1,10 @@
 // 좌표는 칸 단위 [col, row]. 격자는 16x10.
+// theme: 바닥 그림 종류 (meadow 초원, forest 숲, sea 바다)
 export const MAPS = [
   {
     id: 'meadow',
     name: '초원',
+    theme: 'meadow',
     cols: 16,
     rows: 10,
     waypoints: [[0, 2], [13, 2], [13, 6], [2, 6], [2, 9]],
@@ -11,6 +13,7 @@ export const MAPS = [
   {
     id: 'forest',
     name: '숲',
+    theme: 'forest',
     cols: 16,
     rows: 10,
     waypoints: [[0, 1], [5, 1], [5, 8], [10, 8], [10, 3], [15, 3]],
@@ -18,7 +21,8 @@ export const MAPS = [
   },
   {
     id: 'canyon',
-    name: '협곡',
+    name: '바다',
+    theme: 'sea',
     cols: 16,
     rows: 10,
     waypoints: [[0, 8], [3, 8], [3, 1], [8, 1], [8, 6], [12, 6], [12, 2], [15, 2]],
