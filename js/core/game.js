@@ -13,6 +13,7 @@ export const CONFIG = {
   summonStepWaves: 5,
   firstCountdown: 10,
   waveGap: 10,
+  waveClearBonus: 10, // 웨이브의 적을 모두 처리하면 받는 골드
   maxSubstep: 0.05,
 };
 
@@ -35,6 +36,7 @@ export function createGame(map, waves = buildWaves()) {
     time: 0,
     nextId: 1,
     summons: 0,
+    clearedWave: 0, // 보너스를 이미 준 마지막 웨이브 번호
     bossWarning: 0, // 보스 경고 연출이 남은 시간(초). 0이면 경고 없음
   };
 }
@@ -202,9 +204,14 @@ function substep(game, dt) {
   for (const e of game.enemies) stepEnemy(e, dt);
   fireTowers(game, dt);
   resolveEnemies(game);
-  // 스폰이 끝나고 필드의 적을 모두 처리하면 다음 웨이브까지 카운트다운을 시작한다
-  if (game.countdown === null && game.spawnQueue.length === 0 && game.enemies.length === 0
-      && game.waveNumber > 0 && game.waveNumber < game.waves.length) {
+  // 스폰이 끝나고 필드의 적을 모두 처리하면 보너스를 주고 다음 웨이브까지 카운트다운을 시작한다
+  const cleared = game.waveNumber > 0 && game.spawnQueue.length === 0 && game.enemies.length === 0;
+  if (cleared && game.clearedWave < game.waveNumber && game.lives > 0) {
+    game.clearedWave = game.waveNumber;
+    game.gold += CONFIG.waveClearBonus;
+    game.events.push({ type: 'waveClear', wave: game.waveNumber, bonus: CONFIG.waveClearBonus });
+  }
+  if (cleared && game.countdown === null && game.waveNumber < game.waves.length) {
     game.countdown = CONFIG.waveGap;
   }
   if (game.lives <= 0) {

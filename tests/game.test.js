@@ -344,3 +344,25 @@ test('이벤트: 발사는 맞은 적, 처치는 적 종류와 보상, 도착은
   const leak = g.events.find((ev) => ev.type === 'leak');
   assert.deepEqual([leak.enemy, leak.lives], ['boss', 5]);
 });
+
+test('웨이브의 적을 모두 처리하면 10골드를 한 번만 받는다 (마지막 웨이브 포함)', () => {
+  assert.equal(CONFIG.waveClearBonus, 10);
+  const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
+  callNextWave(g);
+  const goldAfterCall = g.gold;
+  step(g, 0.1);
+  assert.equal(g.gold, goldAfterCall, '적이 남아 있으면 보너스 없음');
+  g.enemies[0].hp = 0;
+  step(g, 0.05);
+  assert.equal(g.gold, goldAfterCall + 5 + 10, '처치 5 + 웨이브 보너스 10');
+  assert.ok(g.events.some((ev) => ev.type === 'waveClear' && ev.wave === 1 && ev.bonus === 10));
+  step(g, 1);
+  assert.equal(g.gold, goldAfterCall + 15, '보너스는 한 번만');
+  callNextWave(g);
+  const before = g.gold;
+  step(g, 0.1);
+  g.enemies[0].hp = 0;
+  step(g, 0.05);
+  assert.equal(g.gold, before + 5 + 10);
+  assert.equal(g.status, 'won');
+});

@@ -15,6 +15,8 @@ const withAlpha = (hex, a) => {
 };
 // 숲 바닥 무늬 비율: 기본, 풀포기, 버섯, 낙엽, 기본2 (버섯은 드물게)
 const FOREST_GRASS_WEIGHTS = [8, 3, 1, 2, 6];
+// 돌산 바닥 무늬 비율: 기본, 갈라진 틈, 자갈, 풀포기, 이끼
+const MOUNTAIN_GROUND_WEIGHTS = [9, 3, 3, 2, 2];
 
 // 칸 좌표로 정해지는 의사 난수. 같은 칸은 늘 같은 무늬가 나온다.
 const cellHash = (c, r) => (((c * 73856093) ^ (r * 19349663)) >>> 0);
@@ -102,26 +104,16 @@ export function createRenderer(canvas) {
     return variants[0];
   }
 
-  function drawMeadow(map, path, cell) {
+  function drawMountain(map, path, cell) {
     for (let r = 0; r < map.rows; r++) {
       for (let c = 0; c < map.cols; c++) {
-        const onPath = path.has(`${c},${r}`);
-        ctx.fillStyle = onPath ? '#e8cf9c' : (c + r) % 2 ? '#a5d36f' : '#9bcb65';
-        ctx.fillRect(c * cell, r * cell, cell + 0.5, cell + 0.5);
+        const frames = path.has(`${c},${r}`)
+          ? pickVariant(tiles.mountainPath, c, r)
+          : pickVariant(tiles.mountainGround, c, r, MOUNTAIN_GROUND_WEIGHTS);
+        drawTile(frames[0], c, r, cell);
       }
     }
-    for (const [c, r] of map.blocked) {
-      upright((c + 0.5) * cell, (r + 0.5) * cell, (x, y) => {
-        ctx.fillStyle = '#7f8c8d';
-        ctx.beginPath();
-        ctx.ellipse(x, y + cell * 0.08, cell * 0.36, cell * 0.28, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#a6b1b2';
-        ctx.beginPath();
-        ctx.ellipse(x - cell * 0.08, y, cell * 0.14, cell * 0.1, 0, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
+    for (const [c, r] of map.blocked) drawUprightTile(tiles.mountainBoulder[0][0], c, r, cell);
   }
 
   function drawForest(map, path, cell) {
@@ -159,7 +151,7 @@ export function createRenderer(canvas) {
     ctx.imageSmoothingEnabled = false;
     if (map.theme === 'forest') drawForest(map, path, cell);
     else if (map.theme === 'sea') drawSea(map, path, cell, now);
-    else drawMeadow(map, path, cell);
+    else drawMountain(map, path, cell);
     const end = game.points[game.points.length - 1];
     upright(end.x * cell, end.y * cell, (sx, sy) => {
       ctx.font = `${cell * 0.7}px sans-serif`;
@@ -339,6 +331,7 @@ export function createRenderer(canvas) {
     lastEvents = game.events;
     for (const ev of game.events) {
       effects.fromEvent(ev, now);
+      if (ev.type === 'waveClear') effects.waveClear(game.map.cols / 2, game.map.rows / 2, ev.bonus, now);
       // 타워는 마지막으로 쏜 적 쪽을 바라본다
       if (ev.type === 'shot') {
         const side = screenSide(ev.to.x - ev.from.x, ev.to.y - ev.from.y);

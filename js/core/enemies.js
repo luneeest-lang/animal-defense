@@ -1,7 +1,10 @@
 import { ENEMIES } from '../data/enemies.js';
 
+// 모든 몬스터 체력 보정 (2026-10-26: 약 5% 상향)
+export const HP_BONUS = 1.05;
+
 export function hpScale(waveNumber) {
-  return 1 + 0.3 * (waveNumber - 1);
+  return HP_BONUS * (1 + 0.3 * (waveNumber - 1));
 }
 
 export function createEnemy(id, type, waveNumber) {

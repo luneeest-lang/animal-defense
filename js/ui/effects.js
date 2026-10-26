@@ -89,6 +89,10 @@ export function createEffects(rng = effectRng(Date.now())) {
       add({ kind: 'text', x, y, text: awakened ? '각성!' : '성장!', big: awakened, t: now, life: LIFE.text });
       if (awakened) shake(0.4, now);
     },
+    waveClear(x, y, bonus, now) {
+      add({ kind: 'text', x, y, text: `웨이브 클리어 +${bonus}`, big: false, t: now, life: LIFE.text });
+      burst(x, y, 12, GOLD, 1.8, 0.08, now);
+    },
     hitTime(enemyId) {
       return hits.get(enemyId) ?? -Infinity;
     },

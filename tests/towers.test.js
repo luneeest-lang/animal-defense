@@ -45,7 +45,7 @@ test('findTarget은 사거리 안에서 가장 앞선 적을 고른다', () => {
 test('squirrel은 대상 한 마리에게 기본 공격력만큼 피해', () => {
   const e = enemyAt(1, 'soldier', 5);
   fire(tower('squirrel'), e, [e], points);
-  assert.equal(e.hp, 40 - TOWERS.squirrel.base.damage);
+  assert.equal(e.hp, e.maxHp - TOWERS.squirrel.base.damage);
 });
 
 test('elephant는 대상 주변 반경 1.0 안의 모든 적에게 피해를 준다', () => {
@@ -54,9 +54,9 @@ test('elephant는 대상 주변 반경 1.0 안의 모든 적에게 피해를 준
   const c = enemyAt(3, 'tank', 8);
   const hit = fire(tower('elephant'), a, [a, b, c], points);
   const dmg = TOWERS.elephant.base.damage;
-  assert.equal(a.hp, 160 - dmg);
-  assert.equal(b.hp, 160 - dmg);
-  assert.equal(c.hp, 160);
+  assert.equal(a.hp, a.maxHp - dmg);
+  assert.equal(b.hp, b.maxHp - dmg);
+  assert.equal(c.hp, c.maxHp);
   assert.deepEqual(hit.map((e) => e.id).sort(), [1, 2]);
 });
 
@@ -64,12 +64,12 @@ test('penguin은 감속을, snake는 독을 건다', () => {
   const p = enemyAt(1, 'soldier', 5);
   fire(tower('penguin'), p, [p], points);
   const pb = TOWERS.penguin.base;
-  assert.equal(p.hp, 40 - pb.damage);
+  assert.equal(p.hp, p.maxHp - pb.damage);
   assert.deepEqual(p.slow, { factor: pb.slowFactor, left: pb.slowDuration });
   const s = enemyAt(2, 'soldier', 5);
   fire(tower('snake'), s, [s], points);
   const sb = TOWERS.snake.base;
-  assert.equal(s.hp, 40 - sb.damage);
+  assert.equal(s.hp, s.maxHp - sb.damage);
   assert.deepEqual(s.poison, { dps: sb.poisonDps, left: sb.poisonDuration });
 });
 
@@ -77,10 +77,10 @@ test('eagle은 보스에게 1.5배 피해를 준다', () => {
   const boss = enemyAt(1, 'boss', 5);
   fire(tower('eagle'), boss, [boss], points);
   const eb = TOWERS.eagle.base;
-  assert.equal(boss.hp, 1500 - eb.damage * 1.5);
+  assert.equal(boss.hp, boss.maxHp - eb.damage * 1.5);
   const tank = enemyAt(2, 'tank', 5);
   fire(tower('eagle'), tank, [tank], points);
-  assert.equal(tank.hp, 160 - eb.damage);
+  assert.equal(tank.hp, tank.maxHp - eb.damage);
 });
 
 test('findTarget은 이미 죽은(hp <= 0) 적을 무시한다', () => {

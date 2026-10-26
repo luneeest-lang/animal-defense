@@ -87,3 +87,10 @@ test('효과는 Math.random을 쓰지 않는다 (소환 같은 게임 무작위�
   }
   assert.equal(calls, 0);
 });
+
+test('웨이브 클리어는 맵 가운데에 보상 문구를 띄운다', () => {
+  const fx = createEffects(fixed);
+  fx.waveClear(8, 5, 10, 0);
+  const texts = fx.active(0).filter((f) => f.kind === 'text');
+  assert.deepEqual(texts.map((f) => [f.text, f.x, f.y]), [['웨이브 클리어 +10', 8, 5]]);
+});

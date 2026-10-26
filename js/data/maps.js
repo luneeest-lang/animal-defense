@@ -1,10 +1,11 @@
 // 좌표는 칸 단위 [col, row]. 격자는 16x10.
-// theme: 바닥 그림 종류 (meadow 초원, forest 숲, sea 바다)
+// theme: 바닥 그림 종류 (mountain 돌산, forest 숲, sea 바다)
+// id는 저장 기록의 키라서 이름이나 테마가 바뀌어도 그대로 둔다
 export const MAPS = [
   {
     id: 'meadow',
-    name: '초원',
-    theme: 'meadow',
+    name: '돌산',
+    theme: 'mountain',
     cols: 16,
     rows: 10,
     waypoints: [[0, 2], [13, 2], [13, 6], [2, 6], [2, 9]],

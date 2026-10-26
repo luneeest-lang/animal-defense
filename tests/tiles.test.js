@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { MAPS } from '../js/data/maps.js';
 import { TILES } from '../js/data/tiles.js';
 
-test('맵 테마는 초원, 숲, 바다 순서이고 id는 그대로다', () => {
-  assert.deepEqual(MAPS.map((m) => m.theme), ['meadow', 'forest', 'sea']);
+test('맵 테마는 돌산, 숲, 바다 순서이고 id는 그대로다', () => {
+  assert.deepEqual(MAPS.map((m) => m.theme), ['mountain', 'forest', 'sea']);
+  assert.deepEqual(MAPS.map((m) => m.name), ['돌산', '숲', '바다']);
   assert.deepEqual(MAPS.map((m) => m.id), ['meadow', 'forest', 'canyon']);
 });
 
-test('숲과 바다 테마에 필요한 타일이 모두 있다', () => {
-  for (const name of ['forestGrass', 'forestPath', 'forestTree', 'seaWater', 'seaPlank', 'seaReef', 'seaIslet']) {
+test('돌산, 숲, 바다 테마에 필요한 타일이 모두 있다', () => {
+  for (const name of ['mountainGround', 'mountainPath', 'mountainBoulder', 'forestGrass', 'forestPath', 'forestTree', 'seaWater', 'seaPlank', 'seaReef', 'seaIslet']) {
     assert.ok(TILES[name], `${name} missing`);
   }
   assert.equal(TILES.forestGrass.variants.length, 5);
@@ -34,7 +35,7 @@ test('타일은 16x16이고 팔레트에 없는 글자를 쓰지 않는다', () 
 });
 
 test('바닥 타일은 빈틈 없이 칸을 덮는다', () => {
-  for (const name of ['forestGrass', 'forestPath', 'seaWater', 'seaPlank']) {
+  for (const name of ['mountainGround', 'mountainPath', 'forestGrass', 'forestPath', 'seaWater', 'seaPlank']) {
     for (const frames of TILES[name].variants) {
       for (const rows of frames) assert.ok(!rows.join('').includes('.'), `${name} has transparent pixels`);
     }
