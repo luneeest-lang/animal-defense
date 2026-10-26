@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { MAPS } from '../js/data/maps.js';
 import { TILES } from '../js/data/tiles.js';
 
-test('맵 테마는 돌산, 숲, 바다 순서이고 id는 그대로다', () => {
+test('맵은 초급(돌산), 중급(숲), 고급(바다) 순서이고 id는 그대로다', () => {
   assert.deepEqual(MAPS.map((m) => m.theme), ['mountain', 'forest', 'sea']);
-  assert.deepEqual(MAPS.map((m) => m.name), ['돌산', '숲', '바다']);
+  assert.deepEqual(MAPS.map((m) => m.name), ['초급', '중급', '고급']);
   assert.deepEqual(MAPS.map((m) => m.id), ['meadow', 'forest', 'canyon']);
 });
 

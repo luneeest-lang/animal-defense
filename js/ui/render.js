@@ -317,13 +317,20 @@ export function createRenderer(canvas) {
     }
     ctx.restore();
 
-    const w = Math.max(cell * 0.6, s * 0.7);
+    // 체력바: 두꺼운 빨간 바 (어두운 테두리와 배경)
+    const w = Math.round(Math.max(cell * 0.7, s * 0.8));
+    const h = Math.max(5, Math.round(cell * 0.16));
     const ratio = Math.max(0, e.hp / e.maxHp);
-    const barY = cy - s * 0.62 - cell * 0.1;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(cx - w / 2, barY, w, cell * 0.09);
-    ctx.fillStyle = ratio > 0.5 ? '#4cd964' : ratio > 0.25 ? '#ffcc00' : '#ff3b30';
-    ctx.fillRect(cx - w / 2, barY, w * ratio, cell * 0.09);
+    const barX = Math.round(cx - w / 2);
+    const barY = Math.round(cy - s * 0.62 - cell * 0.12 - h / 2);
+    ctx.fillStyle = '#1a0606';
+    ctx.fillRect(barX - 1, barY - 1, w + 2, h + 2);
+    ctx.fillStyle = '#4a1414';
+    ctx.fillRect(barX, barY, w, h);
+    ctx.fillStyle = '#e8262b';
+    ctx.fillRect(barX, barY, Math.round(w * ratio), h);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+    ctx.fillRect(barX, barY, Math.round(w * ratio), Math.max(1, Math.round(h * 0.3)));
   }
 
   function collectEvents(game, now) {
@@ -387,9 +394,10 @@ export function createRenderer(canvas) {
   // 화면 기준으로 똑바로 쓰는 떠오르는 글자 (보상 숫자, 성장 문구)
   function floatingText(f, k, cell) {
     const big = f.kind === 'text' && f.big;
-    const size = f.kind === 'coin' ? cell * 0.38 : cell * (big ? 0.8 : 0.52);
-    const pop = f.kind === 'text' && k < 0.12 ? 0.6 + (k / 0.12) * 0.4 : 1;
-    const rise = cell * (f.kind === 'coin' ? 0.8 : 1.0) * (1 - (1 - k) ** 2);
+    const damage = f.kind === 'damage';
+    const size = damage ? cell * 0.34 : f.kind === 'coin' ? cell * 0.38 : cell * (big ? 0.8 : 0.52);
+    const pop = (f.kind === 'text' || damage) && k < 0.12 ? 0.6 + (k / 0.12) * 0.4 : 1;
+    const rise = cell * (damage ? 0.55 : f.kind === 'coin' ? 0.8 : 1.0) * (1 - (1 - k) ** 2);
     upright(f.x * cell, f.y * cell, (sx, sy) => {
       ctx.globalAlpha = k > 0.65 ? (1 - k) / 0.35 : 1;
       ctx.font = `900 ${Math.round(size * pop)}px system-ui, sans-serif`;
@@ -398,7 +406,8 @@ export function createRenderer(canvas) {
       ctx.lineWidth = Math.max(3, size * 0.16);
       ctx.strokeStyle = big ? '#5a0d00' : '#2a1c00';
       ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
-      ctx.fillStyle = big ? '#ffe066' : '#ffd23f';
+      // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색
+      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : big ? '#ffe066' : '#ffd23f';
       ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
     });
   }

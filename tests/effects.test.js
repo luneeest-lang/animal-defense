@@ -94,3 +94,12 @@ test('웨이브 클리어는 맵 가운데에 보상 문구를 띄운다', () =>
   const texts = fx.active(0).filter((f) => f.kind === 'text');
   assert.deepEqual(texts.map((f) => [f.text, f.x, f.y]), [['웨이브 클리어 +10', 8, 5]]);
 });
+
+test('hit 이벤트는 노란 데미지 숫자를 띄운다 (반올림, 최소 1)', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'hit', enemyId: 3, amount: 7.6, x: 2, y: 2 }, 0);
+  fx.fromEvent({ type: 'hit', enemyId: 4, amount: 0.2, x: 2, y: 2 }, 0);
+  const dmg = fx.active(0).filter((f) => f.kind === 'damage');
+  assert.deepEqual(dmg.map((f) => f.text), ['8', '1']);
+  assert.ok(!fx.active(LIFE.damage).some((f) => f.kind === 'damage'));
+});

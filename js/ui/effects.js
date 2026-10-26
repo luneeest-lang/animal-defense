@@ -3,7 +3,7 @@
 
 export const EFFECT_LIMIT = 400;
 export const LIFE = {
-  projectile: 180, shock: 320, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320,
+  projectile: 180, shock: 320, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320, damage: 650,
 };
 export const SHAKE_MS = 450;
 
@@ -66,6 +66,12 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'projectile', tower: ev.tower, from: ev.from, to: ev.to, t: now, life: LIFE.projectile });
         if (ev.tower === 'elephant') add({ kind: 'shock', x: ev.to.x, y: ev.to.y, t: now, life: LIFE.shock });
         if (ev.targetId !== undefined) hits.set(ev.targetId, now);
+      } else if (ev.type === 'hit') {
+        // 같은 자리에 숫자가 겹치지 않게 좌우로 조금 흩뿌린다
+        add({
+          kind: 'damage', x: ev.x + (rng() - 0.5) * 0.5, y: ev.y, text: String(Math.max(1, Math.round(ev.amount))),
+          t: now, life: LIFE.damage,
+        });
       } else if (ev.type === 'death') {
         const boss = ev.enemy === 'boss';
         burst(ev.x, ev.y, boss ? 28 : 8, [ENEMY_COLORS[ev.enemy] ?? '#ffffff', '#ffffff'], boss ? 3.2 : 2.2, boss ? 0.12 : 0.08, now);

@@ -366,3 +366,24 @@ test('웨이브의 적을 모두 처리하면 10골드를 한 번만 받는다 (
   assert.equal(g.gold, before + 5 + 10);
   assert.equal(g.status, 'won');
 });
+
+test('맞은 적마다 실제 피해량을 담은 hit 이벤트가 생긴다 (방패병 절반, 범위 공격은 여러 개)', () => {
+  const g = createGame(meadow);
+  g.countdown = null;
+  addTower(g, 'squirrel', 5, 3);
+  const s = inject(g, 'shield', 5);
+  step(g, 0.05);
+  const hits = g.events.filter((ev) => ev.type === 'hit');
+  assert.deepEqual(hits.map((h) => [h.enemyId, h.amount]), [[s.id, 4]]);
+  assert.ok(Number.isFinite(hits[0].x) && Number.isFinite(hits[0].y));
+
+  const g2 = createGame(meadow);
+  g2.countdown = null;
+  addTower(g2, 'elephant', 5, 3);
+  inject(g2, 'tank', 5);
+  inject(g2, 'tank', 5.5);
+  step(g2, 0.05);
+  const hits2 = g2.events.filter((ev) => ev.type === 'hit');
+  assert.equal(hits2.length, 2);
+  for (const h of hits2) assert.equal(h.amount, 20);
+});

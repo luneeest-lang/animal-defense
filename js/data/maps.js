@@ -4,7 +4,7 @@
 export const MAPS = [
   {
     id: 'meadow',
-    name: '돌산',
+    name: '초급',
     theme: 'mountain',
     cols: 16,
     rows: 10,
@@ -13,7 +13,7 @@ export const MAPS = [
   },
   {
     id: 'forest',
-    name: '숲',
+    name: '중급',
     theme: 'forest',
     cols: 16,
     rows: 10,
@@ -22,7 +22,7 @@ export const MAPS = [
   },
   {
     id: 'canyon',
-    name: '바다',
+    name: '고급',
     theme: 'sea',
     cols: 16,
     rows: 10,

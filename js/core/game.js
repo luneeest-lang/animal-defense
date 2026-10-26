@@ -151,7 +151,12 @@ function fireTowers(game, dt) {
       tower.cooldown = 0;
       continue;
     }
-    fire(tower, target, targets, game.points);
+    const hpBefore = new Map(targets.map((e) => [e, e.hp]));
+    const hit = fire(tower, target, targets, game.points);
+    // 맞은 적마다 실제로 들어간 피해량 (화면의 데미지 숫자용)
+    for (const e of hit) {
+      game.events.push({ type: 'hit', enemyId: e.id, amount: hpBefore.get(e) - e.hp, ...positionAt(game.points, e.dist) });
+    }
     // 남은 시간(음수)을 이월해 프레임 크기와 상관없이 공격 간격을 지킨다
     tower.cooldown += towerStats(tower.type, tower.level).cooldown;
     game.events.push({
