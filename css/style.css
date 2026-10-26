@@ -84,6 +84,31 @@ button { font: inherit; color: inherit; }
   pointer-events: none;
 }
 
+/* 보스 경고: 화면 가장자리가 핏빛으로 맥동하고 글자가 깜빡이며 떨린다 */
+#boss-banner {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(15, 0, 0, 0.3) 0%, rgba(25, 0, 0, 0.62) 55%, rgba(110, 0, 0, 0.88) 100%);
+  animation: boss-in 0.5s ease-out, boss-heartbeat 1.1s ease-in-out infinite;
+  transition: opacity 0.4s ease-in;
+}
+#boss-banner.leaving { opacity: 0; }
+.boss-inner { text-align: center; animation: boss-shake 0.11s linear infinite; }
+.boss-text {
+  font-family: 'Creepster', Impact, 'Arial Black', serif;
+  font-size: clamp(64px, 17vw, 168px); line-height: 1; letter-spacing: 0.08em;
+  color: #b3121e;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.75), 0 0 34px #6b0000, 0 5px 0 #2a0000;
+  animation: boss-flicker 1.7s steps(1) infinite;
+}
+.boss-sub { margin-top: 0.4em; color: #e3b0b0; font-size: clamp(13px, 3.4vw, 20px); letter-spacing: 0.35em; opacity: 0.85; }
+@keyframes boss-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes boss-heartbeat { 0%, 100% { filter: brightness(0.85); } 12% { filter: brightness(1.15); } 24% { filter: brightness(0.9); } 36% { filter: brightness(1.1); } }
+@keyframes boss-flicker { 0% { opacity: 1; } 7% { opacity: 0.25; } 9% { opacity: 1; } 52% { opacity: 0.85; } 54% { opacity: 0.15; } 56% { opacity: 1; } }
+@keyframes boss-shake { 0% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(1px, -2px); } 75% { transform: translate(2px, 1px); } }
+@media (prefers-reduced-motion: reduce) {
+  #boss-banner, .boss-inner, .boss-text { animation: none; }
+}
+
 #panel { grid-area: panel; display: flex; align-items: center; gap: 10px; padding: 6px 10px; justify-content: center; background: var(--bar); }
 .summon-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;

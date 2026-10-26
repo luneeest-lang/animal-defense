@@ -7,5 +7,5 @@ export const ENEMIES = {
   shield: { hp: 80, speed: 0.9, reward: 9, leak: 1, directMult: 0.5 },
   splitter: { hp: 60, speed: 1.0, reward: 8, leak: 1, splitInto: { type: 'mini', count: 2 } },
   mini: { hp: 20, speed: 1.4, reward: 2, leak: 1 },
-  boss: { hp: 1500, speed: 0.5, reward: 100, leak: 5 },
+  boss: { hp: 1500, speed: 0.5, reward: 200, leak: 5 },
 };

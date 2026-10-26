@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ENEMIES } from '../js/data/enemies.js';
-import { buildWaves, spawnSchedule } from '../js/core/waves.js';
+import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from '../js/core/waves.js';
 
 const waves = buildWaves();
 const count = (wave, type) => wave.groups.filter((g) => g.type === type).reduce((s, g) => s + g.count, 0);
@@ -35,22 +35,36 @@ test('모든 웨이브가 비어 있지 않고 정의된 적만 쓴다', () => {
   }
 });
 
-test('모든 웨이브는 정확히 20마리다 (보스 포함)', () => {
-  for (const w of waves) assert.equal(w.groups.reduce((s, g) => s + g.count, 0), 20, `wave ${w.number}`);
+test('보스 웨이브(5, 10, 15)는 보스 1마리만, 나머지 웨이브는 정확히 20마리다', () => {
+  for (const w of waves) {
+    const total = w.groups.reduce((s, g) => s + g.count, 0);
+    if ([5, 10, 15].includes(w.number)) {
+      assert.ok(isBossWave(w), `wave ${w.number}`);
+      assert.deepEqual(w.groups.map((g) => [g.type, g.count]), [['boss', 1]]);
+    } else {
+      assert.ok(!isBossWave(w), `wave ${w.number}`);
+      assert.equal(total, 20, `wave ${w.number}`);
+    }
+  }
+});
+
+test('보스는 경고 연출 시간만큼 늦게 나온다', () => {
+  assert.equal(BOSS_INTRO, 3);
+  assert.deepEqual(spawnSchedule(waves[4]), [{ at: BOSS_INTRO, type: 'boss' }]);
 });
 
 test('뒤 웨이브일수록 병사 비중이 줄고 강한 적이 늘어난다', () => {
   assert.equal(count(waves[0], 'soldier'), 20);
-  assert.ok(count(waves[14], 'soldier') < count(waves[4], 'soldier'));
-  assert.ok(count(waves[14], 'tank') >= count(waves[5], 'tank'));
+  assert.ok(count(waves[13], 'soldier') < count(waves[3], 'soldier'));
+  assert.ok(count(waves[13], 'tank') >= count(waves[5], 'tank'));
 });
 
-test('spawnSchedule은 시간순이고 모든 적을 포함하며 0초에 시작한다', () => {
+test('spawnSchedule은 시간순이고 모든 적을 포함하며 0초(보스는 경고 뒤)에 시작한다', () => {
   for (const w of waves) {
     const schedule = spawnSchedule(w);
     const total = w.groups.reduce((s, g) => s + g.count, 0);
     assert.equal(schedule.length, total);
-    assert.equal(schedule[0].at, 0);
+    assert.equal(schedule[0].at, isBossWave(w) ? BOSS_INTRO : 0);
     for (let i = 1; i < schedule.length; i++) assert.ok(schedule[i].at >= schedule[i - 1].at);
   }
 });

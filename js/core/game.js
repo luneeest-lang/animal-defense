@@ -2,7 +2,7 @@ import { waypointPoints, pathLength, positionAt, canBuild, pathCells } from './p
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
-import { buildWaves, spawnSchedule } from './waves.js';
+import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from './waves.js';
 
 export const CONFIG = {
   startLives: 20,
@@ -34,6 +34,7 @@ export function createGame(map, waves = buildWaves()) {
     time: 0,
     nextId: 1,
     summons: 0,
+    bossWarning: 0, // 보스 경고 연출이 남은 시간(초). 0이면 경고 없음
   };
 }
 
@@ -120,6 +121,7 @@ export function sellTower(game, towerId) {
 function startWave(game) {
   game.waveNumber += 1;
   const wave = game.waves[game.waveNumber - 1];
+  game.bossWarning = isBossWave(wave) ? BOSS_INTRO : 0;
   for (const s of spawnSchedule(wave)) {
     game.spawnQueue.push({ at: game.time + s.at, type: s.type, wave: game.waveNumber });
   }
@@ -183,6 +185,7 @@ function resolveEnemies(game) {
 
 function substep(game, dt) {
   game.time += dt;
+  game.bossWarning = Math.max(0, game.bossWarning - dt);
   if (game.countdown !== null) {
     game.countdown -= dt;
     if (game.countdown <= 0) startWave(game);

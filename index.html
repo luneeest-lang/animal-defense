@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>동물 타워 디펜스</title>
   <meta name="description" content="귀여운 동물 타워로 적을 막아 내는 무료 브라우저 타워 디펜스 게임">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -32,6 +35,12 @@
       <main id="stage">
         <canvas id="board" aria-label="게임 화면"></canvas>
         <div id="pause-label" hidden>일시정지</div>
+        <div id="boss-banner" hidden aria-live="assertive">
+          <div class="boss-inner">
+            <div class="boss-text">BOSS</div>
+            <div class="boss-sub">무언가 다가온다…</div>
+          </div>
+        </div>
 
         <div id="tower-info" hidden>
           <div id="ti-title"></div>

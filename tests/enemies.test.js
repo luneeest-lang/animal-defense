@@ -20,7 +20,7 @@ test('적 기본 수치', () => {
   assert.deepEqual([ENEMIES.splitter.hp, ENEMIES.splitter.speed, ENEMIES.splitter.reward], [60, 1.0, 8]);
   assert.deepEqual(ENEMIES.splitter.splitInto, { type: 'mini', count: 2 });
   assert.deepEqual([ENEMIES.mini.hp, ENEMIES.mini.speed, ENEMIES.mini.reward], [20, 1.4, 2]);
-  assert.deepEqual([ENEMIES.boss.hp, ENEMIES.boss.speed, ENEMIES.boss.reward, ENEMIES.boss.leak], [1500, 0.5, 100, 5]);
+  assert.deepEqual([ENEMIES.boss.hp, ENEMIES.boss.speed, ENEMIES.boss.reward, ENEMIES.boss.leak], [1500, 0.5, 200, 5]);
 });
 
 test('웨이브 번호에 따라 체력이 늘어난다', () => {

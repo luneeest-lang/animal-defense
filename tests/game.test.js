@@ -303,3 +303,23 @@ test('소환은 길 바로 옆(대각선 포함 1칸) 빈 칸에만 된다', () 
   }
   assert.ok(!cells.some(([c, r]) => c === 0 && r === 9), '길에서 먼 구석 칸은 빠진다');
 });
+
+test('보스 웨이브가 시작되면 경고 시간 동안 bossWarning이 남아 있고, 그 뒤 보스가 나온다', async () => {
+  const { BOSS_INTRO } = await import('../js/core/waves.js');
+  const g = createGame(meadow, [{ number: 1, groups: [{ type: 'boss', count: 1, interval: 3 }] }]);
+  assert.equal(g.bossWarning, 0);
+  callNextWave(g);
+  assert.equal(g.bossWarning, BOSS_INTRO);
+  step(g, 1);
+  assert.ok(Math.abs(g.bossWarning - (BOSS_INTRO - 1)) < 1e-9);
+  assert.equal(g.enemies.length, 0);
+  step(g, BOSS_INTRO);
+  assert.equal(g.bossWarning, 0);
+  assert.deepEqual(g.enemies.map((e) => e.type), ['boss']);
+});
+
+test('보스가 없는 웨이브는 경고가 없다', () => {
+  const g = createGame(meadow, oneSoldier);
+  callNextWave(g);
+  assert.equal(g.bossWarning, 0);
+});

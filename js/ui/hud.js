@@ -13,7 +13,7 @@ export function createHud(root, handlers) {
     menu: $('screen-menu'), game: $('screen-game'), maps: $('map-list'), warning: $('save-warning'),
     lives: $('stat-lives'), gold: $('stat-gold'), wave: $('stat-wave'),
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
-    pauseLabel: $('pause-label'), panel: $('panel'),
+    pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
@@ -128,6 +128,9 @@ export function createHud(root, handlers) {
       setText(el.btnSpeed, `${ui.speed}x`);
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused;
+      // 보스 경고는 남은 시간 동안 보이고, 끝나기 직전에 서서히 사라진다
+      el.bossBanner.hidden = !(running && game.bossWarning > 0);
+      el.bossBanner.classList.toggle('leaving', game.bossWarning > 0 && game.bossWarning < 0.4);
       const cost = summonCost(game);
       setText(summonCostEl, `🪙 ${cost}`);
       summon.disabled = !running || cost > game.gold || emptyCells(game).length === 0;
