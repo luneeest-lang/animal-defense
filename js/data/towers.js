@@ -22,3 +22,15 @@ export const TOWERS = {
     base: { damage: 2, range: 2.5, cooldown: 1.2, poisonDps: 6, poisonDuration: 3 },
   },
 };
+
+// 레벨 0~3의 성장 단계 이름. 각성 단계는 성체 그림에 오라가 생긴다.
+export const STAGE_NAMES = ['아기', '청년', '성체', '각성'];
+
+// 각성 오라 색 (속성에 맞춘다)
+export const AURA_COLORS = {
+  squirrel: '#ff9f43',
+  elephant: '#d9b26f',
+  penguin: '#7fdcff',
+  eagle: '#ffd23f',
+  snake: '#7dff6a',
+};

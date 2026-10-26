@@ -38,7 +38,7 @@ test('두 프레임은 서로 다르고 그림이 비어 있지 않다', () => {
   }
 });
 
-test('동물 타워 도트는 타워마다 레벨 0~3 네 장이고 형식이 맞다', async () => {
+test('동물 타워 도트는 아기, 청년, 성체, 각성 네 장이고 점점 커진다', async () => {
   const { ANIMAL_SPRITES } = await import('../js/data/animals.js');
   const { TOWERS } = await import('../js/data/towers.js');
   assert.deepEqual(Object.keys(ANIMAL_SPRITES).sort(), Object.keys(TOWERS).sort());
@@ -51,6 +51,17 @@ test('동물 타워 도트는 타워마다 레벨 0~3 네 장이고 형식이 �
         for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown ${ch}`);
       }
     }
-    for (let i = 1; i < 4; i++) assert.notDeepEqual(def.levels[i], def.levels[i - 1], `${name} level ${i} looks the same`);
+    // 아기, 청년, 성체는 모습이 다르고, 각성은 성체 그림에 오라를 화면에서 더한다
+    assert.notDeepEqual(def.levels[0], def.levels[1], `${name} baby = youth`);
+    assert.notDeepEqual(def.levels[1], def.levels[2], `${name} youth = adult`);
+    assert.deepEqual(def.levels[3], def.levels[2], `${name} awakened should reuse the adult sprite`);
+    const filled = (rows) => rows.join('').replace(/\./g, '').length;
+    assert.ok(filled(def.levels[0]) < filled(def.levels[1]) && filled(def.levels[1]) < filled(def.levels[2]), `${name} should grow`);
   }
+});
+
+test('성장 단계 이름과 오라 색이 모든 타워에 정해져 있다', async () => {
+  const { TOWERS, STAGE_NAMES, AURA_COLORS } = await import('../js/data/towers.js');
+  assert.deepEqual(STAGE_NAMES, ['아기', '청년', '성체', '각성']);
+  for (const id of Object.keys(TOWERS)) assert.match(AURA_COLORS[id], /^#[0-9a-f]{6}$/i, id);
 });

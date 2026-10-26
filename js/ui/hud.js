@@ -1,5 +1,5 @@
 import { MAPS } from '../data/maps.js';
-import { TOWERS } from '../data/towers.js';
+import { TOWERS, STAGE_NAMES } from '../data/towers.js';
 import { towerStats, upgradeCost } from '../core/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG } from '../core/game.js';
@@ -69,10 +69,10 @@ export function createHud(root, handlers) {
       return;
     }
     el.info.hidden = false;
-    setText(el.infoTitle, `${TOWERS[shownTower.type].name} Lv.${shownTower.level + 1}`);
+    setText(el.infoTitle, `${TOWERS[shownTower.type].name} · ${STAGE_NAMES[shownTower.level]}`);
     setText(el.infoStats, statsLine(shownTower));
     const cost = upgradeCost(shownTower.type, shownTower.level);
-    setText(el.btnUpgrade, cost === null ? '최대 레벨' : `업그레이드 🪙 ${cost}`);
+    setText(el.btnUpgrade, cost === null ? '최종 단계' : `성장 → ${STAGE_NAMES[shownTower.level + 1]} 🪙 ${cost}`);
     el.btnUpgrade.disabled = cost === null || cost > game.gold;
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }

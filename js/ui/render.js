@@ -1,4 +1,4 @@
-import { TOWERS } from '../data/towers.js';
+import { TOWERS, AURA_COLORS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells, canBuild } from '../core/path.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
@@ -9,6 +9,12 @@ const TOWER_COLORS = {
   squirrel: '#ffe08a', elephant: '#ffb37a', penguin: '#9fd8ff', eagle: '#ffffff', snake: '#9bf06a',
 };
 const WATER_FRAME_MS = 700;
+const AURA_LEVEL = 3;
+
+const withAlpha = (hex, a) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
 // 숲 바닥 무늬 비율: 기본, 풀포기, 버섯, 낙엽, 기본2 (버섯은 드물게)
 const FOREST_GRASS_WEIGHTS = [8, 3, 1, 2, 6];
 
@@ -147,10 +153,50 @@ export function createRenderer(canvas) {
     ctx.stroke();
   }
 
+  // 각성 오라: 몸 뒤에서 맥동하는 빛과 발밑 고리
+  function drawAuraGlow(tower, cx, cy, s, now) {
+    const color = AURA_COLORS[tower.type];
+    const t = now / 1000 + tower.id * 0.37;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+    const r = s * (0.72 + 0.08 * pulse);
+    const glow = ctx.createRadialGradient(cx, cy, r * 0.15, cx, cy, r);
+    glow.addColorStop(0, withAlpha(color, 0.6 + 0.25 * pulse));
+    glow.addColorStop(0.55, withAlpha(color, 0.28 + 0.12 * pulse));
+    glow.addColorStop(1, withAlpha(color, 0));
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = withAlpha(color, 0.75 + 0.25 * pulse);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + s * 0.42, s * 0.46, s * 0.13, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 각성 오라: 위로 떠오르며 사라지는 네모난 빛 조각 (도트 느낌)
+  function drawAuraSparkles(tower, cx, cy, s, unit, now) {
+    const color = AURA_COLORS[tower.type];
+    const t = now / 1000 + tower.id * 0.37;
+    const size = Math.max(3, unit * 2);
+    for (let i = 0; i < 6; i++) {
+      const phase = (t * 0.6 + i / 6) % 1;
+      const angle = i * 1.7 + tower.id;
+      ctx.fillStyle = withAlpha(color, 1 - phase);
+      ctx.fillRect(
+        Math.round(cx + Math.cos(angle) * s * 0.42 - size / 2),
+        Math.round(cy + s * 0.4 - phase * s * 0.95 - size / 2),
+        size,
+        size,
+      );
+    }
+  }
+
   function drawTower(tower, cell, selected, theme) {
     const x = tower.col * cell;
     const y = tower.row * cell;
-    if (theme === 'sea') drawTile(tiles.seaIslet[0][0], tower.col, tower.row, cell);
+    // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
+    if (theme === 'sea') ctx.drawImage(tiles.seaIslet[0][0], x - cell * 0.05, y + cell * 0.2, cell * 1.1, cell * 0.95);
     if (selected) {
       const s = towerStats(tower.type, tower.level);
       rangeCircle(x + cell / 2, y + cell / 2, s.range, cell, true);
@@ -161,12 +207,16 @@ export function createRenderer(canvas) {
     const s = unit * SPRITE_SIZE;
     const cx = Math.round((x + cell / 2) * dpr) / dpr;
     const cy = Math.round((y + cell / 2) * dpr) / dpr;
+    const awakened = tower.level >= AURA_LEVEL;
+    const now = performance.now();
+    if (awakened) drawAuraGlow(tower, cx, cy, s, now);
     ctx.imageSmoothingEnabled = false;
     ctx.save();
     ctx.translate(cx, cy);
     if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
     ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
     ctx.restore();
+    if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
     if (selected) {
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#ffd23f';
