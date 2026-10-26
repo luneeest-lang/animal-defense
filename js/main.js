@@ -48,7 +48,8 @@ const hud = createHud(document.getElementById('app'), {
 });
 
 function summon() {
-  if (game) summonTower(game);
+  const tower = game && summonTower(game);
+  if (tower) renderer.celebrate('summon', tower);
 }
 
 function selectTower(tower) {
@@ -87,7 +88,7 @@ attachInput(document.getElementById('board'), {
   onDrop(cell) {
     if (drag && game && cell) {
       const target = towerAt(cell.col, cell.row);
-      if (target) mergeTowers(game, drag.towerId, target.id);
+      if (target && mergeTowers(game, drag.towerId, target.id)) renderer.celebrate('merge', target);
     }
     drag = null;
   },

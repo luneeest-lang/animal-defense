@@ -27,6 +27,16 @@ export function bakeSprites() {
   return baked;
 }
 
+// 피격 번쩍임용 하얀 실루엣: { 이름: [프레임 캔버스...] }
+export function bakeSilhouettes() {
+  const baked = {};
+  for (const [name, def] of Object.entries(SPRITES)) {
+    const white = Object.fromEntries(Object.keys(def.palette).map((k) => [k, '#ffffff']));
+    baked[name] = def.frames.map((rows) => bake(white, rows));
+  }
+  return baked;
+}
+
 // 맵 타일: { 이름: [무늬마다 [프레임 캔버스...]] }
 export function bakeTiles() {
   const baked = {};

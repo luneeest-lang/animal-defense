@@ -20,6 +20,15 @@ export function createHud(root, handlers) {
     resultDetail: $('result-detail'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
   };
   let shownTower = null;
+  let lastLives = null;
+  let lastGold = null;
+
+  // 같은 애니메이션을 연달아 다시 재생할 수 있도록 클래스를 뺐다가 다시 넣는다
+  const replay = (node, cls) => {
+    node.classList.remove(cls);
+    void node.offsetWidth;
+    node.classList.add(cls);
+  };
   const icons = bakeAnimals();
 
   const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
@@ -98,6 +107,8 @@ export function createHud(root, handlers) {
       el.game.hidden = false;
       el.result.hidden = true;
       shownTower = null;
+      lastLives = null;
+      lastGold = null;
       el.info.hidden = true;
     },
     showSaveWarning(on) { el.warning.hidden = !on; },
@@ -113,8 +124,13 @@ export function createHud(root, handlers) {
     },
     hideResult() { el.result.hidden = true; },
     update(game, ui) {
+      const gold = Math.floor(game.gold);
+      if (lastLives !== null && game.lives < lastLives) replay(el.lives, 'hurt');
+      if (lastGold !== null && gold > lastGold) replay(el.gold, 'gain');
+      lastLives = game.lives;
+      lastGold = gold;
       setText(el.lives, `❤️ ${game.lives}`);
-      setText(el.gold, `🪙 ${Math.floor(game.gold)}`);
+      setText(el.gold, `🪙 ${gold}`);
       setText(el.wave, `웨이브 ${game.waveNumber}/${WAVE_COUNT}`);
       const running = game.status === 'running';
       if (game.countdown !== null && running) {

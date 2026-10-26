@@ -68,7 +68,19 @@ button { font: inherit; color: inherit; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 6px; min-height: var(--bar-h); background: var(--bar);
 }
-.stat { font-weight: 700; padding: 0 4px; white-space: nowrap; }
+.stat { display: inline-block; font-weight: 700; padding: 0 4px; white-space: nowrap; }
+/* 생명이 줄면 흔들리고, 골드가 늘면 살짝 커진다 */
+.stat.hurt { animation: stat-hurt 0.45s ease-out; }
+.stat.gain { animation: stat-gain 0.35s ease-out; }
+@keyframes stat-hurt {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-4px); color: #ff6b5e; }
+  40% { transform: translateX(4px); color: #ff6b5e; }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes stat-gain { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.18); color: #ffd23f; } }
+@media (prefers-reduced-motion: reduce) { .stat.hurt, .stat.gain { animation: none; } }
 #btn-wave { margin-left: auto; }
 
 #stage {

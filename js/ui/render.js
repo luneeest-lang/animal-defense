@@ -2,12 +2,10 @@ import { TOWERS, AURA_COLORS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells } from '../core/path.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites, bakeTiles, bakeAnimals } from './pixel.js';
+import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes } from './pixel.js';
+import { createEffects } from './effects.js';
 
-const FX_MS = 160;
-const TOWER_COLORS = {
-  squirrel: '#ffe08a', elephant: '#ffb37a', penguin: '#9fd8ff', eagle: '#ffffff', snake: '#9bf06a',
-};
+const HIT_FLASH_MS = 90;
 const WATER_FRAME_MS = 700;
 const AURA_LEVEL = 3;
 
@@ -25,9 +23,13 @@ export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   let width = 0;
   let height = 0;
-  let fx = [];
   let lastEvents = null;
+  const effects = createEffects();
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  let shakeX = 0;
+  let shakeY = 0;
   const sprites = bakeSprites();
+  const silhouettes = bakeSilhouettes();
   const tiles = bakeTiles();
   const animals = bakeAnimals();
   const towerFacing = new Map();
@@ -44,7 +46,7 @@ export function createRenderer(canvas) {
     }
     const dpr = window.devicePixelRatio || 1;
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, shakeX * dpr, shakeY * dpr);
     draw(boardH - y, x);
     ctx.restore();
   }
@@ -315,6 +317,12 @@ export function createRenderer(canvas) {
     ctx.translate(cx, cy - s * 0.12 - bob);
     if (face < 0) ctx.scale(-1, 1);
     ctx.drawImage(frame, -s / 2, -s / 2, s, s);
+    // 방금 맞았으면 하얗게 번쩍인다
+    if (performance.now() - effects.hitTime(e.id) < HIT_FLASH_MS) {
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(silhouettes[look.sprite][frameIndex], -s / 2, -s / 2, s, s);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
 
     const w = Math.max(cell * 0.6, s * 0.7);
@@ -330,37 +338,138 @@ export function createRenderer(canvas) {
     if (game.events === lastEvents) return;
     lastEvents = game.events;
     for (const ev of game.events) {
-      fx.push({ ...ev, t: now });
+      effects.fromEvent(ev, now);
       // 타워는 마지막으로 쏜 적 쪽을 바라본다
       if (ev.type === 'shot') {
         const side = screenSide(ev.to.x - ev.from.x, ev.to.y - ev.from.y);
         if (side) towerFacing.set(ev.towerId, side);
       }
     }
-    if (fx.length > 200) fx = fx.slice(-200);
+  }
+
+  // 동물마다 다른 발사체 (맵 좌표에서 그린다)
+  function drawProjectile(f, k, cell) {
+    const at = (t) => ({ x: (f.from.x + (f.to.x - f.from.x) * t) * cell, y: (f.from.y + (f.to.y - f.from.y) * t) * cell });
+    const p = at(k);
+    const u = cell * 0.08;
+    if (f.tower === 'eagle') {
+      const tail = at(Math.max(0, k - 0.45));
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(tail.x, tail.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(p.x - u, p.y - u, u * 2, u * 2);
+    } else if (f.tower === 'penguin') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#bff0ff';
+      ctx.fillRect(-u * 1.2, -u * 1.2, u * 2.4, u * 2.4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-u * 0.5, -u * 0.5, u, u);
+      ctx.restore();
+    } else if (f.tower === 'snake') {
+      for (let i = 2; i >= 0; i--) {
+        const q = at(Math.max(0, k - i * 0.12));
+        ctx.fillStyle = i ? 'rgba(125, 255, 106, 0.45)' : '#7dff6a';
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, u * (1.3 - i * 0.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (f.tower === 'elephant') {
+      ctx.fillStyle = '#e8d2a6';
+      ctx.fillRect(p.x - u * 1.2, p.y - u * 1.2, u * 2.4, u * 2.4);
+    } else {
+      // 다람쥐: 도토리
+      ctx.fillStyle = '#8a5a2b';
+      ctx.fillRect(p.x - u, p.y - u * 0.6, u * 2, u * 1.6);
+      ctx.fillStyle = '#5a3a18';
+      ctx.fillRect(p.x - u * 1.2, p.y - u * 1.2, u * 2.4, u * 0.7);
+    }
+  }
+
+  // 화면 기준으로 똑바로 쓰는 떠오르는 글자 (보상 숫자, 성장 문구)
+  function floatingText(f, k, cell) {
+    const big = f.kind === 'text' && f.big;
+    const size = f.kind === 'coin' ? cell * 0.38 : cell * (big ? 0.8 : 0.52);
+    const pop = f.kind === 'text' && k < 0.12 ? 0.6 + (k / 0.12) * 0.4 : 1;
+    const rise = cell * (f.kind === 'coin' ? 0.8 : 1.0) * (1 - (1 - k) ** 2);
+    upright(f.x * cell, f.y * cell, (sx, sy) => {
+      ctx.globalAlpha = k > 0.65 ? (1 - k) / 0.35 : 1;
+      ctx.font = `900 ${Math.round(size * pop)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = Math.max(3, size * 0.16);
+      ctx.strokeStyle = big ? '#5a0d00' : '#2a1c00';
+      ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
+      ctx.fillStyle = big ? '#ffe066' : '#ffd23f';
+      ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
+    });
   }
 
   function drawEffects(cell, now) {
-    fx = fx.filter((f) => now - f.t < FX_MS);
-    for (const f of fx) {
-      const k = (now - f.t) / FX_MS;
-      ctx.globalAlpha = 1 - k;
-      if (f.type === 'shot') {
-        ctx.strokeStyle = TOWER_COLORS[f.tower] ?? '#fff';
+    for (const f of effects.active(now)) {
+      const age = now - f.t;
+      const k = age / f.life;
+      ctx.globalAlpha = 1;
+      if (f.kind === 'projectile') {
+        drawProjectile(f, k, cell);
+      } else if (f.kind === 'shock') {
+        ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = '#f3e3bf';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(f.from.x * cell, f.from.y * cell);
-        ctx.lineTo(f.to.x * cell, f.to.y * cell);
+        ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + 0.9 * k), 0, Math.PI * 2);
         ctx.stroke();
-      } else if (f.type === 'death') {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+      } else if (f.kind === 'ring') {
+        ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = f.big ? 5 : 3;
         ctx.beginPath();
-        ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + 0.4 * k), 0, Math.PI * 2);
+        ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + (f.big ? 1.5 : 0.6) * k), 0, Math.PI * 2);
         ctx.stroke();
+      } else if (f.kind === 'particle') {
+        // 파편은 화면 아래로 떨어져야 하므로 화면 좌표에서 움직인다
+        const a = age / 1000;
+        upright(f.x * cell, f.y * cell, (sx, sy) => {
+          const size = Math.max(2, f.size * cell);
+          ctx.globalAlpha = 1 - k * k;
+          ctx.fillStyle = f.color;
+          ctx.fillRect(
+            Math.round(sx + f.vx * a * cell - size / 2),
+            Math.round(sy + (f.vy * a + 5 * a * a) * cell - size / 2),
+            size,
+            size,
+          );
+        });
+      } else {
+        floatingText(f, k, cell);
       }
     }
     ctx.globalAlpha = 1;
+  }
+
+  // 적이 집에 도착하면 화면 가장자리가 붉게 번쩍인다 (화면 좌표)
+  function drawLeakFlash(now) {
+    const k = effects.flash(now);
+    if (!k) return;
+    const glow = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.25, width / 2, height / 2, Math.max(width, height) * 0.7);
+    glow.addColorStop(0, 'rgba(255, 0, 0, 0)');
+    glow.addColorStop(1, `rgba(220, 20, 20, ${0.55 * k})`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // 소환과 합성 연출 (main.js에서 부른다)
+  function celebrate(kind, tower) {
+    const now = performance.now();
+    const x = tower.col + 0.5;
+    const y = tower.row + 0.5;
+    if (kind === 'summon') effects.summon(x, y, now);
+    else effects.merge(x, y, tower.level, now);
   }
 
   function draw(game, view) {
@@ -373,6 +482,11 @@ export function createRenderer(canvas) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, width, height);
+    // 보스 처치, 각성 때 화면이 흔들린다 (동작 줄이기 설정이면 흔들지 않는다)
+    const shake = reduceMotion ? 0 : effects.shake(now);
+    shakeX = shake ? Math.sin(now * 0.09) * shake * cell * 0.18 : 0;
+    shakeY = shake ? Math.cos(now * 0.113) * shake * cell * 0.18 : 0;
+    ctx.translate(shakeX, shakeY);
     if (rotated) {
       ctx.translate(boardH, 0);
       ctx.rotate(Math.PI / 2);
@@ -390,6 +504,7 @@ export function createRenderer(canvas) {
     drawEffects(cell, now);
     // 끄는 타워는 손가락 위치(화면 좌표)를 그대로 따라간다
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawLeakFlash(now);
     if (view.drag) {
       const t = game.towers.find((x) => x.id === view.drag.towerId);
       if (t) drawDragged(t, view.drag.x, view.drag.y, cell);
@@ -397,5 +512,5 @@ export function createRenderer(canvas) {
   }
 
   resize();
-  return { draw, resize };
+  return { draw, resize, celebrate };
 }

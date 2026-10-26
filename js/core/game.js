@@ -153,6 +153,7 @@ function fireTowers(game, dt) {
       type: 'shot',
       tower: tower.type,
       towerId: tower.id,
+      targetId: target.id,
       from: { x: tower.col + 0.5, y: tower.row + 0.5 },
       to: positionAt(game.points, target.dist),
     });
@@ -166,7 +167,7 @@ function resolveEnemies(game) {
     const def = ENEMIES[e.type];
     if (e.hp <= 0) {
       game.gold += def.reward;
-      game.events.push({ type: 'death', ...positionAt(game.points, e.dist) });
+      game.events.push({ type: 'death', enemy: e.type, reward: def.reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
         for (let i = 0; i < def.splitInto.count; i++) {
           const child = createEnemy(game.nextId++, def.splitInto.type, e.waveNumber);
@@ -176,6 +177,7 @@ function resolveEnemies(game) {
       }
     } else if (e.dist >= game.length) {
       game.lives -= def.leak;
+      game.events.push({ type: 'leak', enemy: e.type, lives: def.leak, ...positionAt(game.points, e.dist) });
     } else {
       alive.push(e);
     }

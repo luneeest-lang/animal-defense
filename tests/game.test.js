@@ -323,3 +323,19 @@ test('보스가 없는 웨이브는 경고가 없다', () => {
   callNextWave(g);
   assert.equal(g.bossWarning, 0);
 });
+
+test('이벤트: 발사는 맞은 적, 처치는 적 종류와 보상, 도착은 생명 감소량을 담는다', () => {
+  const g = createGame(meadow);
+  addTower(g, 'squirrel', 5, 3);
+  const e = inject(g, 'soldier', 5, 1);
+  step(g, 0.05);
+  const shot = g.events.find((ev) => ev.type === 'shot');
+  assert.equal(shot.targetId, e.id);
+  const death = g.events.find((ev) => ev.type === 'death');
+  assert.deepEqual([death.enemy, death.reward], ['soldier', 5]);
+  assert.ok(Number.isFinite(death.x) && Number.isFinite(death.y));
+  inject(g, 'boss', pathLength(g.points) - 0.01);
+  step(g, 0.05);
+  const leak = g.events.find((ev) => ev.type === 'leak');
+  assert.deepEqual([leak.enemy, leak.lives], ['boss', 5]);
+});
