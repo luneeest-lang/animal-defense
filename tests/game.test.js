@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAPS } from '../js/data/maps.js';
-import { pathLength } from '../js/core/path.js';
+import { pathLength, pathCells as pathCellsOf } from '../js/core/path.js';
 import { createEnemy } from '../js/core/enemies.js';
 import {
   CONFIG, createGame, addTower, summonCost, emptyCells, summonTower, canMerge, mergeTowers,
@@ -21,7 +21,7 @@ const inject = (game, type, dist, hp) => {
 
 test('새 게임의 초기 상태', () => {
   const g = createGame(meadow);
-  assert.equal(g.gold, 150);
+  assert.equal(g.gold, 200);
   assert.equal(g.lives, 20);
   assert.equal(g.waveNumber, 0);
   assert.equal(g.countdown, 10);
@@ -36,12 +36,12 @@ test('소환: 비용을 내고 무작위 빈 칸에 아기 동물이 생기며, 
   const first = emptyCells(g)[0];
   const t = summonTower(g, seq(0));
   assert.deepEqual([t.type, t.col, t.row, t.level, t.invested], ['squirrel', first[0], first[1], 0, 50]);
-  assert.equal(g.gold, 100);
+  assert.equal(g.gold, 150);
   assert.equal(summonCost(g), 55);
   const cells = emptyCells(g);
   const t2 = summonTower(g, seq(0.999999));
   assert.deepEqual([t2.type, t2.col, t2.row, t2.invested], ['snake', ...cells[cells.length - 1], 55]);
-  assert.equal(g.gold, 45);
+  assert.equal(g.gold, 95);
   assert.equal(summonCost(g), 60);
 });
 
@@ -122,17 +122,17 @@ test('다음 웨이브 호출: 보너스를 주고 연달아 눌러도 한 번�
   const g = createGame(meadow);
   assert.equal(callNextWave(g), 10);
   assert.equal(g.waveNumber, 1);
-  assert.equal(g.gold, 160);
+  assert.equal(g.gold, 210);
   assert.equal(callNextWave(g), 0);
   assert.equal(g.waveNumber, 1);
-  assert.equal(g.gold, 160);
+  assert.equal(g.gold, 210);
 });
 
 test('보너스는 남은 카운트다운을 올림한 값이다', () => {
   const g = createGame(meadow);
   g.countdown = 6.2;
   assert.equal(callNextWave(g), 7);
-  assert.equal(g.gold, 157);
+  assert.equal(g.gold, 207);
 });
 
 test('카운트다운이 끝나면 웨이브가 자동 시작되고, 스폰이 끝나면 웨이브 간격 카운트다운이 시작된다', () => {
@@ -157,9 +157,9 @@ test('처치하면 보상을 한 번만 받는다', () => {
   inject(g, 'soldier', 5, 8);
   step(g, 0.05);
   assert.equal(g.enemies.length, 0);
-  assert.equal(g.gold, 155);
+  assert.equal(g.gold, CONFIG.startGold + 5);
   step(g, 0.05);
-  assert.equal(g.gold, 155);
+  assert.equal(g.gold, CONFIG.startGold + 5);
   assert.ok(g.events.every((e) => e.type !== 'death'));
 });
 
@@ -173,7 +173,7 @@ test('분열체가 죽으면 작은 적 둘이 같은 자리에 생기고 분열
     assert.equal(m.type, 'mini');
     assert.ok(Math.abs(m.dist - 5.05) < 0.2);
   }
-  assert.equal(g.gold, 150 + 8);
+  assert.equal(g.gold, CONFIG.startGold + 8);
 });
 
 test('끝까지 간 적은 생명을 깎고 보상은 없다. 보스는 5', () => {
@@ -182,7 +182,7 @@ test('끝까지 간 적은 생명을 깎고 보상은 없다. 보스는 5', () =
   inject(g, 'soldier', len - 0.01);
   step(g, 0.05);
   assert.equal(g.lives, 19);
-  assert.equal(g.gold, 150);
+  assert.equal(g.gold, CONFIG.startGold);
   assert.equal(g.enemies.length, 0);
   inject(g, 'boss', len - 0.01);
   step(g, 0.05);
@@ -273,4 +273,17 @@ test('발사 이벤트에는 쏜 타워의 id가 담긴다', () => {
   step(g, 0.05);
   const shot = g.events.find((e) => e.type === 'shot');
   assert.equal(shot.towerId, t.id);
+});
+
+test('소환은 길 바로 옆(대각선 포함 1칸) 빈 칸에만 된다', () => {
+  const g = createGame(meadow);
+  const path = new Set(pathCellsOf(meadow));
+  const cells = emptyCells(g);
+  assert.ok(cells.length > 20);
+  for (const [c, r] of cells) {
+    let near = false;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (path.has(`${c + dc},${r + dr}`)) near = true;
+    assert.ok(near, `${c},${r} is far from the path`);
+  }
+  assert.ok(!cells.some(([c, r]) => c === 0 && r === 9), '길에서 먼 구석 칸은 빠진다');
 });

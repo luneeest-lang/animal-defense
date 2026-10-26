@@ -1,4 +1,4 @@
-import { waypointPoints, pathLength, positionAt, canBuild } from './path.js';
+import { waypointPoints, pathLength, positionAt, canBuild, pathCells } from './path.js';
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
@@ -6,7 +6,7 @@ import { buildWaves, spawnSchedule } from './waves.js';
 
 export const CONFIG = {
   startLives: 20,
-  startGold: 150,
+  startGold: 200,
   sellRate: 0.7,
   summonBase: 50,
   summonStep: 5,
@@ -44,13 +44,22 @@ export function summonCost(game) {
   return CONFIG.summonBase + CONFIG.summonStep * game.summons;
 }
 
-// 지금 타워를 놓을 수 있는 칸 [col, row] 목록 (위에서 아래, 왼쪽에서 오른쪽 순서)
+// 길 바로 옆(대각선 포함 1칸)인 칸. 소환된 타워가 사거리 밖에서 놀지 않게 이 칸들에만 소환한다.
+function nearPath(map, col, row, path) {
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) if (path.has(`${col + dc},${row + dr}`)) return true;
+  }
+  return false;
+}
+
+// 소환할 수 있는 빈 칸 [col, row] 목록 (위에서 아래, 왼쪽에서 오른쪽 순서)
 export function emptyCells(game) {
   const occupied = occupiedCells(game);
+  const path = pathCells(game.map);
   const cells = [];
   for (let r = 0; r < game.map.rows; r++) {
     for (let c = 0; c < game.map.cols; c++) {
-      if (canBuild(game.map, c, r, occupied)) cells.push([c, r]);
+      if (canBuild(game.map, c, r, occupied) && nearPath(game.map, c, r, path)) cells.push([c, r]);
     }
   }
   return cells;
