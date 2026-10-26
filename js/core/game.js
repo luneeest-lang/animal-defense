@@ -9,7 +9,8 @@ export const CONFIG = {
   startGold: 200,
   sellRate: 0.7,
   summonBase: 50,
-  summonStep: 5,
+  summonStep: 5, // 5웨이브마다 오르는 소환 비용
+  summonStepWaves: 5,
   firstCountdown: 10,
   waveGap: 10,
   maxSubstep: 0.05,
@@ -41,8 +42,10 @@ export function createGame(map, waves = buildWaves()) {
 const occupiedCells = (game) => new Set(game.towers.map((t) => `${t.col},${t.row}`));
 const findTower = (game, id) => game.towers.find((t) => t.id === id);
 
+// 소환 비용은 소환 횟수와 상관없이 웨이브 구간으로 정한다: 1~5웨이브 50, 6~10 55, 11~15 60
 export function summonCost(game) {
-  return CONFIG.summonBase + CONFIG.summonStep * game.summons;
+  const tier = Math.floor(Math.max(0, game.waveNumber - 1) / CONFIG.summonStepWaves);
+  return CONFIG.summonBase + CONFIG.summonStep * tier;
 }
 
 // 길 바로 옆(대각선 포함 1칸)인 칸. 소환된 타워가 사거리 밖에서 놀지 않게 이 칸들에만 소환한다.

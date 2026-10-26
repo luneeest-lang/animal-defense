@@ -31,18 +31,23 @@ test('새 게임의 초기 상태', () => {
   assert.equal(summonCost(g), 50);
 });
 
-test('소환: 비용을 내고 무작위 빈 칸에 아기 동물이 생기며, 다음 비용은 5 오른다', () => {
+test('소환: 비용을 내고 무작위 빈 칸에 아기 동물이 생기며, 같은 구간에서는 비용이 그대로다', () => {
   const g = createGame(meadow);
   const first = emptyCells(g)[0];
   const t = summonTower(g, seq(0));
   assert.deepEqual([t.type, t.col, t.row, t.level, t.invested], ['squirrel', first[0], first[1], 0, 50]);
   assert.equal(g.gold, 150);
-  assert.equal(summonCost(g), 55);
+  assert.equal(summonCost(g), 50);
   const cells = emptyCells(g);
   const t2 = summonTower(g, seq(0.999999));
-  assert.deepEqual([t2.type, t2.col, t2.row, t2.invested], ['snake', ...cells[cells.length - 1], 55]);
-  assert.equal(g.gold, 95);
-  assert.equal(summonCost(g), 60);
+  assert.deepEqual([t2.type, t2.col, t2.row, t2.invested], ['snake', ...cells[cells.length - 1], 50]);
+  assert.equal(g.gold, 100);
+});
+
+test('소환 비용은 5웨이브마다 5골드씩 오른다 (1~5: 50, 6~10: 55, 11~15: 60)', () => {
+  const g = createGame(meadow);
+  const costAt = (wave) => { g.waveNumber = wave; return summonCost(g); };
+  assert.deepEqual([0, 1, 5, 6, 10, 11, 15].map(costAt), [50, 50, 50, 55, 55, 60, 60]);
 });
 
 test('rng 값으로 동물과 칸이 정해진다', () => {
@@ -111,8 +116,8 @@ test('판매하면 들어간 소환 비용 합계의 70%를 내림해 돌려받�
   const b = summonTower(g, seq(0));
   mergeTowers(g, a.id, b.id);
   g.gold = 0;
-  assert.equal(sellTower(g, b.id), 73);
-  assert.equal(g.gold, 73);
+  assert.equal(sellTower(g, b.id), 70);
+  assert.equal(g.gold, 70);
   assert.equal(g.towers.length, 0);
   assert.equal(sellTower(g, b.id), 0);
   assert.ok(addTower(g, 'squirrel', b.col, b.row));
