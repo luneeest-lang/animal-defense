@@ -120,6 +120,15 @@ button { font: inherit; color: inherit; }
 #result-stars { font-size: 1.8rem; min-height: 2.2rem; }
 .result-buttons { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
 
+/* 세로 화면: 맵을 90도 돌려 세로로 길게 보여준다(그리기는 render.js, 터치 좌표는 input.js) */
+@media (orientation: portrait) {
+  #board { aspect-ratio: 10 / 16; }
+  #stage { width: min(100vw, calc((100dvh - 176px) * 0.625), 560px); }
+  #infobar { gap: 4px; padding: 4px 6px; }
+  .stat { font-size: 0.92rem; }
+  #infobar .btn { min-height: 36px; padding: 4px 10px; }
+}
+
 @media (orientation: landscape) and (min-width: 700px) {
   #screen-game {
     grid-template-areas: "bar bar" "stage panel";

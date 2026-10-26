@@ -2,6 +2,13 @@ import { pointToCell } from '../core/path.js';
 
 const DRAG_START_PX = 8;
 
+// 캔버스 위 점(CSS 픽셀)을 맵 칸으로 바꾼다. 밖이면 null.
+// 세로 화면(캔버스가 세로로 김)에서는 맵이 90도 돌아가 있다: 맵의 왼쪽이 화면 위, 맵의 위쪽이 화면 오른쪽.
+export function screenToCell(x, y, w, h, cols, rows) {
+  if (h > w) return pointToCell(y, w - x, h, w, cols, rows);
+  return pointToCell(x, y, w, h, cols, rows);
+}
+
 // 마우스와 터치를 같은 포인터 이벤트로 처리한다.
 // 짧게 누르면 탭(onTap), 일정 거리 이상 끌면 드래그(onDragStart → onDragMove → onDrop)로 본다.
 export function attachInput(canvas, { cols, rows, onTap, onCancel, onDragStart, onDragMove, onDrop }) {
@@ -11,7 +18,7 @@ export function attachInput(canvas, { cols, rows, onTap, onCancel, onDragStart, 
     const rect = canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height };
   };
-  const toCell = (p) => pointToCell(p.x, p.y, p.w, p.h, cols, rows);
+  const toCell = (p) => screenToCell(p.x, p.y, p.w, p.h, cols, rows);
 
   const down = (e) => {
     if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;

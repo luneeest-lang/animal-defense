@@ -32,6 +32,35 @@ export function createRenderer(canvas) {
   const animals = bakeAnimals();
   const towerFacing = new Map();
   const facing = new WeakMap();
+  // 세로 화면에서는 맵을 90도 돌려 그린다(길이 위에서 아래로). boardH는 돌리기 전 맵의 세로 길이(px)
+  let rotated = false;
+  let boardH = 0;
+
+  // 맵 좌표(px)의 점을 화면 기준으로 똑바로 서 있게 그린다. draw(sx, sy)는 화면 좌표를 받는다
+  function upright(x, y, draw) {
+    if (!rotated) {
+      draw(x, y);
+      return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(boardH - y, x);
+    ctx.restore();
+  }
+
+  // 맵 방향(dx, dy)이 화면에서 왼쪽(-1)인지 오른쪽(1)인지, 거의 수직이면 0
+  function screenSide(dx, dy) {
+    const v = rotated ? -dy : dx;
+    return v > 0.001 ? 1 : v < -0.001 ? -1 : 0;
+  }
+
+  // 칸 하나 크기의 그림(나무, 암초)을 똑바로 세워 그린다
+  function drawUprightTile(img, c, r, cell) {
+    upright((c + 0.5) * cell, (r + 0.5) * cell, (sx, sy) => {
+      ctx.drawImage(img, Math.floor(sx - cell / 2), Math.floor(sy - cell / 2), Math.ceil(cell), Math.ceil(cell));
+    });
+  }
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -80,14 +109,16 @@ export function createRenderer(canvas) {
       }
     }
     for (const [c, r] of map.blocked) {
-      ctx.fillStyle = '#7f8c8d';
-      ctx.beginPath();
-      ctx.ellipse((c + 0.5) * cell, (r + 0.58) * cell, cell * 0.36, cell * 0.28, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#a6b1b2';
-      ctx.beginPath();
-      ctx.ellipse((c + 0.42) * cell, (r + 0.5) * cell, cell * 0.14, cell * 0.1, 0, 0, Math.PI * 2);
-      ctx.fill();
+      upright((c + 0.5) * cell, (r + 0.5) * cell, (x, y) => {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.beginPath();
+        ctx.ellipse(x, y + cell * 0.08, cell * 0.36, cell * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#a6b1b2';
+        ctx.beginPath();
+        ctx.ellipse(x - cell * 0.08, y, cell * 0.14, cell * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
   }
 
@@ -100,7 +131,7 @@ export function createRenderer(canvas) {
         drawTile(frames[0], c, r, cell);
       }
     }
-    for (const [c, r] of map.blocked) drawTile(tiles.forestTree[0][0], c, r, cell);
+    for (const [c, r] of map.blocked) drawUprightTile(tiles.forestTree[0][0], c, r, cell);
   }
 
   function drawSea(map, path, cell, now) {
@@ -117,7 +148,7 @@ export function createRenderer(canvas) {
         }
       }
     }
-    for (const [c, r] of map.blocked) drawTile(tiles.seaReef[0][0], c, r, cell);
+    for (const [c, r] of map.blocked) drawUprightTile(tiles.seaReef[0][0], c, r, cell);
   }
 
   function drawBoard(game, cell, now) {
@@ -128,10 +159,14 @@ export function createRenderer(canvas) {
     else if (map.theme === 'sea') drawSea(map, path, cell, now);
     else drawMeadow(map, path, cell);
     const end = game.points[game.points.length - 1];
-    ctx.font = `${cell * 0.7}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🏠', end.x * cell, end.y * cell);
+    upright(end.x * cell, end.y * cell, (sx, sy) => {
+      ctx.font = `${cell * 0.7}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // 크롬은 컬러 이모지에도 fillStyle의 투명도를 적용하므로 불투명한 색으로 둔다
+      ctx.fillStyle = '#000';
+      ctx.fillText('🏠', sx, sy);
+    });
   }
 
   function rangeCircle(cx, cy, range, cell, ok) {
@@ -209,28 +244,30 @@ export function createRenderer(canvas) {
   function drawTower(tower, cell, selected, theme) {
     const x = tower.col * cell;
     const y = tower.row * cell;
-    // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
-    if (theme === 'sea') ctx.drawImage(tiles.seaIslet[0][0], x - cell * 0.05, y + cell * 0.2, cell * 1.1, cell * 0.95);
     if (selected) {
-      const s = towerStats(tower.type, tower.level);
-      rangeCircle(x + cell / 2, y + cell / 2, s.range, cell, true);
+      const st = towerStats(tower.type, tower.level);
+      rangeCircle(x + cell / 2, y + cell / 2, st.range, cell, true);
     }
-    // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
-    const dpr = window.devicePixelRatio || 1;
-    const unit = Math.max(1, Math.round((0.95 * cell * dpr) / SPRITE_SIZE)) / dpr;
-    const s = unit * SPRITE_SIZE;
-    const cx = Math.round((x + cell / 2) * dpr) / dpr;
-    const cy = Math.round((y + cell / 2) * dpr) / dpr;
-    const awakened = tower.level >= AURA_LEVEL;
-    const now = performance.now();
-    if (awakened) drawAuraGlow(tower, cx, cy, s, now);
-    ctx.imageSmoothingEnabled = false;
-    ctx.save();
-    ctx.translate(cx, cy);
-    if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
-    ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
-    ctx.restore();
-    if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
+    upright(x + cell / 2, y + cell / 2, (px, py) => {
+      // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
+      if (theme === 'sea') ctx.drawImage(tiles.seaIslet[0][0], px - cell * 0.55, py - cell * 0.3, cell * 1.1, cell * 0.95);
+      // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
+      const dpr = window.devicePixelRatio || 1;
+      const unit = Math.max(1, Math.round((0.95 * cell * dpr) / SPRITE_SIZE)) / dpr;
+      const s = unit * SPRITE_SIZE;
+      const cx = Math.round(px * dpr) / dpr;
+      const cy = Math.round(py * dpr) / dpr;
+      const awakened = tower.level >= AURA_LEVEL;
+      const now = performance.now();
+      if (awakened) drawAuraGlow(tower, cx, cy, s, now);
+      ctx.imageSmoothingEnabled = false;
+      ctx.save();
+      ctx.translate(cx, cy);
+      if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+      ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
+      ctx.restore();
+      if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
+    });
     if (selected) {
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#ffd23f';
@@ -242,17 +279,19 @@ export function createRenderer(canvas) {
     const look = ENEMY_LOOK[e.type];
     const p = positionAt(game.points, e.dist);
     const prev = positionAt(game.points, Math.max(0, e.dist - 0.08));
-    let face = facing.get(e) ?? 1;
-    if (p.x - prev.x > 0.001) face = 1;
-    else if (p.x - prev.x < -0.001) face = -1;
+    const side = screenSide(p.x - prev.x, p.y - prev.y);
+    const face = side || (facing.get(e) ?? 1);
     facing.set(e, face);
+    upright(p.x * cell, p.y * cell, (px, py) => drawEnemyAt(e, look, face, px, py, cell));
+  }
 
+  function drawEnemyAt(e, look, face, px, py, cell) {
     // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
     const dpr = window.devicePixelRatio || 1;
     const unit = Math.max(1, Math.round((look.size * cell * dpr) / SPRITE_SIZE)) / dpr;
     const s = unit * SPRITE_SIZE;
-    const cx = Math.round(p.x * cell * dpr) / dpr;
-    const cy = Math.round(p.y * cell * dpr) / dpr;
+    const cx = Math.round(px * dpr) / dpr;
+    const cy = Math.round(py * dpr) / dpr;
     const feet = cy + s * 0.32;
 
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
@@ -293,7 +332,10 @@ export function createRenderer(canvas) {
     for (const ev of game.events) {
       fx.push({ ...ev, t: now });
       // 타워는 마지막으로 쏜 적 쪽을 바라본다
-      if (ev.type === 'shot' && Math.abs(ev.to.x - ev.from.x) > 0.05) towerFacing.set(ev.towerId, ev.to.x < ev.from.x ? -1 : 1);
+      if (ev.type === 'shot') {
+        const side = screenSide(ev.to.x - ev.from.x, ev.to.y - ev.from.y);
+        if (side) towerFacing.set(ev.towerId, side);
+      }
     }
     if (fx.length > 200) fx = fx.slice(-200);
   }
@@ -322,9 +364,19 @@ export function createRenderer(canvas) {
   }
 
   function draw(game, view) {
-    const cell = width / game.map.cols;
+    const { cols, rows } = game.map;
+    const dpr = window.devicePixelRatio || 1;
+    rotated = height > width;
+    const cell = rotated ? height / cols : width / cols;
+    boardH = rows * cell;
     const now = performance.now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, width, height);
+    if (rotated) {
+      ctx.translate(boardH, 0);
+      ctx.rotate(Math.PI / 2);
+    }
     drawBoard(game, cell, now);
     for (const t of game.towers) {
       if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
@@ -336,6 +388,8 @@ export function createRenderer(canvas) {
     for (const e of game.enemies) drawEnemy(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);
+    // 끄는 타워는 손가락 위치(화면 좌표)를 그대로 따라간다
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (view.drag) {
       const t = game.towers.find((x) => x.id === view.drag.towerId);
       if (t) drawDragged(t, view.drag.x, view.drag.y, cell);
