@@ -1,9 +1,9 @@
-// 동물 타워 16x16 도트 그림. levels[0~3]: 아기, 청년, 성체, 각성(성체와 같은 그림, 오라는 화면에서 그린다).
+// 동물 타워 16x16 도트 그림. levels[0~3]: 아기, 청년, 성체, 각성(성체 + 왕관, 오라는 화면에서 그린다).
 // '.'은 투명, 나머지 글자는 palette의 색이다. 오른쪽을 보는 그림이다.
 
 export const ANIMAL_SPRITES = {
   squirrel: {
-    palette: { 'A': '#8a5a2b', 'C': '#f7dcb4', 'K': '#161616', 'O': '#d9843a', 'T': '#c46f2c', 'a': '#5a3a18', 'd': '#a85f22', 'o': '#e9a35c', 't': '#e09a55' },
+    palette: { 'A': '#8a5a2b', 'C': '#f7dcb4', 'K': '#161616', 'O': '#d9843a', 'T': '#c46f2c', 'a': '#5a3a18', 'd': '#a85f22', 'j': '#ff4d6d', 'o': '#e9a35c', 't': '#e09a55', 'z': '#ffd23f' },
     levels: [
       [
         '................',
@@ -60,8 +60,8 @@ export const ANIMAL_SPRITES = {
         '........KKKKK...',
       ],
       [
-        '....KKK..K..K...',
-        '..KKTTTKKOKKOK..',
+        '....KKKKzKzKzK..',
+        '..KKTTTKzzjzzK..',
         '.KTTTTTTKOKKOK..',
         '.KTTTTTKOOOOOK..',
         'KTTTTTTKOOoOdK..',
@@ -80,7 +80,7 @@ export const ANIMAL_SPRITES = {
     ],
   },
   elephant: {
-    palette: { 'E': '#909cab', 'G': '#a3aebb', 'K': '#161616', 'L': '#c3ccd6', 'P': '#e7b3c0', 'W': '#fffbea', 'g': '#7c8796' },
+    palette: { 'E': '#909cab', 'G': '#a3aebb', 'K': '#161616', 'L': '#c3ccd6', 'P': '#e7b3c0', 'W': '#fffbea', 'g': '#7c8796', 'j': '#ff4d6d', 'z': '#ffd23f' },
     levels: [
       [
         '................',
@@ -137,9 +137,9 @@ export const ANIMAL_SPRITES = {
         '...KK...KK......',
       ],
       [
-        '................',
-        '.........KKK....',
-        '......KKKGGGK...',
+        '........K.K.K...',
+        '.......KzKzKzK..',
+        '......KKzzjzzK..',
         '.....KEEEKLGGK..',
         '....KEEEEKGGGGK.',
         '....KEPPEEKGKGK.',
@@ -157,7 +157,7 @@ export const ANIMAL_SPRITES = {
     ],
   },
   penguin: {
-    palette: { 'B': '#4fb3ff', 'K': '#161616', 'N': '#2b3a52', 'W': '#f4f8fb', 'Y': '#f2a62c', 'b': '#2f86d0', 'n': '#4a5e80' },
+    palette: { 'B': '#4fb3ff', 'K': '#161616', 'N': '#2b3a52', 'W': '#f4f8fb', 'Y': '#f2a62c', 'b': '#2f86d0', 'j': '#ff4d6d', 'n': '#4a5e80', 'z': '#ffd23f' },
     levels: [
       [
         '................',
@@ -214,8 +214,8 @@ export const ANIMAL_SPRITES = {
         '....KYYKKYYK....',
       ],
       [
-        '................',
-        '......KKKKK.....',
+        '.....KzKzKzK....',
+        '.....KzzjzzK....',
         '.....KNNNNNK....',
         '....KNNnNNNNK...',
         '....KNNNNNWKKKK.',
@@ -234,7 +234,7 @@ export const ANIMAL_SPRITES = {
     ],
   },
   eagle: {
-    palette: { 'K': '#161616', 'R': '#7a5230', 'W': '#f5f1e6', 'Y': '#f2b631', 'h': '#946640', 'k': '#3e2a18', 'r': '#5a3a1f' },
+    palette: { 'K': '#161616', 'R': '#7a5230', 'W': '#f5f1e6', 'Y': '#f2b631', 'h': '#946640', 'j': '#ff4d6d', 'k': '#3e2a18', 'r': '#5a3a1f', 'z': '#ffd23f' },
     levels: [
       [
         '................',
@@ -291,8 +291,8 @@ export const ANIMAL_SPRITES = {
         '.....KYKKYK.....',
       ],
       [
-        '................',
-        '.......KKK......',
+        '.....KzKzKzK....',
+        '.....KzzjzzK....',
         '......KWWWK.....',
         '.....KWWkkWKK...',
         '.....KWWWKWYYK..',
@@ -311,7 +311,7 @@ export const ANIMAL_SPRITES = {
     ],
   },
   snake: {
-    palette: { 'D': '#2d6a35', 'K': '#161616', 'R': '#e0334a', 'S': '#58b560', 'Y': '#fff07a', 'y': '#a8e07a' },
+    palette: { 'D': '#2d6a35', 'K': '#161616', 'R': '#e0334a', 'S': '#58b560', 'Y': '#fff07a', 'j': '#ff4d6d', 'y': '#a8e07a', 'z': '#ffd23f' },
     levels: [
       [
         '................',
@@ -368,8 +368,8 @@ export const ANIMAL_SPRITES = {
         '...KKKKKKKK.....',
       ],
       [
-        '................',
-        '..........KKKKK.',
+        '.........KzKzKzK',
+        '.........KzzjzzK',
         '.........KSSSSSK',
         '.........KSSYKSK',
         '.........KSSSSSR',

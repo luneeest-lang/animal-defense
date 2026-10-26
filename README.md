@@ -1,6 +1,6 @@
 # 동물 타워 디펜스
 
-동물 타워를 세워 길을 따라 오는 적을 막는 2D 타워 디펜스 게임입니다. 서버 없이 브라우저에서만 동작하는 정적 사이트이고, 외부 npm 패키지를 쓰지 않습니다.
+동물 타워를 소환하고 같은 동물끼리 합쳐 키우며, 길을 따라 오는 적을 막는 2D 타워 디펜스 게임입니다. 서버 없이 브라우저에서만 동작하는 정적 사이트이고, 외부 npm 패키지를 쓰지 않습니다.
 
 설계 문서는 [docs/superpowers/specs/2026-10-25-tower-defense-design.md](docs/superpowers/specs/2026-10-25-tower-defense-design.md), 구현 계획은 [docs/superpowers/plans/2026-10-25-tower-defense.md](docs/superpowers/plans/2026-10-25-tower-defense.md)에 있습니다.
 

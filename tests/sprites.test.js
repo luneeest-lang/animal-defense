@@ -51,10 +51,11 @@ test('동물 타워 도트는 아기, 청년, 성체, 각성 네 장이고 점�
         for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown ${ch}`);
       }
     }
-    // 아기, 청년, 성체는 모습이 다르고, 각성은 성체 그림에 오라를 화면에서 더한다
+    // 아기, 청년, 성체는 모습이 다르고, 각성은 성체에 왕관을 쓰고 화면에서 오라를 더한다
     assert.notDeepEqual(def.levels[0], def.levels[1], `${name} baby = youth`);
     assert.notDeepEqual(def.levels[1], def.levels[2], `${name} youth = adult`);
-    assert.deepEqual(def.levels[3], def.levels[2], `${name} awakened should reuse the adult sprite`);
+    assert.notDeepEqual(def.levels[3], def.levels[2], `${name} awakened = adult`);
+    assert.ok(def.levels[3].join('').includes('z') && !def.levels[2].join('').includes('z'), `${name} crown only when awakened`);
     const filled = (rows) => rows.join('').replace(/\./g, '').length;
     assert.ok(filled(def.levels[0]) < filled(def.levels[1]) && filled(def.levels[1]) < filled(def.levels[2]), `${name} should grow`);
   }

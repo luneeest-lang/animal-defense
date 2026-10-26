@@ -1,7 +1,5 @@
 import { MAPS } from './data/maps.js';
-import { TOWERS } from './data/towers.js';
-import { createGame, placeTower, upgradeTower, sellTower, callNextWave, step } from './core/game.js';
-import { canBuild } from './core/path.js';
+import { createGame, summonTower, canMerge, mergeTowers, sellTower, callNextWave, step } from './core/game.js';
 import { loadSave, writeSave, recordResult, starsFor } from './storage.js';
 import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
@@ -25,9 +23,8 @@ let save = loadSave(store);
 
 let game = null;
 let mapId = null;
-let selectedType = null;
 let selectedTower = null;
-let hover = null;
+let drag = null; // { towerId, x, y } 끌고 있는 타워와 포인터 위치(캔버스 CSS 픽셀)
 const ui = { paused: false, speed: 1 };
 let autoPaused = false;
 let finished = false;
@@ -36,12 +33,11 @@ let lastTs = 0;
 const renderer = createRenderer(document.getElementById('board'));
 
 const hud = createHud(document.getElementById('app'), {
-  onPickType: pickType,
+  onSummon: summon,
   onCallWave: () => { if (game) callNextWave(game); },
   onSpeed: () => { ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length]; },
   onPause: togglePause,
   onMenu: goMenu,
-  onUpgrade: () => { if (game && selectedTower) upgradeTower(game, selectedTower.id); },
   onSell: () => {
     if (game && selectedTower) sellTower(game, selectedTower.id);
     selectTower(null);
@@ -51,23 +47,13 @@ const hud = createHud(document.getElementById('app'), {
   onStartMap: startMap,
 });
 
-function pickType(id) {
-  if (!game || game.status !== 'running') return;
-  if (selectedType === id) { selectType(null); return; }
-  if (TOWERS[id].cost > game.gold) return;
-  selectTower(null);
-  selectType(id);
-}
-
-function selectType(id) {
-  selectedType = id;
-  hud.setSelectedType(id);
+function summon() {
+  if (game) summonTower(game);
 }
 
 function selectTower(tower) {
   selectedTower = tower;
   hud.showTowerInfo(tower);
-  if (tower) selectType(null);
 }
 
 function togglePause() {
@@ -76,36 +62,35 @@ function togglePause() {
   autoPaused = false;
 }
 
-function cancelSelection() {
-  selectType(null);
-  selectTower(null);
-}
-
-function onCell(col, row) {
-  if (!game || game.status !== 'running') return;
-  const tower = game.towers.find((t) => t.col === col && t.row === row);
-  if (tower) {
-    selectTower(selectedTower === tower ? null : tower);
-    return;
-  }
-  if (selectedType) {
-    const placed = placeTower(game, selectedType, col, row);
-    if (placed) {
-      if (TOWERS[selectedType].cost > game.gold) selectType(null);
-    } else if (!canBuild(game.map, col, row, new Set())) {
-      cancelSelection();
-    }
-    return;
-  }
-  selectTower(null);
-}
+const towerAt = (col, row) => game.towers.find((t) => t.col === col && t.row === row);
 
 attachInput(document.getElementById('board'), {
   cols: MAPS[0].cols,
   rows: MAPS[0].rows,
-  onCell,
-  onCancel: cancelSelection,
-  onHover: (cell) => { hover = cell; },
+  onTap(col, row) {
+    if (!game || game.status !== 'running') return;
+    const tower = towerAt(col, row);
+    selectTower(tower && tower !== selectedTower ? tower : null);
+  },
+  onCancel: () => selectTower(null),
+  onDragStart(col, row) {
+    if (!game || game.status !== 'running') return false;
+    const tower = towerAt(col, row);
+    if (!tower) return false;
+    selectTower(null);
+    drag = { towerId: tower.id, x: 0, y: 0 };
+    return true;
+  },
+  onDragMove(x, y) {
+    if (drag) Object.assign(drag, { x, y });
+  },
+  onDrop(cell) {
+    if (drag && game && cell) {
+      const target = towerAt(cell.col, cell.row);
+      if (target) mergeTowers(game, drag.towerId, target.id);
+    }
+    drag = null;
+  },
 });
 
 function startMap(id) {
@@ -117,7 +102,8 @@ function startMap(id) {
   ui.paused = false;
   ui.speed = 1;
   autoPaused = false;
-  cancelSelection();
+  drag = null;
+  selectTower(null);
   hud.showGame();
   renderer.resize();
   lastTs = performance.now();
@@ -126,7 +112,8 @@ function startMap(id) {
 function goMenu() {
   game = null;
   mapId = null;
-  cancelSelection();
+  drag = null;
+  selectTower(null);
   hud.showMenu(save);
 }
 
@@ -145,10 +132,15 @@ function frame(ts) {
   lastTs = ts;
   if (game) {
     if (!ui.paused && game.status === 'running') step(game, dt * ui.speed);
+    // 끌고 있는 타워가 사라졌으면(판매, 게임 종료) 드래그를 끝낸다
+    if (drag && !game.towers.some((t) => t.id === drag.towerId)) drag = null;
+    const mergeTargets = drag
+      ? new Set(game.towers.filter((t) => canMerge(game, drag.towerId, t.id)).map((t) => t.id))
+      : new Set();
     renderer.draw(game, {
-      selectedType,
       selectedTowerId: selectedTower ? selectedTower.id : null,
-      hover,
+      drag,
+      mergeTargets,
     });
     hud.update(game, ui);
     if (game.status !== 'running' && !finished) finish();
@@ -158,10 +150,9 @@ function frame(ts) {
 
 window.addEventListener('keydown', (e) => {
   if (!game || e.repeat) return;
-  const n = Number(e.key);
-  if (n >= 1 && n <= Object.keys(TOWERS).length) pickType(Object.keys(TOWERS)[n - 1]);
+  if (e.key === 's' || e.key === 'S') summon();
   else if (e.code === 'Space') { e.preventDefault(); togglePause(); }
-  else if (e.key === 'Escape') cancelSelection();
+  else if (e.key === 'Escape') selectTower(null);
 });
 
 document.addEventListener('visibilitychange', () => {

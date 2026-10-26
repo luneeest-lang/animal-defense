@@ -1,8 +1,8 @@
 import { MAPS } from '../data/maps.js';
 import { TOWERS, STAGE_NAMES } from '../data/towers.js';
-import { towerStats, upgradeCost } from '../core/towers.js';
+import { towerStats } from '../core/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
-import { CONFIG } from '../core/game.js';
+import { CONFIG, summonCost, emptyCells } from '../core/game.js';
 import { bakeAnimals } from './pixel.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
@@ -15,34 +15,34 @@ export function createHud(root, handlers) {
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), panel: $('panel'),
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
-    btnUpgrade: $('btn-upgrade'), btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
+    btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
     resultDetail: $('result-detail'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
   };
   let shownTower = null;
-  const typeButtons = {};
   const icons = bakeAnimals();
 
   const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
 
-  Object.entries(TOWERS).forEach(([id, def], i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'animal-btn';
-    b.dataset.type = id;
-    b.innerHTML = `<span class="key">${i + 1}</span>`
-      + `<span class="icon" style="background-image:url(${icons[id][0].toDataURL()})"></span>`
-      + `<span class="text"><span class="name">${def.name}</span><span class="cost">🪙 ${def.cost}</span></span>`;
-    b.addEventListener('click', () => handlers.onPickType(id));
-    el.panel.appendChild(b);
-    typeButtons[id] = b;
-  });
+  // 패널: 소환 버튼과, 무엇이 나올 수 있는지 보여주는 동물 안내
+  const summon = document.createElement('button');
+  summon.type = 'button';
+  summon.id = 'btn-summon';
+  summon.className = 'summon-btn';
+  summon.innerHTML = '<span class="label">🎲 소환</span><span class="cost"></span>';
+  summon.addEventListener('click', () => handlers.onSummon());
+  const summonCostEl = summon.querySelector('.cost');
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  legend.innerHTML = Object.entries(TOWERS).map(([id, def]) => (
+    `<span class="legend-item" title="${def.name}"><span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span>${def.name}</span>`
+  )).join('') + '<p class="hint">같은 동물·같은 단계를 끌어다 겹치면 합쳐져 성장해요</p>';
+  el.panel.append(summon, legend);
 
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
   el.btnSpeed.addEventListener('click', () => handlers.onSpeed());
   el.btnPause.addEventListener('click', () => handlers.onPause());
   el.btnMenu.addEventListener('click', () => handlers.onMenu());
-  el.btnUpgrade.addEventListener('click', () => handlers.onUpgrade());
   el.btnSell.addEventListener('click', () => handlers.onSell());
   el.btnCloseInfo.addEventListener('click', () => handlers.onCloseInfo());
   el.btnRetry.addEventListener('click', () => handlers.onRetry());
@@ -71,9 +71,6 @@ export function createHud(root, handlers) {
     el.info.hidden = false;
     setText(el.infoTitle, `${TOWERS[shownTower.type].name} · ${STAGE_NAMES[shownTower.level]}`);
     setText(el.infoStats, statsLine(shownTower));
-    const cost = upgradeCost(shownTower.type, shownTower.level);
-    setText(el.btnUpgrade, cost === null ? '최종 단계' : `성장 → ${STAGE_NAMES[shownTower.level + 1]} 🪙 ${cost}`);
-    el.btnUpgrade.disabled = cost === null || cost > game.gold;
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }
 
@@ -104,9 +101,6 @@ export function createHud(root, handlers) {
       el.info.hidden = true;
     },
     showSaveWarning(on) { el.warning.hidden = !on; },
-    setSelectedType(id) {
-      for (const [type, b] of Object.entries(typeButtons)) b.classList.toggle('selected', type === id);
-    },
     showTowerInfo(tower) {
       shownTower = tower;
       if (!tower) el.info.hidden = true;
@@ -133,7 +127,9 @@ export function createHud(root, handlers) {
       setText(el.btnSpeed, `${ui.speed}x`);
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused;
-      for (const [id, b] of Object.entries(typeButtons)) b.classList.toggle('poor', TOWERS[id].cost > game.gold);
+      const cost = summonCost(game);
+      setText(summonCostEl, `🪙 ${cost}`);
+      summon.disabled = !running || cost > game.gold || emptyCells(game).length === 0;
       refreshInfo(game);
     },
   };

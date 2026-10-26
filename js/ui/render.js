@@ -1,6 +1,6 @@
 import { TOWERS, AURA_COLORS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
-import { positionAt, pathCells, canBuild } from '../core/path.js';
+import { positionAt, pathCells } from '../core/path.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
 import { bakeSprites, bakeTiles, bakeAnimals } from './pixel.js';
 
@@ -120,10 +120,9 @@ export function createRenderer(canvas) {
     for (const [c, r] of map.blocked) drawTile(tiles.seaReef[0][0], c, r, cell);
   }
 
-  function drawBoard(game, cell, view, now) {
+  function drawBoard(game, cell, now) {
     const { map } = game;
     const path = pathCells(map);
-    const occupied = new Set(game.towers.map((t) => `${t.col},${t.row}`));
     ctx.imageSmoothingEnabled = false;
     if (map.theme === 'forest') drawForest(map, path, cell);
     else if (map.theme === 'sea') drawSea(map, path, cell, now);
@@ -133,14 +132,6 @@ export function createRenderer(canvas) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🏠', end.x * cell, end.y * cell);
-    if (view.selectedType) {
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      for (let r = 0; r < map.rows; r++) {
-        for (let c = 0; c < map.cols; c++) {
-          if (canBuild(map, c, r, occupied)) ctx.fillRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2);
-        }
-      }
-    }
   }
 
   function rangeCircle(cx, cy, range, cell, ok) {
@@ -190,6 +181,29 @@ export function createRenderer(canvas) {
         size,
       );
     }
+  }
+
+  // 합칠 수 있는 타워: 칸 테두리가 맥동한다
+  function drawMergeHint(tower, cell, now) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 150);
+    const x = tower.col * cell;
+    const y = tower.row * cell;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + 0.15 * pulse})`;
+    ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(255, 236, 140, ${0.6 + 0.4 * pulse})`;
+    ctx.strokeRect(x + 2.5, y + 2.5, cell - 5, cell - 5);
+  }
+
+  // 손가락(마우스)을 따라오는 타워. 손가락에 가리지 않게 조금 위에 그린다
+  function drawDragged(tower, x, y, cell) {
+    const dpr = window.devicePixelRatio || 1;
+    const unit = Math.max(1, Math.round((1.1 * cell * dpr) / SPRITE_SIZE)) / dpr;
+    const s = unit * SPRITE_SIZE;
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(animals[tower.type][tower.level], Math.round(x - s / 2), Math.round(y - s * 0.75), s, s);
+    ctx.globalAlpha = 1;
   }
 
   function drawTower(tower, cell, selected, theme) {
@@ -311,17 +325,21 @@ export function createRenderer(canvas) {
     const cell = width / game.map.cols;
     const now = performance.now();
     ctx.clearRect(0, 0, width, height);
-    drawBoard(game, cell, view, now);
-    if (view.selectedType && view.hover) {
-      const occupied = new Set(game.towers.map((t) => `${t.col},${t.row}`));
-      const ok = canBuild(game.map, view.hover.col, view.hover.row, occupied);
-      const range = TOWERS[view.selectedType].base.range;
-      rangeCircle((view.hover.col + 0.5) * cell, (view.hover.row + 0.5) * cell, range, cell, ok);
+    drawBoard(game, cell, now);
+    for (const t of game.towers) {
+      if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
+      // 끌고 있는 타워는 원래 자리에 흐리게 남긴다
+      ctx.globalAlpha = view.drag?.towerId === t.id ? 0.35 : 1;
+      drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme);
+      ctx.globalAlpha = 1;
     }
-    for (const t of game.towers) drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme);
     for (const e of game.enemies) drawEnemy(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);
+    if (view.drag) {
+      const t = game.towers.find((x) => x.id === view.drag.towerId);
+      if (t) drawDragged(t, view.drag.x, view.drag.y, cell);
+    }
   }
 
   resize();
