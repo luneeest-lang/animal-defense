@@ -1,10 +1,12 @@
 // 좌표는 칸 단위 [col, row]. 격자는 16x10.
+// name: 난이도 이름, place: 메뉴에 함께 보여주는 배경 이름
 // theme: 바닥 그림 종류 (mountain 돌산, forest 숲, sea 바다)
 // id는 저장 기록의 키라서 이름이나 테마가 바뀌어도 그대로 둔다
 export const MAPS = [
   {
     id: 'meadow',
     name: '초급',
+    place: '돌산',
     theme: 'mountain',
     cols: 16,
     rows: 10,
@@ -14,6 +16,7 @@ export const MAPS = [
   {
     id: 'forest',
     name: '중급',
+    place: '숲',
     theme: 'forest',
     cols: 16,
     rows: 10,
@@ -23,6 +26,7 @@ export const MAPS = [
   {
     id: 'canyon',
     name: '고급',
+    place: '바다',
     theme: 'sea',
     cols: 16,
     rows: 10,

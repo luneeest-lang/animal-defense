@@ -2,7 +2,10 @@ export const WAVE_COUNT = 15;
 const GROUP_GAP = 1.5;
 // 보스 웨이브(5, 10, 15)는 보스 1마리만, 나머지는 정확히 20마리. 열: 병사, 달리기, 분열체, 탱크, 방패병, 보스
 const TYPES = ['soldier', 'runner', 'splitter', 'tank', 'shield', 'boss'];
-const INTERVALS = { soldier: 0.7, runner: 0.4, splitter: 0.8, tank: 1.3, shield: 1.0, boss: 3.0 };
+// 같은 무리끼리 최소 약 1칸(간격 x 속도) 떨어져 나오게 해서 체력바가 겹치지 않게 한다
+const INTERVALS = { soldier: 0.95, runner: 0.5, splitter: 0.95, tank: 1.6, shield: 1.1, boss: 3.0 };
+// 빠른 무리가 먼저 나와야 뒤 무리가 앞 무리를 따라잡지 않는다
+const SPAWN_ORDER = ['runner', 'soldier', 'splitter', 'shield', 'tank', 'boss'];
 const COMPOSITION = [
   [20, 0, 0, 0, 0, 0],
   [20, 0, 0, 0, 0, 0],
@@ -29,8 +32,8 @@ export const isBossWave = (wave) => wave.groups.some((g) => g.type === 'boss');
 export function buildWaves() {
   return COMPOSITION.map((counts, i) => ({
     number: i + 1,
-    groups: TYPES
-      .map((type, k) => ({ type, count: counts[k], interval: INTERVALS[type] }))
+    groups: SPAWN_ORDER
+      .map((type) => ({ type, count: counts[TYPES.indexOf(type)], interval: INTERVALS[type] }))
       .filter((g) => g.count > 0),
   }));
 }

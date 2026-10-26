@@ -95,7 +95,7 @@ export function createHud(root, handlers) {
         b.type = 'button';
         b.className = 'map-card';
         b.disabled = locked;
-        b.innerHTML = `<span><div class="name">${locked ? '🔒 ' : ''}${map.name}</div>`
+        b.innerHTML = `<span><div class="name">${locked ? '🔒 ' : ''}${map.name} · ${map.place}</div>`
           + `<div class="sub">${locked ? '이전 맵을 클리어하면 열려요' : rec ? `최고 웨이브 ${rec.bestWave}/${WAVE_COUNT}` : '아직 도전 전'}</div></span>`
           + `<span class="stars">${locked ? '' : stars(rec ? rec.stars : 0)}</span>`;
         b.addEventListener('click', () => handlers.onStartMap(map.id));

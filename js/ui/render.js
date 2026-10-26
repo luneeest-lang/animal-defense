@@ -317,6 +317,20 @@ export function createRenderer(canvas) {
     }
     ctx.restore();
 
+  }
+
+  // 체력바는 몬스터 그림을 모두 그린 뒤에 그려서 다른 몬스터 그림에 가려지지 않게 한다
+  function drawEnemyHp(game, e, cell) {
+    const p = positionAt(game.points, e.dist);
+    upright(p.x * cell, p.y * cell, (px, py) => drawHpBarAt(e, ENEMY_LOOK[e.type], px, py, cell));
+  }
+
+  function drawHpBarAt(e, look, px, py, cell) {
+    const dpr = window.devicePixelRatio || 1;
+    const unit = Math.max(1, Math.round((look.size * cell * dpr) / SPRITE_SIZE)) / dpr;
+    const s = unit * SPRITE_SIZE;
+    const cx = Math.round(px * dpr) / dpr;
+    const cy = Math.round(py * dpr) / dpr;
     // 체력바: 두꺼운 빨간 바 (어두운 테두리와 배경)
     const w = Math.round(Math.max(cell * 0.7, s * 0.8));
     const h = Math.max(5, Math.round(cell * 0.16));
@@ -502,6 +516,7 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
     }
     for (const e of game.enemies) drawEnemy(game, e, cell);
+    for (const e of game.enemies) drawEnemyHp(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);
     // 끄는 타워는 손가락 위치(화면 좌표)를 그대로 따라간다

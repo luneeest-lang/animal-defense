@@ -79,3 +79,18 @@ test('그룹 사이에는 1.5초 간격이 있다', () => {
     { at: 3.5, type: 'runner' }, { at: 4, type: 'runner' },
   ]);
 });
+
+test('같은 무리의 몬스터는 최소 0.95칸 떨어져 나와 체력바가 겹치지 않는다', () => {
+  for (const w of waves) {
+    for (const g of w.groups) {
+      if (g.count > 1) assert.ok(g.interval * ENEMIES[g.type].speed >= 0.95, `wave ${w.number} ${g.type}`);
+    }
+  }
+});
+
+test('빠른 몬스터 무리가 먼저 나와 뒤 무리가 앞 무리를 따라잡지 않는다', () => {
+  for (const w of waves) {
+    const speeds = w.groups.map((g) => ENEMIES[g.type].speed);
+    for (let i = 1; i < speeds.length; i++) assert.ok(speeds[i] <= speeds[i - 1], `wave ${w.number}: ${w.groups.map((g) => g.type)}`);
+  }
+});
