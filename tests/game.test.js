@@ -135,12 +135,28 @@ test('보너스는 남은 카운트다운을 올림한 값이다', () => {
   assert.equal(g.gold, 207);
 });
 
-test('카운트다운이 끝나면 웨이브가 자동 시작되고, 스폰이 끝나면 웨이브 간격 카운트다운이 시작된다', () => {
+test('카운트다운이 끝나면 웨이브가 자동 시작된다', () => {
   const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
   step(g, 10.1);
   assert.equal(g.waveNumber, 1);
   assert.equal(g.enemies.length, 1);
-  assert.ok(g.countdown > CONFIG.waveGap - 1 && g.countdown <= CONFIG.waveGap);
+});
+
+test('적을 모두 처리해야 10초 카운트다운이 시작된다', () => {
+  assert.equal(CONFIG.waveGap, 10);
+  const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
+  callNextWave(g);
+  step(g, 0.1);
+  assert.equal(g.spawnQueue.length, 0);
+  assert.equal(g.enemies.length, 1);
+  assert.equal(g.countdown, null, '적이 남아 있으면 카운트다운이 없다');
+  assert.equal(callNextWave(g), 0, '적이 남아 있으면 건너뛸 수 없다');
+  g.enemies[0].hp = 0;
+  step(g, 0.05);
+  assert.equal(g.enemies.length, 0);
+  assert.ok(g.countdown > CONFIG.waveGap - 0.1 && g.countdown <= CONFIG.waveGap, String(g.countdown));
+  assert.equal(callNextWave(g), 10, '건너뛰면 남은 초만큼 보너스');
+  assert.equal(g.waveNumber, 2);
 });
 
 test('마지막 웨이브를 시작하면 카운트다운이 더 이상 생기지 않는다', () => {

@@ -35,9 +35,14 @@ test('모든 웨이브가 비어 있지 않고 정의된 적만 쓴다', () => {
   }
 });
 
-test('병사 수는 6에서 시작해 웨이브마다 2마리씩 는다', () => {
-  assert.equal(count(waves[0], 'soldier'), 6);
-  assert.equal(count(waves[14], 'soldier'), 34);
+test('모든 웨이브는 정확히 20마리다 (보스 포함)', () => {
+  for (const w of waves) assert.equal(w.groups.reduce((s, g) => s + g.count, 0), 20, `wave ${w.number}`);
+});
+
+test('뒤 웨이브일수록 병사 비중이 줄고 강한 적이 늘어난다', () => {
+  assert.equal(count(waves[0], 'soldier'), 20);
+  assert.ok(count(waves[14], 'soldier') < count(waves[4], 'soldier'));
+  assert.ok(count(waves[14], 'tank') >= count(waves[5], 'tank'));
 });
 
 test('spawnSchedule은 시간순이고 모든 적을 포함하며 0초에 시작한다', () => {

@@ -11,7 +11,7 @@ export const CONFIG = {
   summonBase: 50,
   summonStep: 5,
   firstCountdown: 10,
-  waveGap: 8,
+  waveGap: 10,
   maxSubstep: 0.05,
 };
 
@@ -191,13 +191,14 @@ function substep(game, dt) {
     const s = game.spawnQueue.shift();
     game.enemies.push(createEnemy(game.nextId++, s.type, s.wave));
   }
-  if (game.countdown === null && game.spawnQueue.length === 0
-      && game.waveNumber > 0 && game.waveNumber < game.waves.length) {
-    game.countdown = CONFIG.waveGap;
-  }
   for (const e of game.enemies) stepEnemy(e, dt);
   fireTowers(game, dt);
   resolveEnemies(game);
+  // 스폰이 끝나고 필드의 적을 모두 처리하면 다음 웨이브까지 카운트다운을 시작한다
+  if (game.countdown === null && game.spawnQueue.length === 0 && game.enemies.length === 0
+      && game.waveNumber > 0 && game.waveNumber < game.waves.length) {
+    game.countdown = CONFIG.waveGap;
+  }
   if (game.lives <= 0) {
     game.lives = 0;
     game.status = 'lost';

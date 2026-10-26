@@ -1,7 +1,7 @@
 import { ENEMIES } from '../data/enemies.js';
 
 export function hpScale(waveNumber) {
-  return 1 + 0.2 * (waveNumber - 1);
+  return 1 + 0.3 * (waveNumber - 1);
 }
 
 export function createEnemy(id, type, waveNumber) {
