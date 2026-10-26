@@ -3,37 +3,34 @@ import assert from 'node:assert/strict';
 import { MAPS } from '../js/data/maps.js';
 import { waypointPoints } from '../js/core/path.js';
 import { createEnemy } from '../js/core/enemies.js';
-import { TOWERS, MAX_LEVEL, towerStats, upgradeCost, findTarget, fire } from '../js/core/towers.js';
+import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from '../js/core/towers.js';
 
 const points = waypointPoints(MAPS[0]);
-const tower = (type, col = 5, row = 3, level = 0) => ({ id: 1, type, col, row, level, cooldown: 0, invested: TOWERS[type].cost });
+const tower = (type, col = 5, row = 3, level = 0) => ({ id: 1, type, col, row, level, cooldown: 0, invested: 50 });
 const enemyAt = (id, type, dist) => Object.assign(createEnemy(id, type, 1), { dist });
 
-test('타워 기본 수치', () => {
+test('타워 종류와 최대 단계', () => {
   assert.deepEqual(Object.keys(TOWERS), ['squirrel', 'elephant', 'penguin', 'eagle', 'snake']);
-  assert.deepEqual(['squirrel', 'elephant', 'penguin', 'eagle', 'snake'].map((t) => TOWERS[t].cost), [50, 90, 70, 120, 80]);
   assert.equal(MAX_LEVEL, 3);
-  assert.deepEqual(towerStats('elephant', 0), { damage: 20, range: 2.2, cooldown: 1.6, splash: 1.0 });
+  for (const def of Object.values(TOWERS)) assert.equal(def.cost, undefined, '소환 비용은 모든 동물이 같다');
+  assert.equal(towerStats('elephant', 0).splash, 1.0);
   assert.equal(towerStats('eagle', 0).bossMult, 1.5);
-  assert.equal(towerStats('snake', 0).poisonDps, 6);
-  assert.equal(towerStats('penguin', 0).slowFactor, 0.6);
+  assert.equal(towerStats('squirrel', 0).damage, TOWERS.squirrel.base.damage);
 });
 
-test('레벨마다 능력치가 오른다', () => {
-  assert.equal(towerStats('squirrel', 0).damage, 8);
-  assert.equal(towerStats('squirrel', 2).damage, 18);
-  assert.ok(Math.abs(towerStats('squirrel', 3).range - 3.1) < 1e-9);
-  assert.ok(towerStats('squirrel', 3).cooldown < towerStats('squirrel', 0).cooldown);
-  assert.ok(towerStats('snake', 3).poisonDps > towerStats('snake', 0).poisonDps);
-  assert.ok(towerStats('penguin', 3).slowFactor >= 0.3);
-  assert.ok(towerStats('penguin', 3).slowFactor < towerStats('penguin', 0).slowFactor);
-});
-
-test('업그레이드 비용은 현재 레벨 기준이고 최대 레벨이면 null이다', () => {
-  assert.equal(upgradeCost('squirrel', 0), 40);
-  assert.equal(upgradeCost('squirrel', 1), 70);
-  assert.equal(upgradeCost('squirrel', 2), 110);
-  assert.equal(upgradeCost('squirrel', 3), null);
+test('단계가 오르면 합성 재료 두 개보다 강해진다 (공격력 2.2배)', () => {
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  for (const type of Object.keys(TOWERS)) {
+    for (let lv = 1; lv <= 3; lv++) {
+      const prev = towerStats(type, lv - 1);
+      const cur = towerStats(type, lv);
+      assert.ok(near(cur.damage, prev.damage * 2.2), `${type} ${lv} damage`);
+      assert.ok(cur.cooldown < prev.cooldown, `${type} ${lv} cooldown`);
+      assert.ok(cur.range > prev.range, `${type} ${lv} range`);
+      if (prev.poisonDps) assert.ok(near(cur.poisonDps, prev.poisonDps * 2.2));
+      if (prev.slowFactor) assert.ok(cur.slowFactor <= prev.slowFactor && cur.slowFactor >= 0.3);
+    }
+  }
 });
 
 test('findTarget은 사거리 안에서 가장 앞선 적을 고른다', () => {
@@ -45,10 +42,10 @@ test('findTarget은 사거리 안에서 가장 앞선 적을 고른다', () => {
   assert.equal(findTarget(tower('squirrel'), [], points), null);
 });
 
-test('squirrel은 대상 한 마리에게 8 피해', () => {
+test('squirrel은 대상 한 마리에게 기본 공격력만큼 피해', () => {
   const e = enemyAt(1, 'soldier', 5);
   fire(tower('squirrel'), e, [e], points);
-  assert.equal(e.hp, 32);
+  assert.equal(e.hp, 40 - TOWERS.squirrel.base.damage);
 });
 
 test('elephant는 대상 주변 반경 1.0 안의 모든 적에게 피해를 준다', () => {
@@ -56,8 +53,9 @@ test('elephant는 대상 주변 반경 1.0 안의 모든 적에게 피해를 준
   const b = enemyAt(2, 'tank', 5.5);
   const c = enemyAt(3, 'tank', 8);
   const hit = fire(tower('elephant'), a, [a, b, c], points);
-  assert.equal(a.hp, 140);
-  assert.equal(b.hp, 140);
+  const dmg = TOWERS.elephant.base.damage;
+  assert.equal(a.hp, 160 - dmg);
+  assert.equal(b.hp, 160 - dmg);
   assert.equal(c.hp, 160);
   assert.deepEqual(hit.map((e) => e.id).sort(), [1, 2]);
 });
@@ -65,21 +63,24 @@ test('elephant는 대상 주변 반경 1.0 안의 모든 적에게 피해를 준
 test('penguin은 감속을, snake는 독을 건다', () => {
   const p = enemyAt(1, 'soldier', 5);
   fire(tower('penguin'), p, [p], points);
-  assert.equal(p.hp, 37);
-  assert.deepEqual(p.slow, { factor: 0.6, left: 1.5 });
+  const pb = TOWERS.penguin.base;
+  assert.equal(p.hp, 40 - pb.damage);
+  assert.deepEqual(p.slow, { factor: pb.slowFactor, left: pb.slowDuration });
   const s = enemyAt(2, 'soldier', 5);
   fire(tower('snake'), s, [s], points);
-  assert.equal(s.hp, 38);
-  assert.deepEqual(s.poison, { dps: 6, left: 3 });
+  const sb = TOWERS.snake.base;
+  assert.equal(s.hp, 40 - sb.damage);
+  assert.deepEqual(s.poison, { dps: sb.poisonDps, left: sb.poisonDuration });
 });
 
 test('eagle은 보스에게 1.5배 피해를 준다', () => {
   const boss = enemyAt(1, 'boss', 5);
   fire(tower('eagle'), boss, [boss], points);
-  assert.equal(boss.hp, 1500 - 75);
-  const soldier = enemyAt(2, 'tank', 5);
-  fire(tower('eagle'), soldier, [soldier], points);
-  assert.equal(soldier.hp, 110);
+  const eb = TOWERS.eagle.base;
+  assert.equal(boss.hp, 1500 - eb.damage * 1.5);
+  const tank = enemyAt(2, 'tank', 5);
+  fire(tower('eagle'), tank, [tank], points);
+  assert.equal(tank.hp, 160 - eb.damage);
 });
 
 test('findTarget은 이미 죽은(hp <= 0) 적을 무시한다', () => {

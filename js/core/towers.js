@@ -5,24 +5,20 @@ import { damageEnemy, applySlow, applyPoison } from './enemies.js';
 export { TOWERS };
 export const MAX_LEVEL = 3;
 
-const UPGRADE_COST_RATIO = [0.8, 1.4, 2.2];
+// 합성은 타워 두 개를 하나로 줄이므로, 한 단계마다 공격력을 2배보다 크게 올린다
+const LEVEL_DAMAGE = 2.2;
 
 export function towerStats(type, level) {
   const base = TOWERS[type].base;
   const stats = {
     ...base,
-    damage: base.damage * 1.5 ** level,
-    range: base.range + 0.2 * level,
+    damage: base.damage * LEVEL_DAMAGE ** level,
+    range: base.range + 0.25 * level,
     cooldown: base.cooldown * 0.9 ** level,
   };
-  if (base.poisonDps !== undefined) stats.poisonDps = base.poisonDps * 1.2 ** level;
-  if (base.slowFactor !== undefined) stats.slowFactor = Math.max(0.3, base.slowFactor * 0.9 ** level);
+  if (base.poisonDps !== undefined) stats.poisonDps = base.poisonDps * LEVEL_DAMAGE ** level;
+  if (base.slowFactor !== undefined) stats.slowFactor = Math.max(0.3, base.slowFactor * 0.85 ** level);
   return stats;
-}
-
-export function upgradeCost(type, level) {
-  if (level >= MAX_LEVEL) return null;
-  return Math.round(TOWERS[type].cost * UPGRADE_COST_RATIO[level]);
 }
 
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;

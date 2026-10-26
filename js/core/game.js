@@ -1,13 +1,15 @@
 import { waypointPoints, pathLength, positionAt, canBuild } from './path.js';
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
-import { TOWERS, towerStats, upgradeCost, findTarget, fire } from './towers.js';
+import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
 import { buildWaves, spawnSchedule } from './waves.js';
 
 export const CONFIG = {
   startLives: 20,
   startGold: 150,
   sellRate: 0.7,
+  summonBase: 50,
+  summonStep: 5,
   firstCountdown: 10,
   waveGap: 8,
   maxSubstep: 0.05,
@@ -31,30 +33,69 @@ export function createGame(map, waves = buildWaves()) {
     status: 'running',
     time: 0,
     nextId: 1,
+    summons: 0,
   };
 }
 
 const occupiedCells = (game) => new Set(game.towers.map((t) => `${t.col},${t.row}`));
 const findTower = (game, id) => game.towers.find((t) => t.id === id);
 
-export function placeTower(game, typeId, col, row) {
-  const def = TOWERS[typeId];
-  if (game.status !== 'running' || !def || def.cost > game.gold) return null;
-  if (!canBuild(game.map, col, row, occupiedCells(game))) return null;
-  const tower = { id: game.nextId++, type: typeId, col, row, level: 0, cooldown: 0, invested: def.cost };
-  game.gold -= def.cost;
+export function summonCost(game) {
+  return CONFIG.summonBase + CONFIG.summonStep * game.summons;
+}
+
+// 지금 타워를 놓을 수 있는 칸 [col, row] 목록 (위에서 아래, 왼쪽에서 오른쪽 순서)
+export function emptyCells(game) {
+  const occupied = occupiedCells(game);
+  const cells = [];
+  for (let r = 0; r < game.map.rows; r++) {
+    for (let c = 0; c < game.map.cols; c++) {
+      if (canBuild(game.map, c, r, occupied)) cells.push([c, r]);
+    }
+  }
+  return cells;
+}
+
+// 비용 없이 타워를 놓는다. 소환과 테스트에서 쓴다.
+export function addTower(game, typeId, col, row, level = 0) {
+  if (!TOWERS[typeId] || !canBuild(game.map, col, row, occupiedCells(game))) return null;
+  const tower = { id: game.nextId++, type: typeId, col, row, level, cooldown: 0, invested: 0 };
   game.towers.push(tower);
   return tower;
 }
 
-export function upgradeTower(game, towerId) {
-  const tower = findTower(game, towerId);
-  if (game.status !== 'running' || !tower) return false;
-  const cost = upgradeCost(tower.type, tower.level);
-  if (cost === null || cost > game.gold) return false;
+const pick = (list, rng) => list[Math.min(list.length - 1, Math.floor(rng() * list.length))];
+
+// 무작위 동물을 무작위 빈 칸에 아기 단계로 소환한다.
+export function summonTower(game, rng = Math.random) {
+  const cost = summonCost(game);
+  if (game.status !== 'running' || cost > game.gold) return null;
+  const cells = emptyCells(game);
+  if (cells.length === 0) return null;
+  const type = pick(Object.keys(TOWERS), rng);
+  const [col, row] = pick(cells, rng);
+  const tower = addTower(game, type, col, row);
+  tower.invested = cost;
   game.gold -= cost;
-  tower.invested += cost;
-  tower.level += 1;
+  game.summons += 1;
+  return tower;
+}
+
+export function canMerge(game, fromId, toId) {
+  const from = findTower(game, fromId);
+  const to = findTower(game, toId);
+  return game.status === 'running' && !!from && !!to && from !== to
+    && from.type === to.type && from.level === to.level && to.level < MAX_LEVEL;
+}
+
+// from을 to 위에 합친다. to가 한 단계 성장하고 from은 사라진다.
+export function mergeTowers(game, fromId, toId) {
+  if (!canMerge(game, fromId, toId)) return false;
+  const from = findTower(game, fromId);
+  const to = findTower(game, toId);
+  to.level += 1;
+  to.invested += from.invested;
+  game.towers = game.towers.filter((t) => t !== from);
   return true;
 }
 
