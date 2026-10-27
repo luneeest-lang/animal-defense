@@ -1,6 +1,6 @@
 import { TOWERS } from '../data/towers.js';
 import { positionAt } from './path.js';
-import { damageEnemy, applySlow, applyPoison } from './enemies.js';
+import { damageEnemy, applySlow, applyPoison, isBoss } from './enemies.js';
 
 export { TOWERS };
 export const MAX_LEVEL = 3;
@@ -47,7 +47,7 @@ export function findTarget(tower, enemies, points) {
 export function fire(tower, target, enemies, points, upgrade = 0) {
   const stats = towerStats(tower.type, tower.level, upgrade);
   const kind = TOWERS[tower.type].kind;
-  const bossBonus = stats.bossMult !== undefined && target.type === 'boss' ? stats.bossMult : 1;
+  const bossBonus = stats.bossMult !== undefined && isBoss(target.type) ? stats.bossMult : 1;
   let hit = [target];
   if (kind === 'splash') {
     const at = positionAt(points, target.dist);

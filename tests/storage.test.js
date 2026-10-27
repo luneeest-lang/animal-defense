@@ -19,7 +19,7 @@ test('깨지거나 엉뚱한 저장 데이터는 기본값으로 시작한다', 
 test('범위를 벗어난 값은 보정한다', () => {
   const save = loadSave(fakeStore('{"version":1,"unlocked":99,"records":{"meadow":{"bestWave":999,"stars":9},"nope":{"bestWave":3,"stars":1}}}'));
   assert.equal(save.unlocked, 3);
-  assert.deepEqual(save.records, { meadow: { bestWave: 15, stars: 3 } });
+  assert.deepEqual(save.records, { meadow: { bestWave: 30, stars: 3 } });
   assert.equal(loadSave(fakeStore('{"version":1,"unlocked":-4,"records":{}}')).unlocked, 1);
 });
 

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ENEMIES } from '../js/data/enemies.js';
 import {
-  hpScale, createEnemy, damageEnemy, applySlow, applyPoison, stepEnemy,
+  hpScale, createEnemy, damageEnemy, applySlow, applyPoison, stepEnemy, speedScale, isBoss,
 } from '../js/core/enemies.js';
 
 test('적 기본 수치', () => {
@@ -79,4 +79,32 @@ test('지속시간보다 긴 한 번의 step도 지속시간만큼만 피해를 
   applyPoison(e, 6, 3);
   stepEnemy(e, 10);
   assert.equal(e.hp, e.maxHp - 18);
+});
+
+test('보스 6종이 있고 흑룡은 체력이 가장 높다', () => {
+  const bosses = ['boss', 'slimeKing', 'lich', 'lavaGolem', 'shadowWolf', 'dragon'];
+  for (const id of bosses) {
+    assert.ok(isBoss(id), id);
+    assert.equal(ENEMIES[id].leak, 5, id);
+    assert.ok(ENEMIES[id].name, id);
+  }
+  assert.ok(!isBoss('soldier'));
+  for (const id of bosses.slice(0, 5)) assert.ok(ENEMIES.dragon.hp > ENEMIES[id].hp);
+});
+
+test('웨이브가 높을수록 몬스터가 빨라진다 (웨이브마다 1%)', () => {
+  assert.equal(speedScale(1), 1);
+  assert.ok(Math.abs(speedScale(30) - 1.29) < 1e-9);
+  const e = createEnemy(1, 'soldier', 11);
+  stepEnemy(e, 1);
+  assert.ok(Math.abs(e.dist - 1.1) < 1e-9);
+});
+
+test('방패병의 방어는 웨이브가 높을수록 단단해진다 (직접 피해 50% → 최소 35%)', () => {
+  const early = createEnemy(1, 'shield', 1);
+  const late = createEnemy(2, 'shield', 30);
+  assert.equal(early.directMult, 0.5);
+  assert.ok(late.directMult >= 0.35 && late.directMult < 0.4, String(late.directMult));
+  damageEnemy(late, 100, 'direct');
+  assert.ok(Math.abs(late.maxHp - late.hp - 100 * late.directMult) < 1e-9);
 });

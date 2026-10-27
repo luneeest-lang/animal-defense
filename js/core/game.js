@@ -13,8 +13,8 @@ export const CONFIG = {
   summonStepWaves: 5,
   firstCountdown: 10,
   waveGap: 10,
-  waveClearBonus: 10,
-  upgradeCosts: [80, 120, 160, 200, 240], // 동물별 강화 Lv.1~5 비용 // 웨이브의 적을 모두 처리하면 받는 골드
+  waveClearBonus: 10, // 웨이브의 적을 모두 처리하면 받는 골드
+  upgradeCosts: [80, 120, 160, 200, 240], // 동물별 강화 Lv.1~5 비용
   maxSubstep: 0.05,
 };
 

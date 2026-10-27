@@ -6,15 +6,17 @@ import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from '../js/core/wa
 const waves = buildWaves();
 const count = (wave, type) => wave.groups.filter((g) => g.type === type).reduce((s, g) => s + g.count, 0);
 
-test('웨이브는 15개이고 번호는 1부터 15이다', () => {
-  assert.equal(waves.length, 15);
-  assert.deepEqual(waves.map((w) => w.number), Array.from({ length: 15 }, (_, i) => i + 1));
+test('웨이브는 30개이고 번호는 1부터 30이다', () => {
+  assert.equal(waves.length, 30);
+  assert.deepEqual(waves.map((w) => w.number), Array.from({ length: 30 }, (_, i) => i + 1));
 });
 
-test('보스는 5, 10, 15웨이브에만 1마리씩 나온다', () => {
-  const bossWaves = waves.filter((w) => count(w, 'boss') > 0);
-  assert.deepEqual(bossWaves.map((w) => w.number), [5, 10, 15]);
-  for (const w of bossWaves) assert.equal(count(w, 'boss'), 1);
+test('5웨이브마다 서로 다른 보스가 1마리씩만 나온다 (마지막은 흑룡)', () => {
+  const bossWaves = waves.filter(isBossWave);
+  assert.deepEqual(bossWaves.map((w) => w.number), [5, 10, 15, 20, 25, 30]);
+  assert.deepEqual(bossWaves.map((w) => w.groups.map((g) => [g.type, g.count])),
+    [[['boss', 1]], [['slimeKing', 1]], [['lich', 1]], [['lavaGolem', 1]], [['shadowWolf', 1]], [['dragon', 1]]]);
+  for (const w of bossWaves) assert.ok(ENEMIES[w.groups[0].type].boss);
 });
 
 test('새 적은 정해진 웨이브부터 섞여 나온다', () => {
@@ -35,12 +37,13 @@ test('모든 웨이브가 비어 있지 않고 정의된 적만 쓴다', () => {
   }
 });
 
-test('보스 웨이브(5, 10, 15)는 보스 1마리만, 나머지 웨이브는 정확히 20마리다', () => {
+test('보스 웨이브(5의 배수)는 보스 1마리만, 나머지 웨이브는 정확히 20마리다', () => {
   for (const w of waves) {
     const total = w.groups.reduce((s, g) => s + g.count, 0);
-    if ([5, 10, 15].includes(w.number)) {
+    if (w.number % 5 === 0) {
       assert.ok(isBossWave(w), `wave ${w.number}`);
-      assert.deepEqual(w.groups.map((g) => [g.type, g.count]), [['boss', 1]]);
+      assert.equal(w.groups.length, 1);
+      assert.equal(total, 1);
     } else {
       assert.ok(!isBossWave(w), `wave ${w.number}`);
       assert.equal(total, 20, `wave ${w.number}`);
@@ -92,5 +95,12 @@ test('빠른 몬스터 무리가 먼저 나와 뒤 무리가 앞 무리를 따�
   for (const w of waves) {
     const speeds = w.groups.map((g) => ENEMIES[g.type].speed);
     for (let i = 1; i < speeds.length; i++) assert.ok(speeds[i] <= speeds[i - 1], `wave ${w.number}: ${w.groups.map((g) => g.type)}`);
+  }
+});
+
+test('16웨이브 이후에는 병사가 거의 없고 탱크·방패병이 많다', () => {
+  for (const w of waves.filter((x) => x.number > 16 && !isBossWave(x))) {
+    assert.equal(count(w, 'soldier'), 0, `wave ${w.number}`);
+    assert.ok(count(w, 'tank') + count(w, 'shield') >= 11, `wave ${w.number}`);
   }
 });

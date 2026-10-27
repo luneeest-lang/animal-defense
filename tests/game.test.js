@@ -26,7 +26,7 @@ test('새 게임의 초기 상태', () => {
   assert.equal(g.waveNumber, 0);
   assert.equal(g.countdown, 10);
   assert.equal(g.status, 'running');
-  assert.equal(g.waves.length, 15);
+  assert.equal(g.waves.length, 30);
   assert.equal(g.summons, 0);
   assert.equal(summonCost(g), 50);
 });

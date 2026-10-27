@@ -7,10 +7,13 @@ export const LIFE = {
 };
 export const SHAKE_MS = 450;
 
+import { ENEMIES } from '../data/enemies.js';
+
 // 처치 파편 색 (몬스터 도트의 주색)
 export const ENEMY_COLORS = {
   soldier: '#5fbf4a', runner: '#e0453a', tank: '#8d99a3', shield: '#eceff1',
   splitter: '#a85be0', mini: '#a85be0', boss: '#c8302a',
+  slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
 
@@ -73,7 +76,7 @@ export function createEffects(rng = effectRng(Date.now())) {
           t: now, life: LIFE.damage,
         });
       } else if (ev.type === 'death') {
-        const boss = ev.enemy === 'boss';
+        const boss = !!ENEMIES[ev.enemy]?.boss;
         burst(ev.x, ev.y, boss ? 28 : 8, [ENEMY_COLORS[ev.enemy] ?? '#ffffff', '#ffffff'], boss ? 3.2 : 2.2, boss ? 0.12 : 0.08, now);
         add({ kind: 'coin', x: ev.x, y: ev.y, text: `+${ev.reward}`, t: now, life: LIFE.coin });
         if (boss) {

@@ -12,6 +12,11 @@ export const ENEMY_LOOK = {
   splitter: { sprite: 'splitter', size: 0.9 },
   mini: { sprite: 'splitter', size: 0.55 },
   boss: { sprite: 'boss', size: 1.5 },
+  slimeKing: { sprite: 'boss', size: 1.5 },
+  lich: { sprite: 'boss', size: 1.5 },
+  lavaGolem: { sprite: 'boss', size: 1.5 },
+  shadowWolf: { sprite: 'boss', size: 1.5 },
+  dragon: { sprite: 'boss', size: 2.0 },
 };
 
 export const SPRITES = {

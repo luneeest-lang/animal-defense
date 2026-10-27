@@ -7,14 +7,31 @@ export function hpScale(waveNumber) {
   return HP_BONUS * (1 + 0.3 * (waveNumber - 1));
 }
 
+// 웨이브가 높을수록 조금씩 빨라진다 (웨이브마다 1%)
+export function speedScale(waveNumber) {
+  return 1 + 0.01 * (waveNumber - 1);
+}
+
+export const isBoss = (type) => !!ENEMIES[type]?.boss;
+
+// 방패병의 직접 피해 배율: 1웨이브 50%에서 30웨이브 35%까지 단단해진다
+function directMultAt(type, waveNumber) {
+  const base = ENEMIES[type].directMult;
+  if (base === undefined) return 1;
+  return Math.max(0.35, base - (0.15 / 29) * (waveNumber - 1));
+}
+
 // hpMult: 맵 난이도에 따른 체력 배율
 export function createEnemy(id, type, waveNumber, hpMult = 1) {
   const maxHp = ENEMIES[type].hp * hpScale(waveNumber) * hpMult;
-  return { id, type, waveNumber, hp: maxHp, maxHp, dist: 0, slow: null, poison: null };
+  return {
+    id, type, waveNumber, hp: maxHp, maxHp, dist: 0, slow: null, poison: null,
+    speedMult: speedScale(waveNumber), directMult: directMultAt(type, waveNumber),
+  };
 }
 
 export function damageEnemy(e, amount, kind) {
-  const mult = kind === 'direct' ? (ENEMIES[e.type].directMult ?? 1) : 1;
+  const mult = kind === 'direct' ? e.directMult ?? 1 : 1;
   e.hp -= amount * mult;
 }
 
@@ -29,7 +46,7 @@ export function applyPoison(e, dps, duration) {
 }
 
 export function stepEnemy(e, dt) {
-  const speed = ENEMIES[e.type].speed;
+  const speed = ENEMIES[e.type].speed * (e.speedMult ?? 1);
   if (e.poison) {
     const t = Math.min(dt, e.poison.left);
     e.hp -= e.poison.dps * t;
