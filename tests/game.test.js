@@ -162,7 +162,6 @@ test('적을 모두 처리해야 10초 카운트다운이 시작된다', () => {
   step(g, 0.05);
   assert.equal(g.enemies.length, 0);
   assert.ok(g.countdown > CONFIG.waveGap - 0.1 && g.countdown <= CONFIG.waveGap, String(g.countdown));
-  assert.ok(chooseCard(g, g.cardChoices[0]), '웨이브 사이 카드를 먼저 고른다');
   assert.equal(callNextWave(g), 10, '건너뛰면 남은 초만큼 보너스');
   assert.equal(g.waveNumber, 2);
 });
@@ -362,7 +361,6 @@ test('웨이브의 적을 모두 처리하면 10골드를 한 번만 받는다 (
   assert.ok(g.events.some((ev) => ev.type === 'waveClear' && ev.wave === 1 && ev.bonus === 10));
   step(g, 1);
   assert.equal(g.gold, goldAfterCall + 15, '보너스는 한 번만');
-  chooseCard(g, g.cardChoices[0]);
   callNextWave(g);
   const before = g.gold;
   step(g, 0.1);

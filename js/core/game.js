@@ -4,7 +4,7 @@ import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
 import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js';
 import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from './waves.js';
-import { CARDS, drawCards } from '../data/cards.js';
+import { CARDS, CARD_POWER, drawCards } from '../data/cards.js';
 
 export const CONFIG = {
   startLives: 20,
@@ -112,15 +112,16 @@ export function effectiveStats(game, tower) {
 export function chooseCard(game, cardId) {
   if (!game.cardChoices || !game.cardChoices.includes(cardId) || !CARDS[cardId]) return false;
   const { mods } = game;
-  if (cardId.startsWith('train:')) mods.damage[cardId.slice(6)] += 0.3;
-  else if (cardId === 'haste') mods.attackSpeed += 0.1;
-  else if (cardId === 'eye') mods.range += 0.3;
-  else if (cardId === 'treasure') game.gold += 100;
-  else if (cardId === 'heal') game.lives += 3;
-  else if (cardId === 'lucky') for (let i = 0; i < 2; i++) placeRandom(game, game.rng);
-  else if (cardId === 'bounty') mods.bounty += 1;
-  else if (cardId === 'frost') mods.enemySpeed *= 0.92;
-  else if (cardId === 'hunter') mods.bossDamage += 0.25;
+  const P = CARD_POWER;
+  if (cardId.startsWith('train:')) mods.damage[cardId.slice(6)] += P.train;
+  else if (cardId === 'haste') mods.attackSpeed += P.haste;
+  else if (cardId === 'eye') mods.range += P.eye;
+  else if (cardId === 'treasure') game.gold += P.treasure;
+  else if (cardId === 'heal') game.lives += P.heal;
+  else if (cardId === 'lucky') for (let i = 0; i < P.lucky; i++) placeRandom(game, game.rng);
+  else if (cardId === 'bounty') mods.bounty += P.bounty;
+  else if (cardId === 'frost') mods.enemySpeed *= P.frost;
+  else if (cardId === 'hunter') mods.bossDamage += P.hunter;
   game.cardsTaken.push(cardId);
   game.cardChoices = null;
   return true;
@@ -370,8 +371,9 @@ function substep(game, dt) {
     game.clearedWave = game.waveNumber;
     game.gold += CONFIG.waveClearBonus;
     game.events.push({ type: 'waveClear', wave: game.waveNumber, bonus: CONFIG.waveClearBonus });
-    // 마지막 웨이브가 아니면 카드 3장 중 1장을 고른다 (고를 때까지 게임이 멈춘다)
-    if (game.waveNumber < game.waves.length) game.cardChoices = drawCards(game.rng);
+    // 보스 웨이브(5·10·15·20·25)를 깨면 카드 3장 중 1장을 고른다 (고를 때까지 게임이 멈춘다). 마지막 웨이브는 없다
+    const wave = game.waves[game.waveNumber - 1];
+    if (game.waveNumber < game.waves.length && isBossWave(wave)) game.cardChoices = drawCards(game.rng);
   }
   if (cleared && game.countdown === null && game.waveNumber < game.waves.length) {
     game.countdown = CONFIG.waveGap;

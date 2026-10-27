@@ -7,17 +7,19 @@ import {
   createGame, addTower, callNextWave, step, chooseCard, effectiveStats, emptyCells,
 } from '../js/core/game.js';
 import { towerStats } from '../js/core/towers.js';
+import { BOSS_INTRO } from '../js/core/waves.js';
 
 const meadow = MAPS[0];
 const seq = (...values) => { let i = 0; return () => values[i++ % values.length]; };
+// 1웨이브가 보스 웨이브인 짧은 게임
 const twoWaves = [
-  { number: 1, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
+  { number: 1, groups: [{ type: 'boss', count: 1, interval: 3 }] },
   { number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
 ];
-// 1웨이브를 끝내 카드 선택 상태로 만든다
+// 1웨이브를 끝낸다 (보스는 경고 연출 뒤에 나온다)
 const clearFirstWave = (g) => {
   callNextWave(g);
-  step(g, 0.1);
+  step(g, BOSS_INTRO + 0.1);
   g.enemies[0].hp = 0;
   step(g, 0.05);
 };
@@ -43,7 +45,18 @@ test('drawCards는 서로 다른 카드 3장을 뽑는다', () => {
   assert.deepEqual(drawCards(seq(0)), Object.keys(CARDS).slice(0, 3));
 });
 
-test('웨이브를 끝내면 카드 3장이 나오고, 고를 때까지 게임이 멈춘다', () => {
+test('일반 웨이브를 끝내면 카드가 나오지 않는다', () => {
+  const g = createGame(meadow, [twoWaves[1], twoWaves[1]]);
+  callNextWave(g);
+  step(g, 0.1);
+  g.enemies[0].hp = 0;
+  step(g, 0.05);
+  assert.equal(g.clearedWave, 1);
+  assert.equal(g.cardChoices, null);
+  assert.ok(g.countdown > 0);
+});
+
+test('보스 웨이브를 끝내면 카드 3장이 나오고, 고를 때까지 게임이 멈춘다', () => {
   const g = createGame(meadow, twoWaves);
   g.rng = seq(0);
   clearFirstWave(g);
@@ -62,7 +75,7 @@ test('웨이브를 끝내면 카드 3장이 나오고, 고를 때까지 게임�
   assert.ok(g.time > t);
 });
 
-test('마지막 웨이브를 끝내면 카드가 나오지 않는다', () => {
+test('마지막 웨이브는 보스 웨이브여도 카드가 나오지 않는다', () => {
   const g = createGame(meadow, [twoWaves[0]]);
   clearFirstWave(g);
   assert.equal(g.cardChoices, null);
@@ -71,12 +84,12 @@ test('마지막 웨이브를 끝내면 카드가 나오지 않는다', () => {
 
 const choose = (g, id) => { g.cardChoices = [id]; return chooseCard(g, id); };
 
-test('동물 특훈: 그 동물 공격력 +30% (여러 번 고르면 쌓인다)', () => {
+test('동물 특훈: 그 동물 공격력 +100% (여러 번 고르면 쌓인다)', () => {
   const g = createGame(meadow);
   const t = addTower(g, 'eagle', 5, 3);
   choose(g, 'train:eagle');
   choose(g, 'train:eagle');
-  assert.ok(Math.abs(effectiveStats(g, t).damage - towerStats('eagle', 0).damage * 1.6) < 1e-9);
+  assert.ok(Math.abs(effectiveStats(g, t).damage - towerStats('eagle', 0).damage * 3) < 1e-9);
   const s = addTower(g, 'squirrel', 6, 3);
   assert.equal(effectiveStats(g, s).damage, towerStats('squirrel', 0).damage);
 });
@@ -87,27 +100,27 @@ test('날쌘 발톱은 공격 간격을 줄이고, 매의 눈은 사거리를 �
   const base = towerStats('squirrel', 0);
   choose(g, 'haste');
   choose(g, 'eye');
-  assert.ok(Math.abs(effectiveStats(g, t).cooldown - base.cooldown / 1.1) < 1e-9);
-  assert.ok(Math.abs(effectiveStats(g, t).range - (base.range + 0.3)) < 1e-9);
+  assert.ok(Math.abs(effectiveStats(g, t).cooldown - base.cooldown / 1.4) < 1e-9);
+  assert.ok(Math.abs(effectiveStats(g, t).range - (base.range + 1)) < 1e-9);
 });
 
-test('보물 상자 +100골드, 응급 치료 +3생명, 행운의 소환은 아기 2마리 무료', () => {
+test('보물 상자 +400골드, 응급 치료 +10생명, 행운의 소환은 아기 6마리 무료', () => {
   const g = createGame(meadow);
   g.rng = seq(0);
   const gold = g.gold;
   choose(g, 'treasure');
-  assert.equal(g.gold, gold + 100);
+  assert.equal(g.gold, gold + 400);
   choose(g, 'heal');
-  assert.equal(g.lives, 23);
+  assert.equal(g.lives, 30);
   const cells = emptyCells(g).length;
   choose(g, 'lucky');
-  assert.equal(g.towers.length, 2);
+  assert.equal(g.towers.length, 6);
   assert.ok(g.towers.every((t) => t.level === 0 && t.invested === 0));
-  assert.equal(emptyCells(g).length, cells - 2);
-  assert.equal(g.gold, gold + 100, '무료 소환은 골드를 쓰지 않는다');
+  assert.equal(emptyCells(g).length, cells - 6);
+  assert.equal(g.gold, gold + 400, '무료 소환은 골드를 쓰지 않는다');
 });
 
-test('현상금은 처치 보상 +1, 서리 바람은 몬스터 이동 -8%, 보스 사냥꾼은 보스 피해 +25%', () => {
+test('현상금은 처치 보상 +4, 서리 바람은 몬스터 이동 -25%, 보스 사냥꾼은 보스 피해 +100%', () => {
   const g = createGame(meadow);
   g.countdown = null;
   choose(g, 'bounty');
@@ -120,12 +133,12 @@ test('현상금은 처치 보상 +1, 서리 바람은 몬스터 이동 -8%, 보�
   g.enemies.push(e);
   const gold = g.gold;
   step(g, 0.05);
-  assert.equal(g.gold, gold + 6);
+  assert.equal(g.gold, gold + 9);
   const runner = createEnemy(g.nextId++, 'soldier', 1);
   g.enemies.push(runner);
   g.towers = [];
   step(g, 1);
-  assert.ok(Math.abs(runner.dist - 0.92) < 1e-9, String(runner.dist));
+  assert.ok(Math.abs(runner.dist - 0.75) < 1e-9, String(runner.dist));
 
   const g2 = createGame(meadow);
   g2.countdown = null;
@@ -135,5 +148,5 @@ test('현상금은 처치 보상 +1, 서리 바람은 몬스터 이동 -8%, 보�
   boss.dist = 5;
   g2.enemies.push(boss);
   step(g2, 0.05);
-  assert.ok(Math.abs((boss.maxHp - boss.hp) - towerStats('squirrel', 0).damage * 1.25) < 1e-9);
+  assert.ok(Math.abs((boss.maxHp - boss.hp) - towerStats('squirrel', 0).damage * 2) < 1e-9);
 });
