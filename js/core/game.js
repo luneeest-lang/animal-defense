@@ -7,7 +7,7 @@ import { CARDS, drawCards } from '../data/cards.js';
 
 export const CONFIG = {
   startLives: 20,
-  startGold: 200,
+  startGold: 250,
   sellRate: 0.7,
   summonBase: 50,
   summonStep: 5, // 5웨이브마다 오르는 소환 비용

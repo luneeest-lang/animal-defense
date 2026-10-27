@@ -27,7 +27,10 @@ test('웨이브 번호에 따라 체력이 늘어난다', () => {
   // 전체 체력 5% 상향 (기본 수치 x 1.05)
   assert.ok(Math.abs(hpScale(1) - 1.05) < 1e-9);
   assert.ok(Math.abs(createEnemy(1, 'soldier', 1).hp - 42) < 1e-9);
-  assert.ok(Math.abs(createEnemy(1, 'soldier', 11).hp - 168) < 1e-9);
+  // 10웨이브까지는 웨이브마다 기본의 30%씩, 그 뒤로는 웨이브마다 1.1배씩 더 늘어난다
+  assert.ok(Math.abs(createEnemy(1, 'soldier', 10).hp - 42 * 3.7) < 1e-9);
+  assert.ok(Math.abs(createEnemy(1, 'soldier', 11).hp - 168 * 1.1) < 1e-9);
+  assert.ok(Math.abs(hpScale(30) - 1.05 * 9.7 * 1.1 ** 20) < 1e-9);
   const e = createEnemy(7, 'soldier', 1);
   assert.deepEqual(
     { id: e.id, type: e.type, waveNumber: e.waveNumber, maxHp: e.maxHp, dist: e.dist, slow: e.slow, poison: e.poison },

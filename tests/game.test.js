@@ -21,7 +21,7 @@ const inject = (game, type, dist, hp) => {
 
 test('새 게임의 초기 상태', () => {
   const g = createGame(meadow);
-  assert.equal(g.gold, 200);
+  assert.equal(g.gold, 250);
   assert.equal(g.lives, 20);
   assert.equal(g.waveNumber, 0);
   assert.equal(g.countdown, 10);
@@ -36,12 +36,12 @@ test('소환: 비용을 내고 무작위 빈 칸에 아기 동물이 생기며, 
   const first = emptyCells(g)[0];
   const t = summonTower(g, seq(0));
   assert.deepEqual([t.type, t.col, t.row, t.level, t.invested], ['squirrel', first[0], first[1], 0, 50]);
-  assert.equal(g.gold, 150);
+  assert.equal(g.gold, 200);
   assert.equal(summonCost(g), 50);
   const cells = emptyCells(g);
   const t2 = summonTower(g, seq(0.999999));
   assert.deepEqual([t2.type, t2.col, t2.row, t2.invested], ['snake', ...cells[cells.length - 1], 50]);
-  assert.equal(g.gold, 100);
+  assert.equal(g.gold, 150);
 });
 
 test('소환 비용은 5웨이브마다 5골드씩 오른다 (1~5: 50, 6~10: 55, 11~15: 60)', () => {
@@ -127,17 +127,17 @@ test('다음 웨이브 호출: 보너스를 주고 연달아 눌러도 한 번�
   const g = createGame(meadow);
   assert.equal(callNextWave(g), 10);
   assert.equal(g.waveNumber, 1);
-  assert.equal(g.gold, 210);
+  assert.equal(g.gold, 260);
   assert.equal(callNextWave(g), 0);
   assert.equal(g.waveNumber, 1);
-  assert.equal(g.gold, 210);
+  assert.equal(g.gold, 260);
 });
 
 test('보너스는 남은 카운트다운을 올림한 값이다', () => {
   const g = createGame(meadow);
   g.countdown = 6.2;
   assert.equal(callNextWave(g), 7);
-  assert.equal(g.gold, 207);
+  assert.equal(g.gold, 257);
 });
 
 test('카운트다운이 끝나면 웨이브가 자동 시작된다', () => {

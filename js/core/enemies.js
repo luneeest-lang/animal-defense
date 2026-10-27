@@ -3,8 +3,12 @@ import { ENEMIES } from '../data/enemies.js';
 // 모든 몬스터 체력 보정 (2026-10-26: 약 5% 상향)
 export const HP_BONUS = 1.05;
 
+// 체력 증가: 웨이브마다 기본 체력의 30%씩, LATE_FROM 웨이브 뒤로는 웨이브마다 LATE 배씩 더 (카드가 쌓이는 후반 대응)
+export const HP_GROWTH = { late: 1.1, lateFrom: 10 };
+
 export function hpScale(waveNumber) {
-  return HP_BONUS * (1 + 0.3 * (waveNumber - 1));
+  const late = HP_GROWTH.late ** Math.max(0, waveNumber - HP_GROWTH.lateFrom);
+  return HP_BONUS * (1 + 0.3 * (waveNumber - 1)) * late;
 }
 
 // 웨이브가 높을수록 조금씩 빨라진다 (웨이브마다 1%)
