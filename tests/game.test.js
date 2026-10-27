@@ -387,3 +387,18 @@ test('맞은 적마다 실제 피해량을 담은 hit 이벤트가 생긴다 (�
   assert.equal(hits2.length, 2);
   for (const h of hits2) assert.equal(h.amount, 20);
 });
+
+test('맵의 체력 배율이 스폰되는 몬스터와 분열체 새끼에 적용된다', () => {
+  const hard = { ...meadow, hpMult: 2 };
+  const g = createGame(hard, oneSoldier);
+  callNextWave(g);
+  step(g, 0.05);
+  const base = createEnemy(0, 'soldier', 1);
+  assert.equal(g.enemies[0].maxHp, base.maxHp * 2);
+  const g2 = createGame(hard, [{ number: 1, groups: [{ type: 'splitter', count: 1, interval: 1 }] }]);
+  callNextWave(g2);
+  step(g2, 0.05);
+  g2.enemies[0].hp = 0;
+  step(g2, 0.05);
+  assert.deepEqual(g2.enemies.map((e) => e.maxHp), [createEnemy(0, 'mini', 1).maxHp * 2, createEnemy(0, 'mini', 1).maxHp * 2]);
+});

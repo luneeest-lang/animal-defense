@@ -63,12 +63,30 @@ button { font: inherit; color: inherit; }
   grid-template-areas: "bar" "stage" "panel";
   justify-content: center;
 }
+/* 상단 바는 칸 크기가 고정된 격자다. 버튼 글자(진행 중 / 바로 시작)나 숫자가 바뀌어도 아무것도 움직이지 않는다.
+   기본(휴대폰): 윗줄 생명·골드·웨이브, 아랫줄 웨이브 버튼·배속·일시정지·메뉴 */
 #infobar {
   grid-area: bar;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  padding: 6px; min-height: var(--bar-h); background: var(--bar);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 44px 44px;
+  grid-template-rows: 28px 40px;
+  grid-template-areas: "stats stats stats stats" "wave speed pause menu";
+  align-items: center; gap: 4px 6px;
+  padding: 6px; background: var(--bar);
 }
-.stat { display: inline-block; font-weight: 700; padding: 0 4px; white-space: nowrap; }
+#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; min-width: 0; }
+#btn-wave { grid-area: wave; }
+#btn-speed { grid-area: speed; }
+#btn-pause { grid-area: pause; }
+#btn-menu { grid-area: menu; }
+#infobar .btn {
+  width: 100%; height: 100%; min-height: 0; padding: 0 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stat {
+  display: inline-block; font-weight: 700; padding: 0 4px; white-space: nowrap;
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis;
+}
 /* 생명이 줄면 흔들리고, 골드가 늘면 살짝 커진다 */
 .stat.hurt { animation: stat-hurt 0.45s ease-out; }
 .stat.gain { animation: stat-gain 0.35s ease-out; }
@@ -81,7 +99,6 @@ button { font: inherit; color: inherit; }
 }
 @keyframes stat-gain { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.18); color: #ffd23f; } }
 @media (prefers-reduced-motion: reduce) { .stat.hurt, .stat.gain { animation: none; } }
-#btn-wave { margin-left: auto; }
 
 #stage {
   grid-area: stage;
@@ -161,12 +178,19 @@ button { font: inherit; color: inherit; }
 @media (orientation: portrait) {
   #board { aspect-ratio: 10 / 16; }
   #stage { width: min(100vw, calc((100dvh - 176px) * 0.625), 560px); }
-  #infobar { gap: 4px; padding: 4px 6px; }
+  #infobar { padding: 4px 6px; }
   .stat { font-size: 0.92rem; }
-  #infobar .btn { min-height: 36px; padding: 4px 10px; }
+  #btn-wave { font-size: 0.92rem; }
 }
 
 @media (orientation: landscape) and (min-width: 700px) {
+  /* 넓은 화면은 한 줄: 생명·골드·웨이브 | 웨이브 버튼(폭 고정) | 배속 | 일시정지 | 메뉴 */
+  #infobar {
+    grid-template-columns: minmax(0, 1fr) 15.5em 44px 44px 44px;
+    grid-template-rows: 40px;
+    grid-template-areas: "stats wave speed pause menu";
+  }
+  #stats { grid-template-columns: repeat(3, max-content); gap: 8px; }
   #screen-game {
     grid-template-areas: "bar bar" "stage panel";
     grid-template-columns: auto var(--panel-w);

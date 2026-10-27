@@ -7,8 +7,9 @@ export function hpScale(waveNumber) {
   return HP_BONUS * (1 + 0.3 * (waveNumber - 1));
 }
 
-export function createEnemy(id, type, waveNumber) {
-  const maxHp = ENEMIES[type].hp * hpScale(waveNumber);
+// hpMult: 맵 난이도에 따른 체력 배율
+export function createEnemy(id, type, waveNumber, hpMult = 1) {
+  const maxHp = ENEMIES[type].hp * hpScale(waveNumber) * hpMult;
   return { id, type, waveNumber, hp: maxHp, maxHp, dist: 0, slow: null, poison: null };
 }
 

@@ -135,7 +135,7 @@ export function createHud(root, handlers) {
       const running = game.status === 'running';
       if (game.countdown !== null && running) {
         const left = Math.ceil(game.countdown);
-        setText(el.btnWave, `⏭ 바로 시작 ${left}초 (+${left}🪙)`);
+        setText(el.btnWave, `⏭ 바로 시작 ${left}초 +${left}🪙`);
         el.btnWave.disabled = false;
       } else {
         setText(el.btnWave, game.waveNumber >= game.waves.length ? '마지막 웨이브' : `웨이브 ${game.waveNumber} 진행 중`);

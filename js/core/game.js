@@ -180,7 +180,7 @@ function resolveEnemies(game) {
       game.events.push({ type: 'death', enemy: e.type, reward: def.reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
         for (let i = 0; i < def.splitInto.count; i++) {
-          const child = createEnemy(game.nextId++, def.splitInto.type, e.waveNumber);
+          const child = createEnemy(game.nextId++, def.splitInto.type, e.waveNumber, game.map.hpMult ?? 1);
           child.dist = e.dist;
           born.push(child);
         }
@@ -204,7 +204,7 @@ function substep(game, dt) {
   }
   while (game.spawnQueue.length && game.spawnQueue[0].at <= game.time) {
     const s = game.spawnQueue.shift();
-    game.enemies.push(createEnemy(game.nextId++, s.type, s.wave));
+    game.enemies.push(createEnemy(game.nextId++, s.type, s.wave, game.map.hpMult ?? 1));
   }
   for (const e of game.enemies) stepEnemy(e, dt);
   fireTowers(game, dt);
