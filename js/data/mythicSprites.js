@@ -1,5 +1,5 @@
 // 신화 동물 20x20 도트 그림 (오른쪽을 본다). '.'은 투명, 나머지 글자는 palette의 색이다.
-// 기본 동물(16x16)보다 크다. 불사조의 불꽃은 테두리 없이 빛나게 두고, 해태는 호랑이, 기린은 실제 기린처럼 그린다.
+// 기본 동물(16x16)보다 크다. 불사조의 불꽃은 테두리 없이 빛나게 두고, 해태는 붉은 눈의 백호, 기린은 금빛 뿔의 초록 기린, 천마는 검은 말이다.
 export const MYTHIC_SIZE = 20;
 
 export const MYTHIC_SPRITES = {
@@ -54,7 +54,7 @@ export const MYTHIC_SPRITES = {
     ],
   },
   cheonma: {
-    palette: { 'K': '#0f1626', 'W': '#ffffff', 'G': '#b9c6d8', 'D': '#7f8ea6', 'M': '#3fb5ff', 'N': '#9d6bff', 'E': '#ff2e4a', 'S': '#dff3ff' },
+    palette: { 'K': '#000000', 'W': '#2b2b3a', 'G': '#1a1a24', 'D': '#0e0e16', 'M': '#9d6bff', 'N': '#5b2bbf', 'E': '#ff2e4a', 'S': '#5a5a72' },
     rows: [
       'K...................',
       'KSK.................',
@@ -79,7 +79,7 @@ export const MYTHIC_SPRITES = {
     ],
   },
   haetae: {
-    palette: { 'K': '#140a02', 'O': '#ff8a1f', 'D': '#c95f0c', 'W': '#ffffff', 'G': '#e9e2d6', 'E': '#c6ff3d', 'N': '#ff8fb1' },
+    palette: { 'K': '#14141c', 'O': '#ffffff', 'D': '#c3cbd8', 'W': '#e8edf5', 'G': '#e9e2d6', 'E': '#ff1f3d', 'N': '#ff8fb1' },
     rows: [
       '....................',
       '....................',
@@ -104,11 +104,11 @@ export const MYTHIC_SPRITES = {
     ],
   },
   girin: {
-    palette: { 'K': '#2a1a08', 'Y': '#f2c14e', 'B': '#9c5a22', 'D': '#6b3d14', 'W': '#fff1d0', 'E': '#161616', 'H': '#3a2408' },
+    palette: { 'K': '#06170f', 'Y': '#6bf0a0', 'B': '#2ea86c', 'D': '#14653f', 'W': '#e9fff3', 'E': '#ff2e4a', 'H': '#ffd23f' },
     rows: [
       '..............H.H...',
-      '..............K.K...',
-      '.............KYKYK..',
+      '..............H.H...',
+      '.............KHKHK..',
       '............KYYYEYK.',
       '............KDYYYYWK',
       '...........KDYYKKKK.',
@@ -125,7 +125,7 @@ export const MYTHIC_SPRITES = {
       '..KBK.....KBK.......',
       '..KYK.....KYK.......',
       '..KYK.....KYK.......',
-      '..KHK.....KHK.......',
+      '..KDK.....KDK.......',
     ],
   },
 };

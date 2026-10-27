@@ -18,17 +18,17 @@ export const MYTHICS = {
     base: { damage: 225, range: 3.5, cooldown: 0.8, shots: 4, charmChance: 0.12, charmBack: 1.0 },
   },
   cheonma: {
-    name: '천마', icon: '🐎', recipe: ['penguin', 'snake', 'elephant'], color: '#d8f3ff',
+    name: '천마', icon: '🐎', recipe: ['penguin', 'snake', 'elephant'], color: '#9d6bff',
     desc: '날개 바람이 일직선의 적을 꿰뚫고, 주변 동물을 빠르게 해요',
     base: { damage: 375, range: 4.5, cooldown: 1.0, width: 0.6, buffRange: 2, buffSpeed: 1.25 },
   },
   haetae: {
-    name: '해태', icon: '🐯', recipe: ['elephant', 'snake', 'squirrel'], color: '#ff9a3c',
+    name: '해태', icon: '🐯', recipe: ['elephant', 'snake', 'squirrel'], color: '#dfe8ff',
     desc: '땅을 울려 맵 전체 적에게 피해를 주고 느리게 해요',
     base: { damage: 375, range: 0, cooldown: 3.0, slowFactor: 0.6, slowDuration: 1.5 },
   },
   girin: {
-    name: '기린', icon: '🦒', recipe: ['squirrel', 'eagle', 'snake'], color: '#ffd27a',
+    name: '기린', icon: '🦒', recipe: ['squirrel', 'eagle', 'snake'], color: '#7dffb0',
     desc: '아주 빠르게 공격하고 보스에게 강해요. 잡은 적은 골드를 더 줘요',
     base: { damage: 135, range: 3.0, cooldown: 0.2, bossMult: 2, killGold: 2 },
   },
