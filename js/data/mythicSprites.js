@@ -1,31 +1,31 @@
 // 신화 동물 20x20 도트 그림 (오른쪽을 본다). '.'은 투명, 나머지 글자는 palette의 색이다.
-// 기본 동물(16x16)보다 크고, 뾰족한 실루엣과 째려보는 눈으로 날카롭게 그린다.
+// 기본 동물(16x16)보다 크고, 뾰족한 실루엣과 째려보는 눈으로 날카롭게 그린다. 불사조의 불꽃은 테두리 없이 빛나게 둔다.
 export const MYTHIC_SIZE = 20;
 
 export const MYTHIC_SPRITES = {
   phoenix: {
-    palette: { 'K': '#1a0500', 'R': '#e8341c', 'D': '#8f1408', 'O': '#ff8a1f', 'Y': '#ffd23f', 'W': '#fff6c2', 'E': '#ffe600' },
+    palette: { 'K': '#3a0800', 'R': '#e8341c', 'D': '#a3150a', 'O': '#ff6a00', 'Y': '#ffc21f', 'W': '#fff4b0', 'E': '#fff6c2' },
     rows: [
-      '...........K.K.K....',
-      '..........KYKYKYK...',
-      'K..........KRRRRK...',
-      'KOK.......KRRRKERK..',
-      '.KOK.....KRRRRRRYYK.',
-      '.KYOK...KRRWRRRKKK..',
-      '..KYOK.KDRRRRRK.....',
-      '..KYYOKDRRRRRK......',
-      '...KYYODRRRRRK......',
-      '...KYYYORRYRRK......',
-      '....KYYORYYYRK......',
-      '.....KYODRYYRK......',
-      '......KODDRRRK......',
-      '.....KOODDDDK.......',
-      '....KOYOKKKDK.......',
-      '...KOYYOK.KYK.......',
-      '..KOYYOK..KYK.......',
-      '.KOYOKK..KYYK.......',
-      'KOYK....KYK.K.......',
-      'KK......KK..........',
+      '.O.....O............',
+      '.YO...OY.....O.O....',
+      'OYO..OYO....OYOYO...',
+      'OWYO.OWYO...KRRRK...',
+      'OWYOOOWYO..KRRRKEK..',
+      '.OWYOYWYO.KRRRRRRYYK',
+      '.OYWWYWYOKRRRRRKKK..',
+      '..OYWWWYORRRRRK.....',
+      '..OYYWWYORRRRK......',
+      '...OYYWYOORRRK......',
+      '....OOYYORYYRK......',
+      '.....OOYRYWYRK......',
+      '......ORRYYYRK......',
+      '.....OODRRYRK.......',
+      '....OYODDRRK........',
+      '...OYWYOKDDK........',
+      '..OYWYO..KK.........',
+      '..OYYO..............',
+      '.OYO................',
+      '.O..................',
     ],
   },
   gumiho: {

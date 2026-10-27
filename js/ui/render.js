@@ -473,6 +473,7 @@ export function createRenderer(canvas) {
     if (stunned) ctx.globalAlpha *= 0.55;
     ctx.drawImage(mythics[tower.type], -s / 2, -s / 2, s, s);
     ctx.restore();
+    if (tower.type === 'phoenix') drawEmbers(tower, cx, cy, s, unit, now);
     // 반짝이: 무지개색 점이 몸 주위를 돈다
     for (let i = 0; i < 4; i++) {
       const a = now / 600 + (i * Math.PI) / 2;
@@ -481,6 +482,26 @@ export function createRenderer(canvas) {
       ctx.fillStyle = `hsl(${(now / 5 + i * 90) % 360}, 100%, 70%)`;
       ctx.fillRect(Math.round(cx + Math.cos(a) * r - size / 2), Math.round(cy + Math.sin(a) * r * 0.6 - size / 2), size, size);
     }
+  }
+
+  // 불사조: 몸에서 불티가 피어오르고, 몸을 감싼 불빛이 일렁인다
+  function drawEmbers(tower, cx, cy, s, unit, now) {
+    const flicker = 0.75 + Math.sin(now / 90 + tower.id) * 0.15 + Math.sin(now / 37) * 0.1;
+    const glow = ctx.createRadialGradient(cx, cy, s * 0.05, cx, cy, s * 0.6);
+    glow.addColorStop(0, `rgba(255, 200, 60, ${0.35 * flicker})`);
+    glow.addColorStop(1, 'rgba(255, 80, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+    const size = Math.max(2, Math.round(unit * 1.2));
+    for (let i = 0; i < 7; i++) {
+      const life = (now / 900 + i / 7 + (tower.id % 7) / 7) % 1;
+      const x = cx + (((i * 37) % 13) / 13 - 0.5) * s * 0.8 + Math.sin(now / 200 + i) * s * 0.05;
+      const y = cy + s * 0.25 - life * s * 0.9;
+      ctx.globalAlpha = 1 - life;
+      ctx.fillStyle = life < 0.3 ? '#fff4b0' : life < 0.6 ? '#ffc21f' : '#ff6a00';
+      ctx.fillRect(Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // 불사조가 남긴 불길: 깜빡이는 주황 원과 불티
