@@ -32,8 +32,7 @@ export function towerStats(type, level, upgrade = 0) {
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 const center = (tower) => ({ x: tower.col + 0.5, y: tower.row + 0.5 });
 
-export function findTarget(tower, enemies, points) {
-  const range = towerStats(tower.type, tower.level).range;
+export function findTarget(tower, enemies, points, range = towerStats(tower.type, tower.level).range) {
   const from = center(tower);
   let best = null;
   for (const e of enemies) {
@@ -44,10 +43,10 @@ export function findTarget(tower, enemies, points) {
   return best;
 }
 
-export function fire(tower, target, enemies, points, upgrade = 0) {
-  const stats = towerStats(tower.type, tower.level, upgrade);
+// stats: 강화·카드가 반영된 능력치 (기본은 강화 없는 능력치)
+export function fire(tower, target, enemies, points, stats = towerStats(tower.type, tower.level)) {
   const kind = TOWERS[tower.type].kind;
-  const bossBonus = stats.bossMult !== undefined && isBoss(target.type) ? stats.bossMult : 1;
+  const bossBonus = isBoss(target.type) ? (stats.bossMult ?? 1) * (stats.bossDamage ?? 1) : 1;
   let hit = [target];
   if (kind === 'splash') {
     const at = positionAt(points, target.dist);

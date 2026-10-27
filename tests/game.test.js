@@ -5,7 +5,7 @@ import { pathLength, pathCells as pathCellsOf } from '../js/core/path.js';
 import { createEnemy } from '../js/core/enemies.js';
 import {
   CONFIG, createGame, addTower, summonCost, emptyCells, summonTower, canMerge, mergeTowers,
-  sellTower, callNextWave, step, upgradeCost, upgradeAnimal,
+  sellTower, callNextWave, step, upgradeCost, upgradeAnimal, chooseCard,
 } from '../js/core/game.js';
 
 const meadow = MAPS[0];
@@ -150,6 +150,7 @@ test('카운트다운이 끝나면 웨이브가 자동 시작된다', () => {
 test('적을 모두 처리해야 10초 카운트다운이 시작된다', () => {
   assert.equal(CONFIG.waveGap, 10);
   const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
+  g.rng = seq(0);
   callNextWave(g);
   step(g, 0.1);
   assert.equal(g.spawnQueue.length, 0);
@@ -160,6 +161,7 @@ test('적을 모두 처리해야 10초 카운트다운이 시작된다', () => {
   step(g, 0.05);
   assert.equal(g.enemies.length, 0);
   assert.ok(g.countdown > CONFIG.waveGap - 0.1 && g.countdown <= CONFIG.waveGap, String(g.countdown));
+  assert.ok(chooseCard(g, g.cardChoices[0]), '웨이브 사이 카드를 먼저 고른다');
   assert.equal(callNextWave(g), 10, '건너뛰면 남은 초만큼 보너스');
   assert.equal(g.waveNumber, 2);
 });
@@ -348,6 +350,7 @@ test('이벤트: 발사는 맞은 적, 처치는 적 종류와 보상, 도착은
 test('웨이브의 적을 모두 처리하면 10골드를 한 번만 받는다 (마지막 웨이브 포함)', () => {
   assert.equal(CONFIG.waveClearBonus, 10);
   const g = createGame(meadow, oneSoldier.concat([{ number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] }]));
+  g.rng = seq(0); // 첫 카드는 골드와 상관없는 '다람쥐 특훈'
   callNextWave(g);
   const goldAfterCall = g.gold;
   step(g, 0.1);
@@ -358,6 +361,7 @@ test('웨이브의 적을 모두 처리하면 10골드를 한 번만 받는다 (
   assert.ok(g.events.some((ev) => ev.type === 'waveClear' && ev.wave === 1 && ev.bonus === 10));
   step(g, 1);
   assert.equal(g.gold, goldAfterCall + 15, '보너스는 한 번만');
+  chooseCard(g, g.cardChoices[0]);
   callNextWave(g);
   const before = g.gold;
   step(g, 0.1);

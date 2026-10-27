@@ -45,8 +45,9 @@ export function applyPoison(e, dps, duration) {
   else e.poison.left = Math.max(e.poison.left, duration);
 }
 
-export function stepEnemy(e, dt) {
-  const speed = ENEMIES[e.type].speed * (e.speedMult ?? 1);
+// speedFactor: 카드(서리 바람) 같은 전체 이동 속도 배율
+export function stepEnemy(e, dt, speedFactor = 1) {
+  const speed = ENEMIES[e.type].speed * (e.speedMult ?? 1) * speedFactor;
   if (e.poison) {
     const t = Math.min(dt, e.poison.left);
     e.hp -= e.poison.dps * t;

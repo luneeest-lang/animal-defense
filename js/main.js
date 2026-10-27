@@ -1,5 +1,7 @@
 import { MAPS } from './data/maps.js';
-import { createGame, summonTower, canMerge, mergeTowers, sellTower, callNextWave, step, upgradeAnimal } from './core/game.js';
+import {
+  createGame, summonTower, canMerge, mergeTowers, sellTower, callNextWave, step, upgradeAnimal, chooseCard,
+} from './core/game.js';
 import { loadSave, writeSave, recordResult, starsFor } from './storage.js';
 import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
@@ -35,6 +37,7 @@ const renderer = createRenderer(document.getElementById('board'));
 const hud = createHud(document.getElementById('app'), {
   onSummon: summon,
   onUpgradeAnimal: (id) => { if (game) upgradeAnimal(game, id); },
+  onPickCard: (id) => { if (game) chooseCard(game, id); },
   onCallWave: () => { if (game) callNextWave(game); },
   onSpeed: () => { ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length]; },
   onPause: togglePause,
@@ -152,7 +155,8 @@ function frame(ts) {
 
 window.addEventListener('keydown', (e) => {
   if (!game || e.repeat) return;
-  if (e.key === 's' || e.key === 'S') summon();
+  if (game.cardChoices && ['1', '2', '3'].includes(e.key)) chooseCard(game, game.cardChoices[Number(e.key) - 1]);
+  else if (e.key === 's' || e.key === 'S') summon();
   else if (e.code === 'Space') { e.preventDefault(); togglePause(); }
   else if (e.key === 'Escape') selectTower(null);
 });
