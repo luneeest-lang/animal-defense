@@ -450,21 +450,28 @@ export function createRenderer(canvas) {
     const bob = Math.round(Math.sin(now / 400 + tower.id) * s * 0.03 * dpr) / dpr;
     const feet = cy + s * 0.4;
     if (theme !== 'sea') dropShadow(cx, feet, s * 0.38, s * 0.11, 0.35);
-    // 무지개 고리 (색이 돈다)
+    const pulse = 0.5 + 0.5 * Math.sin(now / 320 + tower.id);
+    const hue = now / 6;
     ctx.save();
-    ctx.lineWidth = Math.max(2, s * 0.07);
-    for (let i = 0; i < 6; i++) {
-      ctx.strokeStyle = `hsl(${(now / 8 + i * 60) % 360}, 95%, 62%)`;
-      ctx.beginPath();
-      ctx.ellipse(cx, feet, s * 0.46, s * 0.15, 0, (i * Math.PI) / 3, ((i + 1) * Math.PI) / 3);
-      ctx.stroke();
-    }
-    // 몸 뒤의 은은한 빛
-    const glow = ctx.createRadialGradient(cx, cy, s * 0.1, cx, cy, s * 0.7);
-    glow.addColorStop(0, `${MYTHICS[tower.type].color}66`);
+    // 빛이 겹치는 곳은 더 밝아지게 더해서 그린다
+    ctx.globalCompositeOperation = 'lighter';
+    // 발밑에서 솟는 무지개 빛기둥
+    const pillar = ctx.createLinearGradient(0, feet, 0, feet - s * 1.4);
+    pillar.addColorStop(0, `hsla(${hue % 360}, 100%, 65%, ${0.3 + 0.15 * pulse})`);
+    pillar.addColorStop(0.5, `hsla(${(hue + 120) % 360}, 100%, 65%, ${0.12 + 0.08 * pulse})`);
+    pillar.addColorStop(1, `hsla(${(hue + 240) % 360}, 100%, 65%, 0)`);
+    ctx.fillStyle = pillar;
+    ctx.beginPath();
+    ctx.ellipse(cx, feet - s * 0.6, s * 0.4, s * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 몸 뒤의 빛 (신화마다 색이 다르다)
+    const glow = ctx.createRadialGradient(cx, cy, s * 0.1, cx, cy, s * 0.75);
+    glow.addColorStop(0, `${MYTHICS[tower.type].color}${pulse > 0.5 ? '88' : '66'}`);
     glow.addColorStop(1, `${MYTHICS[tower.type].color}00`);
     ctx.fillStyle = glow;
     ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+    // 고리의 뒤쪽 절반 (몸에 가려지는 쪽)
+    rainbowRing(cx, feet, s, hue, pulse, Math.PI, Math.PI * 2);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
     ctx.save();
@@ -474,14 +481,51 @@ export function createRenderer(canvas) {
     ctx.drawImage(mythics[tower.type], -s / 2, -s / 2, s, s);
     ctx.restore();
     if (tower.type === 'phoenix') drawEmbers(tower, cx, cy, s, unit, now);
-    // 반짝이: 무지개색 점이 몸 주위를 돈다
-    for (let i = 0; i < 4; i++) {
-      const a = now / 600 + (i * Math.PI) / 2;
-      const r = s * 0.5;
-      const size = Math.max(2, Math.round(unit * 1.5));
-      ctx.fillStyle = `hsl(${(now / 5 + i * 90) % 360}, 100%, 70%)`;
-      ctx.fillRect(Math.round(cx + Math.cos(a) * r - size / 2), Math.round(cy + Math.sin(a) * r * 0.6 - size / 2), size, size);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // 고리의 앞쪽 절반 (발 앞을 감싼다)
+    rainbowRing(cx, feet, s, hue, pulse, 0, Math.PI);
+    // 별빛: 십자 모양 반짝이가 깜빡이며 몸 주위를 돈다
+    for (let i = 0; i < 6; i++) {
+      const a = now / 700 + (i * Math.PI) / 3;
+      const twinkle = 0.5 + 0.5 * Math.sin(now / 140 + i * 1.7 + tower.id);
+      const len = Math.max(2, unit * (1.5 + 2.5 * twinkle));
+      const w = Math.max(1, unit * 0.8);
+      const x = Math.round(cx + Math.cos(a) * s * 0.55);
+      const y = Math.round(cy - s * 0.1 + Math.sin(a) * s * 0.35);
+      ctx.globalAlpha = 0.5 + 0.5 * twinkle;
+      ctx.fillStyle = `hsl(${(hue * 1.5 + i * 60) % 360}, 100%, 75%)`;
+      ctx.fillRect(x - len, y - w / 2, len * 2, w);
+      ctx.fillRect(x - w / 2, y - len, w, len * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - w, y - w, w * 2, w * 2);
     }
+    ctx.restore();
+  }
+
+  // 신화 발밑의 무지개 고리 [from, to] 구간. 넓고 흐린 선을 겹쳐 빛이 번지고, 가운데는 밝은 선이다
+  function rainbowRing(cx, cy, s, hue, pulse, from, to) {
+    const SEGMENTS = 24;
+    const step = (Math.PI * 2) / SEGMENTS;
+    // 번지는 빛 두 겹은 더해서 밝게, 가운데 고리는 색이 바래지 않게 보통으로 칠한다
+    const passes = [[0.24, 0.1 + 0.06 * pulse, 'lighter', 60], [0.14, 0.22 + 0.1 * pulse, 'lighter', 60], [0.065, 1, 'source-over', 58]];
+    for (const [width, alpha, mode, light] of passes) {
+      ctx.globalCompositeOperation = mode;
+      ctx.lineWidth = Math.max(2, s * width);
+      for (let a = from; a < to - 1e-6; a += step) {
+        ctx.strokeStyle = `hsla(${(hue + (a / (Math.PI * 2)) * 360) % 360}, 100%, ${light}%, ${alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, s * 0.48, s * 0.16, 0, a, a + step + 0.02);
+        ctx.stroke();
+      }
+    }
+    // 반짝이는 하얀 심지
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = Math.max(1, s * 0.012);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.25 + 0.35 * pulse})`;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, s * 0.48, s * 0.16, 0, from, to);
+    ctx.stroke();
   }
 
   // 불사조: 몸에서 불티가 피어오르고, 몸을 감싼 불빛이 일렁인다
