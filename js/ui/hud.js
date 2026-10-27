@@ -3,7 +3,14 @@ import { TOWERS, STAGE_NAMES } from '../data/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG, summonCost, emptyCells, upgradeCost, effectiveStats } from '../core/game.js';
 import { CARDS } from '../data/cards.js';
+import { ENEMIES } from '../data/enemies.js';
 import { bakeAnimals } from './pixel.js';
+
+// 이름 끝 글자에 받침이 있으면 '이', 없으면 '가'
+const subjectParticle = (word) => {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '이' : '가';
+};
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -15,6 +22,7 @@ export function createHud(root, handlers) {
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     cardPick: $('card-pick'), cardList: $('card-list'),
+    bossSub: root.querySelector('.boss-sub'), bossSkill: root.querySelector('.boss-skill'),
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
@@ -200,6 +208,12 @@ export function createHud(root, handlers) {
       renderTaken(game);
       // 보스 경고는 남은 시간 동안 보이고, 끝나기 직전에 서서히 사라진다
       el.bossBanner.hidden = !(running && game.bossWarning > 0);
+      if (game.bossWarningType) {
+        const boss = ENEMIES[game.bossWarningType];
+        setText(el.bossSub, `${boss.name}${subjectParticle(boss.name)} 다가온다…`);
+        el.bossSkill.hidden = !game.map.bossAbilities;
+        setText(el.bossSkill, `능력: ${boss.skill}`);
+      }
       el.bossBanner.classList.toggle('leaving', game.bossWarning > 0 && game.bossWarning < 0.4);
       const cost = summonCost(game);
       setText(summonCostEl, `🪙 ${cost}`);

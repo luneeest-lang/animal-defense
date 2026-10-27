@@ -32,7 +32,7 @@ export function createEnemy(id, type, waveNumber, hpMult = 1) {
 
 export function damageEnemy(e, amount, kind) {
   const mult = kind === 'direct' ? e.directMult ?? 1 : 1;
-  e.hp -= amount * mult;
+  e.hp -= amount * mult * (e.armor ?? 1);
 }
 
 export function applySlow(e, factor, duration) {
@@ -47,7 +47,7 @@ export function applyPoison(e, dps, duration) {
 
 // speedFactor: 카드(서리 바람) 같은 전체 이동 속도 배율
 export function stepEnemy(e, dt, speedFactor = 1) {
-  const speed = ENEMIES[e.type].speed * (e.speedMult ?? 1) * speedFactor;
+  const speed = ENEMIES[e.type].speed * (e.speedMult ?? 1) * (e.abilitySpeed ?? 1) * speedFactor;
   if (e.poison) {
     const t = Math.min(dt, e.poison.left);
     e.hp -= e.poison.dps * t;

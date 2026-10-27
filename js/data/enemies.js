@@ -8,10 +8,11 @@ export const ENEMIES = {
   splitter: { hp: 60, speed: 1.0, reward: 8, leak: 1, splitInto: { type: 'mini', count: 2 } },
   mini: { hp: 20, speed: 1.4, reward: 2, leak: 1 },
   // 보스: 5웨이브마다 다른 보스가 1마리 나온다 (boss는 첫 보스 붉은 악마)
-  boss: { name: '붉은 악마', boss: true, hp: 1500, speed: 0.5, reward: 200, leak: 5 },
-  slimeKing: { name: '슬라임 왕', boss: true, hp: 1600, speed: 0.5, reward: 200, leak: 5 },
-  lich: { name: '리치 왕', boss: true, hp: 1400, speed: 0.55, reward: 200, leak: 5 },
-  lavaGolem: { name: '용암 거인', boss: true, hp: 2000, speed: 0.4, reward: 200, leak: 5 },
-  shadowWolf: { name: '그림자 늑대', boss: true, hp: 1200, speed: 0.7, reward: 200, leak: 5 },
-  dragon: { name: '흑룡', boss: true, hp: 3500, speed: 0.45, reward: 300, leak: 5 },
+  // skill: 중급·고급에서 쓰는 고유 능력 설명
+  boss: { name: '붉은 악마', skill: '분노 — 체력이 절반 아래면 1.5배 빨라진다', boss: true, hp: 1500, speed: 0.5, reward: 200, leak: 5 },
+  slimeKing: { name: '슬라임 왕', skill: '분열 — 체력 75·50·25%마다 슬라임 2마리', boss: true, hp: 1600, speed: 0.5, reward: 200, leak: 5 },
+  lich: { name: '리치 왕', skill: '부하 소환 — 5초마다 해골 방패병', boss: true, hp: 1400, speed: 0.55, reward: 200, leak: 5 },
+  lavaGolem: { name: '용암 거인', skill: '단단함 — 받는 피해 30% 감소', boss: true, hp: 2000, speed: 0.4, reward: 200, leak: 5 },
+  shadowWolf: { name: '그림자 늑대', skill: '질주 — 6초마다 1.5초 동안 3배 빠르다', boss: true, hp: 1200, speed: 0.7, reward: 200, leak: 5 },
+  dragon: { name: '흑룡', skill: '포효 — 8초마다 주변 동물을 2초 기절', boss: true, hp: 3500, speed: 0.45, reward: 300, leak: 5 },
 };

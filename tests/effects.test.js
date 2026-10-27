@@ -103,3 +103,15 @@ test('hit 이벤트는 노란 데미지 숫자를 띄운다 (반올림, 최소 1
   assert.deepEqual(dmg.map((f) => f.text), ['8', '1']);
   assert.ok(!fx.active(LIFE.damage).some((f) => f.kind === 'damage'));
 });
+
+test('보스 능력은 경고 문구와 고리를 띄우고, 포효는 크게 화면을 흔든다', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'bossSkill', skill: 'rage', enemy: 'boss', x: 3, y: 3 }, 0);
+  assert.equal(fx.shake(0), 0);
+  fx.fromEvent({ type: 'bossSkill', skill: 'roar', enemy: 'dragon', x: 3, y: 3 }, 0);
+  const texts = fx.active(0).filter((f) => f.kind === 'text').map((f) => f.text);
+  assert.deepEqual(texts, ['분노!', '포효!']);
+  const rings = fx.active(0).filter((f) => f.kind === 'ring');
+  assert.deepEqual(rings.map((f) => f.reach), [0.8, 2.5]);
+  assert.ok(fx.shake(0) > 0);
+});

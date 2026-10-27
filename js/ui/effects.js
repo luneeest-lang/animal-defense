@@ -16,6 +16,8 @@ export const ENEMY_COLORS = {
   slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
+// 보스 능력 문구
+const SKILL_TEXT = { rage: '분노!', split: '분열!', summon: '소환!', dash: '질주!', roar: '포효!' };
 
 // 화면 효과 전용 난수. 소환 같은 게임 규칙의 무작위(Math.random)와 섞이지 않게 따로 쓴다.
 export function effectRng(seed) {
@@ -83,6 +85,11 @@ export function createEffects(rng = effectRng(Date.now())) {
           add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ff4d4d', big: true, t: now, life: LIFE.ring });
           shake(1, now);
         }
+      } else if (ev.type === 'bossSkill') {
+        const roar = ev.skill === 'roar';
+        add({ kind: 'text', x: ev.x, y: ev.y, text: SKILL_TEXT[ev.skill] ?? '!', big: roar, warn: true, t: now, life: LIFE.text });
+        add({ kind: 'ring', x: ev.x, y: ev.y, color: roar ? '#ff3b30' : '#ff9f43', big: roar, reach: roar ? 2.5 : 0.8, t: now, life: LIFE.ring });
+        if (roar) shake(0.6, now);
       } else if (ev.type === 'leak') {
         flashAt = now;
       }

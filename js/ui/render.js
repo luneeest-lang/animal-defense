@@ -1,6 +1,7 @@
 import { TOWERS, AURA_COLORS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells } from '../core/path.js';
+import { isBoss } from '../core/enemies.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
 import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes } from './pixel.js';
 import { createEffects } from './effects.js';
@@ -235,7 +236,7 @@ export function createRenderer(canvas) {
     ctx.globalAlpha = 1;
   }
 
-  function drawTower(tower, cell, selected, theme) {
+  function drawTower(tower, cell, selected, theme, stunned = false) {
     const x = tower.col * cell;
     const y = tower.row * cell;
     if (selected) {
@@ -258,9 +259,21 @@ export function createRenderer(canvas) {
       ctx.save();
       ctx.translate(cx, cy);
       if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+      if (stunned) ctx.globalAlpha *= 0.55;
       ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
       ctx.restore();
       if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
+      // 기절: 머리 위에서 별이 돈다
+      if (stunned) {
+        ctx.font = `${Math.round(cell * 0.32)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#000';
+        for (let i = 0; i < 3; i++) {
+          const a = now / 250 + (i * Math.PI * 2) / 3;
+          ctx.fillText('💫', cx + Math.cos(a) * s * 0.3, cy - s * 0.55 + Math.sin(a) * s * 0.08);
+        }
+      }
     });
     if (selected) {
       ctx.lineWidth = 3;
@@ -288,9 +301,11 @@ export function createRenderer(canvas) {
     const cy = Math.round(py * dpr) / dpr;
     const feet = cy + s * 0.32;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    // 웨이브가 높을수록 강해진 몬스터: 11웨이브부터 주황, 21웨이브부터 보라 기운
+    const tier = e.waveNumber >= 21 ? 'rgba(170, 80, 255, 0.55)' : e.waveNumber >= 11 ? 'rgba(255, 140, 40, 0.5)' : null;
+    ctx.fillStyle = tier && !isBoss(e.type) ? tier : 'rgba(0,0,0,0.22)';
     ctx.beginPath();
-    ctx.ellipse(cx, feet, s * 0.36, s * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, feet, s * (tier ? 0.42 : 0.36), s * (tier ? 0.13 : 0.1), 0, 0, Math.PI * 2);
     ctx.fill();
     if (e.poison || e.slow) {
       ctx.lineWidth = 2;
@@ -418,10 +433,10 @@ export function createRenderer(canvas) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = Math.max(3, size * 0.16);
-      ctx.strokeStyle = big ? '#5a0d00' : '#2a1c00';
+      ctx.strokeStyle = f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
       ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
       // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색
-      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : big ? '#ffe066' : '#ffd23f';
+      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
       ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
     });
   }
@@ -445,7 +460,7 @@ export function createRenderer(canvas) {
         ctx.strokeStyle = f.color;
         ctx.lineWidth = f.big ? 5 : 3;
         ctx.beginPath();
-        ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + (f.big ? 1.5 : 0.6) * k), 0, Math.PI * 2);
+        ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + (f.reach ?? (f.big ? 1.5 : 0.6)) * k), 0, Math.PI * 2);
         ctx.stroke();
       } else if (f.kind === 'particle') {
         // 파편은 화면 아래로 떨어져야 하므로 화면 좌표에서 움직인다
@@ -512,7 +527,7 @@ export function createRenderer(canvas) {
       if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
       // 끌고 있는 타워는 원래 자리에 흐리게 남긴다
       ctx.globalAlpha = view.drag?.towerId === t.id ? 0.35 : 1;
-      drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme);
+      drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme, t.stunUntil > game.time);
       ctx.globalAlpha = 1;
     }
     for (const e of game.enemies) drawEnemy(game, e, cell);

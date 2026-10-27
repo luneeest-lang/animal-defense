@@ -41,6 +41,7 @@ export function createGame(map, waves = buildWaves()) {
     upgrades: Object.fromEntries(Object.keys(TOWERS).map((id) => [id, 0])), // 동물별 강화 레벨
     clearedWave: 0, // 보너스를 이미 준 마지막 웨이브 번호
     bossWarning: 0,
+    bossWarningType: null, // 경고 중인 보스 종류 (경고 문구용)
     rng: Math.random, // 카드 뽑기·행운의 소환에 쓰는 무작위 (테스트에서 바꿔 끼운다)
     cardChoices: null, // 웨이브를 끝내고 고를 카드 id 3개. 고르는 동안 게임이 멈춘다
     cardsTaken: [],
@@ -186,10 +187,81 @@ export function upgradeAnimal(game, typeId) {
   return true;
 }
 
+// 보스 능력 상태 (중급·고급 맵에서만)
+const BOSS_SKILLS = {
+  boss: () => ({ rage: false }),
+  slimeKing: () => ({ nextSplit: 0.75 }),
+  lich: () => ({ timer: 5, summoned: 0 }),
+  lavaGolem: () => ({}),
+  shadowWolf: () => ({ timer: 6, dashLeft: 0 }),
+  dragon: () => ({ timer: 8 }),
+};
+
+// 몬스터를 길 위 dist 지점에 만든다. 맵 체력 배율과 보스 능력을 함께 정한다.
+export function spawnEnemy(game, type, waveNumber, dist = 0) {
+  const e = createEnemy(game.nextId++, type, waveNumber, game.map.hpMult ?? 1);
+  e.dist = dist;
+  if (game.map.bossAbilities && BOSS_SKILLS[type]) {
+    e.skill = BOSS_SKILLS[type]();
+    if (type === 'lavaGolem') e.armor = 0.7;
+  }
+  game.enemies.push(e);
+  return e;
+}
+
+const skillEvent = (game, e, skill) => game.events.push({ type: 'bossSkill', skill, enemy: e.type, ...positionAt(game.points, e.dist) });
+
+// 보스 고유 능력. 몬스터가 움직이기 전에 매 순간 확인한다.
+function updateBossSkills(game, dt) {
+  for (const e of [...game.enemies]) {
+    const s = e.skill;
+    if (!s || e.hp <= 0) continue;
+    if (e.type === 'boss' && !s.rage && e.hp <= e.maxHp / 2) {
+      s.rage = true;
+      e.abilitySpeed = 1.5;
+      skillEvent(game, e, 'rage');
+    } else if (e.type === 'slimeKing') {
+      while (s.nextSplit > 0 && e.hp <= e.maxHp * s.nextSplit) {
+        s.nextSplit -= 0.25;
+        for (let i = 0; i < 2; i++) spawnEnemy(game, 'mini', e.waveNumber, e.dist);
+        skillEvent(game, e, 'split');
+      }
+    } else if (e.type === 'lich') {
+      s.timer -= dt;
+      if (s.timer <= 0 && s.summoned < 6) {
+        s.timer += 5;
+        s.summoned += 1;
+        spawnEnemy(game, 'shield', e.waveNumber, e.dist);
+        skillEvent(game, e, 'summon');
+      }
+    } else if (e.type === 'shadowWolf') {
+      if (s.dashLeft > 0) s.dashLeft -= dt;
+      s.timer -= dt;
+      if (s.timer <= 0) {
+        s.timer += 6;
+        s.dashLeft = 1.5;
+        skillEvent(game, e, 'dash');
+      }
+      e.abilitySpeed = s.dashLeft > 0 ? 3 : 1;
+    } else if (e.type === 'dragon') {
+      s.timer -= dt;
+      if (s.timer <= 0) {
+        s.timer += 8;
+        const at = positionAt(game.points, e.dist);
+        for (const t of game.towers) {
+          if ((t.col + 0.5 - at.x) ** 2 + (t.row + 0.5 - at.y) ** 2 <= 2.5 ** 2) t.stunUntil = game.time + 2;
+        }
+        skillEvent(game, e, 'roar');
+      }
+    }
+  }
+}
+
 function startWave(game) {
   game.waveNumber += 1;
   const wave = game.waves[game.waveNumber - 1];
   game.bossWarning = isBossWave(wave) ? BOSS_INTRO : 0;
+  game.bossWarningType = isBossWave(wave) ? wave.groups[0].type : null;
   for (const s of spawnSchedule(wave)) {
     game.spawnQueue.push({ at: game.time + s.at, type: s.type, wave: game.waveNumber });
   }
@@ -207,6 +279,8 @@ export function callNextWave(game) {
 function fireTowers(game, dt) {
   const targets = game.enemies.filter((e) => e.hp > 0 && e.dist < game.length);
   for (const tower of game.towers) {
+    // 흑룡의 포효에 기절한 동물은 쏘지 않는다
+    if (tower.stunUntil > game.time) continue;
     tower.cooldown -= dt;
     if (tower.cooldown > 0) continue;
     const stats = effectiveStats(game, tower);
@@ -245,9 +319,8 @@ function resolveEnemies(game) {
       game.events.push({ type: 'death', enemy: e.type, reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
         for (let i = 0; i < def.splitInto.count; i++) {
-          const child = createEnemy(game.nextId++, def.splitInto.type, e.waveNumber, game.map.hpMult ?? 1);
-          child.dist = e.dist;
-          born.push(child);
+          born.push(createEnemy(game.nextId++, def.splitInto.type, e.waveNumber, game.map.hpMult ?? 1));
+          born[born.length - 1].dist = e.dist;
         }
       }
     } else if (e.dist >= game.length) {
@@ -269,8 +342,9 @@ function substep(game, dt) {
   }
   while (game.spawnQueue.length && game.spawnQueue[0].at <= game.time) {
     const s = game.spawnQueue.shift();
-    game.enemies.push(createEnemy(game.nextId++, s.type, s.wave, game.map.hpMult ?? 1));
+    spawnEnemy(game, s.type, s.wave);
   }
+  updateBossSkills(game, dt);
   for (const e of game.enemies) stepEnemy(e, dt, game.mods.enemySpeed);
   fireTowers(game, dt);
   resolveEnemies(game);

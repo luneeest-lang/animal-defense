@@ -129,6 +129,7 @@ button { font: inherit; color: inherit; }
   text-shadow: 0 0 10px rgba(255, 0, 0, 0.75), 0 0 34px #6b0000, 0 5px 0 #2a0000;
   animation: boss-flicker 1.7s steps(1) infinite;
 }
+.boss-skill { margin-top: 0.5em; color: #ffb3a3; font-size: clamp(12px, 3vw, 16px); opacity: 0.9; }
 .boss-sub { margin-top: 0.4em; color: #e3b0b0; font-size: clamp(13px, 3.4vw, 20px); letter-spacing: 0.35em; opacity: 0.85; }
 @keyframes boss-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes boss-heartbeat { 0%, 100% { filter: brightness(0.85); } 12% { filter: brightness(1.15); } 24% { filter: brightness(0.9); } 36% { filter: brightness(1.1); } }
