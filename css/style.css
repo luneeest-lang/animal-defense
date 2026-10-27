@@ -58,10 +58,15 @@ button { font: inherit; color: inherit; }
 .ad-slot { min-height: 0; margin-top: 16px; }
 
 /* 게임 화면 */
+/* 게임 화면은 화면 높이에 딱 맞춘다. 가운데 맵 자리(stage)의 남는 공간에 render.js가 맵을 비율대로 맞춘다 */
 #screen-game {
   display: grid;
+  height: 100vh;
+  height: 100dvh;
   grid-template-areas: "bar" "stage" "panel";
-  justify-content: center;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
 }
 /* 상단 바는 칸 크기가 고정된 격자다. 버튼 글자(진행 중 / 바로 시작)나 숫자가 바뀌어도 아무것도 움직이지 않는다.
    기본(휴대폰): 윗줄 생명·골드·웨이브, 아랫줄 웨이브 버튼·배속·일시정지·메뉴 */
@@ -103,9 +108,11 @@ button { font: inherit; color: inherit; }
 #stage {
   grid-area: stage;
   position: relative;
-  width: min(100vw, calc((100dvh - 150px) * 1.6), 1100px);
+  min-width: 0; min-height: 0;
+  display: grid; place-items: center;
+  overflow: hidden;
 }
-#board { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; }
+#board { display: block; touch-action: none; }
 
 #pause-label {
   position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
@@ -212,14 +219,12 @@ button { font: inherit; color: inherit; }
 
 /* 세로 화면: 맵을 90도 돌려 세로로 길게 보여준다(그리기는 render.js, 터치 좌표는 input.js) */
 @media (orientation: portrait) {
-  #board { aspect-ratio: 10 / 16; }
-  #stage { width: min(100vw, calc((100dvh - 176px) * 0.625), 560px); }
   #infobar { padding: 4px 6px; }
   .stat { font-size: 0.92rem; }
   #btn-wave { font-size: 0.92rem; }
 }
 
-@media (orientation: landscape) and (min-width: 700px) {
+@media (orientation: landscape) and (min-width: 560px) {
   /* 넓은 화면은 한 줄: 생명·골드·웨이브 | 웨이브 버튼(폭 고정) | 배속 | 일시정지 | 메뉴 */
   #infobar {
     grid-template-columns: minmax(0, 1fr) 15.5em 44px 44px 44px;
@@ -229,14 +234,30 @@ button { font: inherit; color: inherit; }
   #stats { grid-template-columns: repeat(3, max-content); gap: 8px; }
   #screen-game {
     grid-template-areas: "bar bar" "stage panel";
-    grid-template-columns: auto var(--panel-w);
+    grid-template-columns: minmax(0, 1fr) var(--panel-w);
+    grid-template-rows: auto minmax(0, 1fr);
   }
-  #stage { width: min(calc(100vw - var(--panel-w)), calc((100dvh - var(--bar-h)) * 1.6), 1100px); }
-  #panel { flex-direction: column; justify-content: flex-start; overflow-y: auto; max-height: calc(100dvh - var(--bar-h)); }
+  /* 세로 한 줄로만 쌓는다(줄바꿈하면 강화 버튼이 오른쪽 화면 밖으로 밀려 잘린다). 넘치면 스크롤 */
+  #panel { flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; overflow-y: auto; min-height: 0; }
   .summon-btn { width: 100%; }
   .upgrades { grid-template-columns: 1fr; flex: none; width: 100%; }
   .upgrade-btn { flex-direction: row; justify-content: flex-start; gap: 6px; padding: 4px 6px; font-size: 0.75rem; }
   .upgrade-btn .up-text { align-items: flex-start; }
   .upgrade-btn .up-name { display: block; }
   #panel .hint { flex-basis: auto; width: 100%; text-align: left; }
+}
+
+/* 가로로 든 휴대폰(낮은 화면): 패널과 상단 바를 촘촘하게 해서 맵 자리를 넓힌다 */
+@media (orientation: landscape) and (min-width: 560px) and (max-height: 500px) {
+  :root { --panel-w: 124px; }
+  #infobar { grid-template-columns: minmax(0, 1fr) 12.5em 40px 40px 40px; grid-template-rows: 34px; padding: 4px 6px; }
+  #infobar .btn { font-size: 0.85rem; }
+  .stat { font-size: 0.85rem; }
+  #panel { gap: 4px; padding: 4px 6px; }
+  .summon-btn { padding: 4px 8px; border-radius: 12px; }
+  .summon-btn .label { font-size: 0.95rem; }
+  .upgrade-btn { padding: 2px 6px; }
+  .upgrade-btn .icon { width: 22px; height: 22px; background-size: 22px 22px; }
+  .upgrade-btn .up-name { display: none; }
+  #panel .hint { font-size: 0.65rem; }
 }

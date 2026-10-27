@@ -2,6 +2,8 @@ import { TOWERS, AURA_COLORS } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { positionAt, pathCells } from '../core/path.js';
 import { isBoss } from '../core/enemies.js';
+import { fitBoard } from './layout.js';
+import { reliefCells } from './relief.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
 import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes } from './pixel.js';
 import { createEffects } from './effects.js';
@@ -21,6 +23,13 @@ const MOUNTAIN_GROUND_WEIGHTS = [9, 3, 3, 2, 2];
 
 // 칸 좌표로 정해지는 의사 난수. 같은 칸은 늘 같은 무늬가 나온다.
 const cellHash = (c, r) => (((c * 73856093) ^ (r * 19349663)) >>> 0);
+
+// 단차 블록의 앞면 벽 색. wall: 벽 높이(칸 비율), face: 벽, stripe: 벽 무늬, top: 벽 윗단, low: 낮은 칸을 살짝 어둡게
+const RELIEF = {
+  mountain: { wall: 0.4, face: '#544940', stripe: '#3d342d', top: '#a99a88', low: 0.14, strata: '#665a50' },
+  forest: { wall: 0.4, face: '#6b4529', stripe: '#4d2f1a', top: '#5c9a3a', low: 0.14, grass: '#3d7228', strata: '#7d5535' },
+  sea: { wall: 0.24, face: '#6e4522', stripe: '#4d2f14', top: '#a8763f', low: 0, post: '#36210e' },
+};
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
@@ -67,10 +76,15 @@ export function createRenderer(canvas) {
     });
   }
 
+  // 맵 자리(부모 요소)의 크기를 재서 맵을 비율대로 맞춘다. 브라우저마다 다른 CSS 단위 지원에 기대지 않는다
   function resize() {
     const dpr = window.devicePixelRatio || 1;
-    width = canvas.clientWidth;
-    height = canvas.clientHeight;
+    const box = canvas.parentElement;
+    const fit = fitBoard(box.clientWidth, box.clientHeight);
+    canvas.style.width = `${fit.width}px`;
+    canvas.style.height = `${fit.height}px`;
+    width = fit.width;
+    height = fit.height;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -114,7 +128,8 @@ export function createRenderer(canvas) {
         drawTile(frames[0], c, r, cell);
       }
     }
-    for (const [c, r] of map.blocked) drawUprightTile(tiles.mountainBoulder[0][0], c, r, cell);
+    drawRelief(map, cell);
+    for (const [c, r] of map.blocked) drawObject(tiles.mountainBoulder[0][0], c, r, cell);
   }
 
   function drawForest(map, path, cell) {
@@ -126,7 +141,8 @@ export function createRenderer(canvas) {
         drawTile(frames[0], c, r, cell);
       }
     }
-    for (const [c, r] of map.blocked) drawUprightTile(tiles.forestTree[0][0], c, r, cell);
+    drawRelief(map, cell);
+    for (const [c, r] of map.blocked) drawObject(tiles.forestTree[0][0], c, r, cell);
   }
 
   function drawSea(map, path, cell, now) {
@@ -143,7 +159,124 @@ export function createRenderer(canvas) {
         }
       }
     }
-    for (const [c, r] of map.blocked) drawUprightTile(tiles.seaReef[0][0], c, r, cell);
+    drawRelief(map, cell);
+    for (const [c, r] of map.blocked) drawObject(tiles.seaReef[0][0], c, r, cell);
+  }
+
+  // 화면 좌표(돌리기 전, 흔들림만 적용)로 그린다
+  function inScreen(draw) {
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, shakeX * dpr, shakeY * dpr);
+    draw();
+    ctx.restore();
+  }
+
+  // 발밑 그림자. 빛이 왼쪽 위에서 오므로 오른쪽 아래로 살짝 비낀다 (화면 좌표)
+  function dropShadow(sx, sy, rx, ry, alpha = 0.3) {
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(sx + rx * 0.15, sy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 바위·나무·암초: 그림자를 깔고 세워 그린다
+  function drawObject(img, c, r, cell) {
+    upright((c + 0.5) * cell, (r + 0.5) * cell, (sx, sy) => dropShadow(sx, sy + cell * 0.36, cell * 0.4, cell * 0.12));
+    drawUprightTile(img, c, r, cell);
+  }
+
+  // 단차 블록: 높은 칸의 앞면 벽, 옆 그림자, 모서리 빛을 화면 기준으로 그린다
+  function drawRelief(map, cell) {
+    const look = RELIEF[map.theme] ?? RELIEF.mountain;
+    const u = cell / 16; // 도트 한 칸
+    const wallH = Math.round(cell * look.wall / u) * u;
+    inScreen(() => {
+      for (const k of reliefCells(map, rotated)) {
+        const x0 = Math.floor(k.i * cell);
+        const y0 = Math.floor(k.j * cell);
+        const w = Math.floor((k.i + 1) * cell) - x0;
+        const h = Math.floor((k.j + 1) * cell) - y0;
+        if (!k.high && look.low) {
+          ctx.fillStyle = `rgba(0,0,0,${look.low})`;
+          ctx.fillRect(x0, y0, w, h);
+        }
+        if (k.shadeLeft) {
+          const g = ctx.createLinearGradient(x0, 0, x0 + cell * 0.28, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0.42)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x0, y0, cell * 0.28, h);
+        }
+        if (k.edgeRight) {
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(x0 + w - u * 2, y0, u * 2, h);
+        }
+        if (k.lipBottom) {
+          ctx.fillStyle = 'rgba(0,0,0,0.2)';
+          ctx.fillRect(x0, y0 + h - u, w, u);
+        }
+        if (k.wallTop) {
+          // 벽 아래로 떨어지는 그림자
+          const g = ctx.createLinearGradient(0, y0 + wallH, 0, y0 + wallH + cell * 0.26);
+          g.addColorStop(0, 'rgba(0,0,0,0.45)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x0, y0 + wallH, w, cell * 0.26);
+          // 벽 면과 세로 무늬 (칸마다 조금씩 다르게)
+          ctx.fillStyle = look.face;
+          ctx.fillRect(x0, y0, w, wallH);
+          ctx.fillStyle = look.stripe;
+          const hash = cellHash(k.i, k.j);
+          for (let n = 0; n < 16; n += 3) {
+            const len = 0.45 + ((hash >> n) & 3) * 0.15;
+            ctx.fillRect(x0 + (n + ((hash >> (n + 2)) & 1)) * u, y0 + wallH * (1 - len), u, wallH * len);
+          }
+          // 지층: 벽 가운데쯤 밝은 가로줄이 끊겨 가며 지나간다
+          if (look.strata) {
+            ctx.fillStyle = look.strata;
+            for (let n = 0; n < 16; n += 4) if ((hash >> (n + 1)) & 1) ctx.fillRect(x0 + n * u, y0 + Math.round(wallH * 0.55 / u) * u, u * 3, u);
+          }
+          // 바다 다리: 기둥
+          if (look.post) {
+            ctx.fillStyle = look.post;
+            ctx.fillRect(x0 + 3 * u, y0, 2 * u, wallH + u * 2);
+            ctx.fillRect(x0 + 11 * u, y0, 2 * u, wallH + u * 2);
+          }
+          // 벽 윗단(모서리) 밝은 띠, 숲은 풀이 늘어진다
+          ctx.fillStyle = look.top;
+          ctx.fillRect(x0, y0, w, u * 2);
+          if (look.grass) {
+            ctx.fillStyle = look.grass;
+            for (let n = 0; n < 16; n += 2) if ((hash >> n) & 1) ctx.fillRect(x0 + n * u, y0 + u * 2, u, u * (1 + ((hash >> (n + 1)) & 1)));
+          }
+          // 벽 아래 어두운 접지선
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.fillRect(x0, y0 + wallH - u, w, u);
+        }
+        if (k.rimTop) {
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.fillRect(x0, y0, w, u);
+        }
+        if (k.rimLeft) {
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fillRect(x0, y0, u, h);
+        }
+        if (k.rimBottom) {
+          ctx.fillStyle = 'rgba(0,0,0,0.25)';
+          ctx.fillRect(x0, y0 + h - u, w, u);
+        }
+      }
+      // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게
+      const W = (rotated ? map.rows : map.cols) * cell;
+      const H = (rotated ? map.cols : map.rows) * cell;
+      const g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, 'rgba(255,240,200,0.07)');
+      g.addColorStop(0.5, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,30,0.16)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    });
   }
 
   function drawBoard(game, cell, now) {
@@ -254,6 +387,7 @@ export function createRenderer(canvas) {
       const cy = Math.round(py * dpr) / dpr;
       const awakened = tower.level >= AURA_LEVEL;
       const now = performance.now();
+      if (theme !== 'sea') dropShadow(cx, cy + s * 0.38, s * 0.36, s * 0.11, 0.32);
       if (awakened) drawAuraGlow(tower, cx, cy, s, now);
       ctx.imageSmoothingEnabled = false;
       ctx.save();

@@ -187,7 +187,7 @@ window.addEventListener('resize', () => {
   }
   lastWidth = window.innerWidth;
 });
-new ResizeObserver(() => renderer.resize()).observe(document.getElementById('board'));
+new ResizeObserver(() => renderer.resize()).observe(document.getElementById('stage'));
 
 hud.showSaveWarning(!writeSave(store, save));
 hud.showMenu(save);
