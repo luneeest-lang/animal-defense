@@ -14,6 +14,10 @@ const subjectParticle = (word) => {
   return code >= 0 && code <= 11171 && code % 28 !== 0 ? '이' : '가';
 };
 
+// 소리 버튼: 전체 켜기 → 효과음만 → 끄기
+const SOUND_ICON = { all: '🔊', sfx: '🔉', off: '🔇' };
+const SOUND_TITLE = { all: '소리: 효과음과 배경음', sfx: '소리: 효과음만', off: '소리 끄기' };
+
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
 export function createHud(root, handlers) {
@@ -21,6 +25,7 @@ export function createHud(root, handlers) {
   const el = {
     menu: $('screen-menu'), game: $('screen-game'), maps: $('map-list'), warning: $('save-warning'),
     lives: $('stat-lives'), gold: $('stat-gold'), wave: $('stat-wave'),
+    btnContinue: $('btn-continue'), btnSound: $('btn-sound'),
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     cardPick: $('card-pick'), cardList: $('card-list'),
@@ -156,6 +161,8 @@ export function createHud(root, handlers) {
     mythicBtn.disabled = game.status !== 'running';
   }
 
+  el.btnContinue.addEventListener('click', () => handlers.onContinue());
+  el.btnSound.addEventListener('click', () => handlers.onSound());
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
   el.btnSpeed.addEventListener('click', () => handlers.onSpeed());
   el.btnPause.addEventListener('click', () => handlers.onPause());
@@ -197,10 +204,13 @@ export function createHud(root, handlers) {
   }
 
   return {
-    showMenu(save) {
+    // run: 이어할 게임 { name, place, wave } (없으면 null)
+    showMenu(save, run = null) {
       el.game.hidden = true;
       el.result.hidden = true;
       el.menu.hidden = false;
+      el.btnContinue.hidden = !run;
+      if (run) el.btnContinue.innerHTML = `<span class="c-title">▶ 이어하기</span><span class="c-sub">${run.name} · ${run.place} · 웨이브 ${run.wave}/${WAVE_COUNT}</span>`;
       el.maps.replaceChildren(...MAPS.map((map, i) => {
         const locked = i >= save.unlocked;
         const rec = save.records[map.id];
@@ -259,6 +269,8 @@ export function createHud(root, handlers) {
         el.btnWave.disabled = true;
       }
       setText(el.btnSpeed, `${ui.speed}x`);
+      setText(el.btnSound, SOUND_ICON[ui.sound] ?? '🔊');
+      el.btnSound.title = SOUND_TITLE[ui.sound] ?? '';
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused || !!game.cardChoices;
       renderCards(game);

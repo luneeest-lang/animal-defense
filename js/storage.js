@@ -2,6 +2,8 @@ import { MAPS } from './data/maps.js';
 import { WAVE_COUNT } from './core/waves.js';
 
 export const SAVE_KEY = 'td-save-v1';
+// 진행 중인 한 판(이어하기). 내용 검사는 core/snapshot.js의 restoreGame이 한다
+export const RUN_KEY = 'td-run-v1';
 
 export function defaultSave() {
   return { version: 1, unlocked: 1, records: {} };
@@ -67,4 +69,32 @@ export function recordResult(save, mapId, { wave, lives, won }) {
   };
   if (won) next.unlocked = Math.max(next.unlocked, Math.min(index + 2, MAPS.length));
   return next;
+}
+
+export function loadRun(store) {
+  try {
+    const raw = store.getItem(RUN_KEY);
+    if (raw === null || raw === undefined) return null;
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeRun(store, run) {
+  try {
+    store.setItem(RUN_KEY, JSON.stringify(run));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearRun(store) {
+  try {
+    store.removeItem(RUN_KEY);
+  } catch {
+    // 저장소가 막혀 있으면 지울 것도 없다
+  }
 }

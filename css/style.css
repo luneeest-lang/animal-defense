@@ -79,7 +79,11 @@ button { font: inherit; color: inherit; }
   align-items: center; gap: 4px 6px;
   padding: 6px; background: var(--bar);
 }
-#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; min-width: 0; }
+#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 34px; align-items: center; min-width: 0; }
+.sound-btn {
+  width: 32px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: #2c3f2c;
+  font-size: 1rem; line-height: 1; cursor: pointer; touch-action: manipulation;
+}
 #btn-wave { grid-area: wave; }
 #btn-speed { grid-area: speed; }
 #btn-pause { grid-area: pause; }
@@ -231,7 +235,7 @@ button { font: inherit; color: inherit; }
     grid-template-rows: 40px;
     grid-template-areas: "stats wave speed pause menu";
   }
-  #stats { grid-template-columns: repeat(3, max-content); gap: 8px; }
+  #stats { grid-template-columns: repeat(3, max-content) 34px; gap: 8px; }
   #screen-game {
     grid-template-areas: "bar bar" "stage panel";
     grid-template-columns: minmax(0, 1fr) var(--panel-w);
@@ -304,3 +308,12 @@ button { font: inherit; color: inherit; }
 .mat.have .mat-ok { color: #6bff8a; }
 .plus { opacity: 0.6; }
 .m-make { min-height: 36px; padding: 4px 10px; }
+
+/* 메뉴의 이어하기 버튼 */
+.continue-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; margin-bottom: 12px;
+  padding: 12px 16px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-text);
+  cursor: pointer; touch-action: manipulation; box-shadow: 0 3px 0 #b07d00;
+}
+.continue-btn .c-title { font-size: 1.2rem; font-weight: 800; }
+.continue-btn .c-sub { font-size: 0.85rem; font-weight: 600; }
