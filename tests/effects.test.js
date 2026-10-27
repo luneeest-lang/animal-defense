@@ -49,12 +49,12 @@ test('소환은 고리와 반짝임, 합성은 성장 문구, 각성은 각성 �
   fx.summon(3, 3, 0);
   let kinds = fx.active(0).map((f) => f.kind);
   assert.ok(kinds.includes('ring') && kinds.includes('particle'));
-  fx.merge(3, 3, 1, 10);
-  assert.deepEqual(fx.active(10).filter((f) => f.kind === 'text').map((f) => f.text), ['성장!']);
+  fx.merge(3, 3, 1, 10, '펭귄');
+  assert.deepEqual(fx.active(10).filter((f) => f.kind === 'text').map((f) => f.text), ['성장! 펭귄']);
   assert.equal(fx.shake(10), 0);
-  fx.merge(4, 4, 3, 20);
+  fx.merge(4, 4, 3, 20, '뱀');
   const texts = fx.active(20).filter((f) => f.kind === 'text');
-  assert.deepEqual(texts.map((f) => [f.text, f.big]), [['성장!', false], ['각성!', true]]);
+  assert.deepEqual(texts.map((f) => [f.text, f.big]), [['성장! 펭귄', false], ['각성! 뱀', true]]);
   assert.ok(fx.shake(20) > 0);
 });
 

@@ -7,8 +7,11 @@ export const MAX_LEVEL = 3;
 
 // 합성은 타워 두 개를 하나로 줄이므로, 한 단계마다 공격력을 2배보다 크게 올린다
 const LEVEL_DAMAGE = 2.2;
+// 동물별 강화(골드) 1레벨마다: 공격력·독 피해 +20%, 감속 시간 +10%
+const UPGRADE_DAMAGE = 0.2;
+const UPGRADE_SLOW_TIME = 0.1;
 
-export function towerStats(type, level) {
+export function towerStats(type, level, upgrade = 0) {
   const base = TOWERS[type].base;
   const stats = {
     ...base,
@@ -18,6 +21,11 @@ export function towerStats(type, level) {
   };
   if (base.poisonDps !== undefined) stats.poisonDps = base.poisonDps * LEVEL_DAMAGE ** level;
   if (base.slowFactor !== undefined) stats.slowFactor = Math.max(0.3, base.slowFactor * 0.85 ** level);
+  if (upgrade > 0) {
+    stats.damage *= 1 + UPGRADE_DAMAGE * upgrade;
+    if (stats.poisonDps !== undefined) stats.poisonDps *= 1 + UPGRADE_DAMAGE * upgrade;
+    if (stats.slowDuration !== undefined) stats.slowDuration *= 1 + UPGRADE_SLOW_TIME * upgrade;
+  }
   return stats;
 }
 
@@ -36,8 +44,8 @@ export function findTarget(tower, enemies, points) {
   return best;
 }
 
-export function fire(tower, target, enemies, points) {
-  const stats = towerStats(tower.type, tower.level);
+export function fire(tower, target, enemies, points, upgrade = 0) {
+  const stats = towerStats(tower.type, tower.level, upgrade);
   const kind = TOWERS[tower.type].kind;
   const bossBonus = stats.bossMult !== undefined && target.type === 'boss' ? stats.bossMult : 1;
   let hit = [target];

@@ -5,7 +5,7 @@ import { pathLength, pathCells as pathCellsOf } from '../js/core/path.js';
 import { createEnemy } from '../js/core/enemies.js';
 import {
   CONFIG, createGame, addTower, summonCost, emptyCells, summonTower, canMerge, mergeTowers,
-  sellTower, callNextWave, step,
+  sellTower, callNextWave, step, upgradeCost, upgradeAnimal,
 } from '../js/core/game.js';
 
 const meadow = MAPS[0];
@@ -80,7 +80,7 @@ test('addTower는 길, 장애물, 격자 밖, 이미 있는 칸에 놓지 않는
   assert.equal(g.towers.length, 1);
 });
 
-test('같은 동물, 같은 단계끼리만 합성되고 놓인 자리의 타워가 성장한다', () => {
+test('같은 동물, 같은 단계끼리만 합성되고 놓인 자리의 타워가 성장한다 (결과 동물은 rng로 정해진다)', () => {
   const g = createGame(meadow);
   const a = addTower(g, 'squirrel', 5, 4);
   const b = addTower(g, 'squirrel', 6, 4);
@@ -93,11 +93,11 @@ test('같은 동물, 같은 단계끼리만 합성되고 놓인 자리의 타워
   assert.equal(canMerge(g, a.id, a.id), false);
   assert.equal(canMerge(g, a.id, 9999), false);
   assert.equal(mergeTowers(g, a.id, c.id), false);
-  assert.equal(mergeTowers(g, a.id, b.id), true);
-  assert.deepEqual([b.level, b.invested, b.col, b.row], [1, 105, 6, 4]);
+  assert.equal(mergeTowers(g, a.id, b.id, seq(0)), true);
+  assert.deepEqual([b.type, b.level, b.invested, b.col, b.row], ['squirrel', 1, 105, 6, 4]);
   assert.ok(!g.towers.includes(a));
   assert.equal(g.towers.length, 3);
-  assert.equal(mergeTowers(g, d.id, b.id), true);
+  assert.equal(mergeTowers(g, d.id, b.id, seq(0)), true);
   assert.equal(b.level, 2);
 });
 
@@ -401,4 +401,52 @@ test('맵의 체력 배율이 스폰되는 몬스터와 분열체 새끼에 적�
   g2.enemies[0].hp = 0;
   step(g2, 0.05);
   assert.deepEqual(g2.enemies.map((e) => e.maxHp), [createEnemy(0, 'mini', 1).maxHp * 2, createEnemy(0, 'mini', 1).maxHp * 2]);
+});
+
+test('합성 결과는 5종 중 무작위 동물의 다음 단계다', () => {
+  const g = createGame(meadow);
+  const a = addTower(g, 'squirrel', 5, 4);
+  const b = addTower(g, 'squirrel', 6, 4);
+  assert.equal(mergeTowers(g, a.id, b.id, seq(0.5)), true);
+  assert.deepEqual([b.type, b.level], ['penguin', 1]);
+  const c = addTower(g, 'eagle', 9, 4, 2);
+  const d = addTower(g, 'eagle', 10, 4, 2);
+  mergeTowers(g, c.id, d.id, seq(0.999999));
+  assert.deepEqual([d.type, d.level], ['snake', 3]);
+});
+
+test('동물별 강화: 비용은 80부터 40씩 오르고 최대 Lv.5, 골드가 모자라면 거절된다', () => {
+  const g = createGame(meadow);
+  assert.deepEqual(CONFIG.upgradeCosts, [80, 120, 160, 200, 240]);
+  assert.deepEqual(g.upgrades, { squirrel: 0, elephant: 0, penguin: 0, eagle: 0, snake: 0 });
+  assert.equal(upgradeCost(g, 'squirrel'), 80);
+  g.gold = 79;
+  assert.equal(upgradeAnimal(g, 'squirrel'), false);
+  assert.deepEqual([g.gold, g.upgrades.squirrel], [79, 0]);
+  g.gold = 10000;
+  for (const cost of [80, 120, 160, 200, 240]) {
+    const before = g.gold;
+    assert.equal(upgradeAnimal(g, 'squirrel'), true);
+    assert.equal(before - g.gold, cost);
+  }
+  assert.equal(g.upgrades.squirrel, 5);
+  assert.equal(upgradeCost(g, 'squirrel'), null);
+  const gold = g.gold;
+  assert.equal(upgradeAnimal(g, 'squirrel'), false);
+  assert.equal(g.gold, gold);
+  assert.equal(upgradeAnimal(g, 'nope'), false);
+  g.status = 'lost';
+  assert.equal(upgradeAnimal(g, 'eagle'), false);
+});
+
+test('강화는 이미 놓인 동물에도 바로 적용된다 (Lv.2면 공격력 1.4배)', () => {
+  const g = createGame(meadow);
+  g.countdown = null;
+  addTower(g, 'squirrel', 5, 3);
+  g.gold = 1000;
+  upgradeAnimal(g, 'squirrel');
+  upgradeAnimal(g, 'squirrel');
+  const e = inject(g, 'tank', 5);
+  step(g, 0.05);
+  assert.ok(Math.abs((e.maxHp - e.hp) - 8 * 1.4) < 1e-9, String(e.maxHp - e.hp));
 });

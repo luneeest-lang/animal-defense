@@ -138,7 +138,7 @@ button { font: inherit; color: inherit; }
   #boss-banner, .boss-inner, .boss-text { animation: none; }
 }
 
-#panel { grid-area: panel; display: flex; align-items: center; gap: 10px; padding: 6px 10px; justify-content: center; background: var(--bar); }
+#panel { grid-area: panel; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px; justify-content: center; background: var(--bar); }
 .summon-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   min-width: 96px; padding: 8px 14px; border: 0; border-radius: 14px;
@@ -149,10 +149,21 @@ button { font: inherit; color: inherit; }
 .summon-btn .cost { font-size: 0.85rem; font-weight: 700; }
 .summon-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b07d00; }
 .summon-btn:disabled { opacity: 0.45; cursor: default; }
-.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.72rem; opacity: 0.85; }
-.legend-item { display: inline-flex; align-items: center; gap: 3px; }
-.legend .icon { width: 24px; height: 24px; background-size: 24px 24px; background-repeat: no-repeat; image-rendering: pixelated; }
-.legend .hint { flex-basis: 100%; margin: 2px 0 0; opacity: 0.75; }
+/* 동물별 강화 버튼 5개. 칸 크기가 고정이라 레벨·비용 숫자가 바뀌어도 움직이지 않는다 */
+.upgrades { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; min-width: 0; flex: 1; }
+.upgrade-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 0; padding: 3px 2px; border: 0; border-radius: 10px;
+  background: var(--card); cursor: pointer; touch-action: manipulation;
+  font-size: 0.68rem; line-height: 1.15; font-variant-numeric: tabular-nums;
+}
+.upgrade-btn:disabled { opacity: 0.5; cursor: default; }
+.upgrade-btn .icon { width: 26px; height: 26px; background-size: 26px 26px; background-repeat: no-repeat; image-rendering: pixelated; }
+.upgrade-btn .up-text { display: flex; flex-direction: column; align-items: center; }
+.upgrade-btn .up-name { display: none; }
+.upgrade-btn .up-level { font-weight: 800; }
+.upgrade-btn .up-cost { color: var(--accent); font-weight: 700; }
+#panel .hint { flex-basis: 100%; margin: 2px 0 0; font-size: 0.72rem; opacity: 0.75; text-align: center; }
 
 #tower-info {
   position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
@@ -198,6 +209,9 @@ button { font: inherit; color: inherit; }
   #stage { width: min(calc(100vw - var(--panel-w)), calc((100dvh - var(--bar-h)) * 1.6), 1100px); }
   #panel { flex-direction: column; justify-content: flex-start; overflow-y: auto; max-height: calc(100dvh - var(--bar-h)); }
   .summon-btn { width: 100%; }
-  .legend { flex-direction: column; align-items: flex-start; }
-  .legend .hint { flex-basis: auto; width: 100%; }
+  .upgrades { grid-template-columns: 1fr; flex: none; width: 100%; }
+  .upgrade-btn { flex-direction: row; justify-content: flex-start; gap: 6px; padding: 4px 6px; font-size: 0.75rem; }
+  .upgrade-btn .up-text { align-items: flex-start; }
+  .upgrade-btn .up-name { display: block; }
+  #panel .hint { flex-basis: auto; width: 100%; text-align: left; }
 }

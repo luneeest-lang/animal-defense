@@ -90,3 +90,17 @@ test('findTarget은 이미 죽은(hp <= 0) 적을 무시한다', () => {
   assert.equal(findTarget(tower('squirrel'), [dead, alive], points), alive);
   assert.equal(findTarget(tower('squirrel'), [dead], points), null);
 });
+
+test('강화 레벨마다 공격력과 독 피해 +20%, 펭귄 감속 시간 +10% (사거리·속도는 그대로)', () => {
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  for (const type of Object.keys(TOWERS)) {
+    const base = towerStats(type, 1, 0);
+    const up = towerStats(type, 1, 3);
+    assert.ok(near(up.damage, base.damage * 1.6), type);
+    assert.equal(up.range, base.range);
+    assert.equal(up.cooldown, base.cooldown);
+    if (base.poisonDps) assert.ok(near(up.poisonDps, base.poisonDps * 1.6));
+    if (base.slowDuration) assert.ok(near(up.slowDuration, base.slowDuration * 1.3));
+  }
+  assert.deepEqual(towerStats('squirrel', 0), towerStats('squirrel', 0, 0));
+});

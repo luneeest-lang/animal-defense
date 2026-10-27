@@ -13,7 +13,8 @@ export const CONFIG = {
   summonStepWaves: 5,
   firstCountdown: 10,
   waveGap: 10,
-  waveClearBonus: 10, // 웨이브의 적을 모두 처리하면 받는 골드
+  waveClearBonus: 10,
+  upgradeCosts: [80, 120, 160, 200, 240], // 동물별 강화 Lv.1~5 비용 // 웨이브의 적을 모두 처리하면 받는 골드
   maxSubstep: 0.05,
 };
 
@@ -36,6 +37,7 @@ export function createGame(map, waves = buildWaves()) {
     time: 0,
     nextId: 1,
     summons: 0,
+    upgrades: Object.fromEntries(Object.keys(TOWERS).map((id) => [id, 0])), // 동물별 강화 레벨
     clearedWave: 0, // 보너스를 이미 준 마지막 웨이브 번호
     bossWarning: 0, // 보스 경고 연출이 남은 시간(초). 0이면 경고 없음
   };
@@ -103,11 +105,12 @@ export function canMerge(game, fromId, toId) {
     && from.type === to.type && from.level === to.level && to.level < MAX_LEVEL;
 }
 
-// from을 to 위에 합친다. to가 한 단계 성장하고 from은 사라진다.
-export function mergeTowers(game, fromId, toId) {
+// from을 to 위에 합친다. to 자리에 5종 중 무작위 동물이 한 단계 성장해 나오고 from은 사라진다.
+export function mergeTowers(game, fromId, toId, rng = Math.random) {
   if (!canMerge(game, fromId, toId)) return false;
   const from = findTower(game, fromId);
   const to = findTower(game, toId);
+  to.type = pick(Object.keys(TOWERS), rng);
   to.level += 1;
   to.invested += from.invested;
   game.towers = game.towers.filter((t) => t !== from);
@@ -121,6 +124,21 @@ export function sellTower(game, towerId) {
   game.gold += refund;
   game.towers = game.towers.filter((t) => t !== tower);
   return refund;
+}
+
+// 동물별 강화 다음 레벨 비용. 최대 레벨이면 null
+export function upgradeCost(game, typeId) {
+  const level = game.upgrades[typeId];
+  return level === undefined || level >= CONFIG.upgradeCosts.length ? null : CONFIG.upgradeCosts[level];
+}
+
+// 그 동물 전체(놓인 것과 앞으로 소환될 것)를 한 레벨 강화한다
+export function upgradeAnimal(game, typeId) {
+  const cost = upgradeCost(game, typeId);
+  if (game.status !== 'running' || cost === null || cost > game.gold) return false;
+  game.gold -= cost;
+  game.upgrades[typeId] += 1;
+  return true;
 }
 
 function startWave(game) {
@@ -152,7 +170,7 @@ function fireTowers(game, dt) {
       continue;
     }
     const hpBefore = new Map(targets.map((e) => [e, e.hp]));
-    const hit = fire(tower, target, targets, game.points);
+    const hit = fire(tower, target, targets, game.points, game.upgrades[tower.type]);
     // 맞은 적마다 실제로 들어간 피해량 (화면의 데미지 숫자용)
     for (const e of hit) {
       game.events.push({ type: 'hit', enemyId: e.id, amount: hpBefore.get(e) - e.hp, ...positionAt(game.points, e.dist) });

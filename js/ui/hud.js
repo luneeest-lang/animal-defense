@@ -2,7 +2,7 @@ import { MAPS } from '../data/maps.js';
 import { TOWERS, STAGE_NAMES } from '../data/towers.js';
 import { towerStats } from '../core/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
-import { CONFIG, summonCost, emptyCells } from '../core/game.js';
+import { CONFIG, summonCost, emptyCells, upgradeCost } from '../core/game.js';
 import { bakeAnimals } from './pixel.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
@@ -41,12 +41,26 @@ export function createHud(root, handlers) {
   summon.innerHTML = '<span class="label">🎲 소환</span><span class="cost"></span>';
   summon.addEventListener('click', () => handlers.onSummon());
   const summonCostEl = summon.querySelector('.cost');
-  const legend = document.createElement('div');
-  legend.className = 'legend';
-  legend.innerHTML = Object.entries(TOWERS).map(([id, def]) => (
-    `<span class="legend-item" title="${def.name}"><span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span>${def.name}</span>`
-  )).join('') + '<p class="hint">같은 동물·같은 단계를 끌어다 겹치면 합쳐져 성장해요</p>';
-  el.panel.append(summon, legend);
+  // 동물별 강화 버튼: 누르면 그 동물 전체가 강해진다
+  const upgrades = document.createElement('div');
+  upgrades.className = 'upgrades';
+  const upgradeButtons = {};
+  for (const [id, def] of Object.entries(TOWERS)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'upgrade-btn';
+    b.dataset.type = id;
+    b.title = `${def.name} 강화`;
+    b.innerHTML = `<span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span>`
+      + `<span class="up-text"><span class="up-name">${def.name}</span><span class="up-level"></span><span class="up-cost"></span></span>`;
+    b.addEventListener('click', () => handlers.onUpgradeAnimal(id));
+    upgrades.appendChild(b);
+    upgradeButtons[id] = { button: b, level: b.querySelector('.up-level'), cost: b.querySelector('.up-cost') };
+  }
+  const hint = document.createElement('p');
+  hint.className = 'hint';
+  hint.textContent = '같은 동물·같은 단계를 끌어다 겹치면 무작위 동물로 성장해요';
+  el.panel.append(summon, upgrades, hint);
 
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
   el.btnSpeed.addEventListener('click', () => handlers.onSpeed());
@@ -57,8 +71,8 @@ export function createHud(root, handlers) {
   el.btnRetry.addEventListener('click', () => handlers.onRetry());
   el.btnResultMenu.addEventListener('click', () => handlers.onMenu());
 
-  function statsLine(tower) {
-    const s = towerStats(tower.type, tower.level);
+  function statsLine(tower, upgrade) {
+    const s = towerStats(tower.type, tower.level, upgrade);
     const parts = [
       `공격력 ${Math.round(s.damage * 10) / 10}`,
       `사거리 ${s.range.toFixed(1)}`,
@@ -79,7 +93,7 @@ export function createHud(root, handlers) {
     }
     el.info.hidden = false;
     setText(el.infoTitle, `${TOWERS[shownTower.type].name} · ${STAGE_NAMES[shownTower.level]}`);
-    setText(el.infoStats, statsLine(shownTower));
+    setText(el.infoStats, statsLine(shownTower, game.upgrades[shownTower.type]));
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }
 
@@ -150,6 +164,12 @@ export function createHud(root, handlers) {
       const cost = summonCost(game);
       setText(summonCostEl, `🪙 ${cost}`);
       summon.disabled = !running || cost > game.gold || emptyCells(game).length === 0;
+      for (const [id, ui2] of Object.entries(upgradeButtons)) {
+        const next = upgradeCost(game, id);
+        setText(ui2.level, `Lv.${game.upgrades[id]}`);
+        setText(ui2.cost, next === null ? 'MAX' : `🪙${next}`);
+        ui2.button.disabled = !running || next === null || next > game.gold;
+      }
       refreshInfo(game);
     },
   };

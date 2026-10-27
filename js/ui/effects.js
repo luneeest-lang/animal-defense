@@ -88,11 +88,12 @@ export function createEffects(rng = effectRng(Date.now())) {
       add({ kind: 'ring', x, y, color: '#ffffff', big: false, t: now, life: LIFE.ring });
       burst(x, y, 6, ['#ffffff', '#fff3b0'], 1.2, 0.07, now);
     },
-    merge(x, y, level, now) {
+    merge(x, y, level, now, name = '') {
       const awakened = level >= 3;
       add({ kind: 'ring', x, y, color: '#ffd23f', big: awakened, t: now, life: LIFE.ring });
       burst(x, y, awakened ? 22 : 10, GOLD, awakened ? 2.6 : 1.6, awakened ? 0.1 : 0.08, now);
-      add({ kind: 'text', x, y, text: awakened ? '각성!' : '성장!', big: awakened, t: now, life: LIFE.text });
+      const word = awakened ? '각성!' : '성장!';
+      add({ kind: 'text', x, y, text: name ? `${word} ${name}` : word, big: awakened, t: now, life: LIFE.text });
       if (awakened) shake(0.4, now);
     },
     waveClear(x, y, bonus, now) {

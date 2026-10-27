@@ -239,7 +239,7 @@ export function createRenderer(canvas) {
     const x = tower.col * cell;
     const y = tower.row * cell;
     if (selected) {
-      const st = towerStats(tower.type, tower.level);
+      const st = towerStats(tower.type, tower.level); // 사거리 원: 강화는 사거리를 바꾸지 않는다
       rangeCircle(x + cell / 2, y + cell / 2, st.range, cell, true);
     }
     upright(x + cell / 2, y + cell / 2, (px, py) => {
@@ -485,7 +485,7 @@ export function createRenderer(canvas) {
     const x = tower.col + 0.5;
     const y = tower.row + 0.5;
     if (kind === 'summon') effects.summon(x, y, now);
-    else effects.merge(x, y, tower.level, now);
+    else effects.merge(x, y, tower.level, now, TOWERS[tower.type].name);
   }
 
   function draw(game, view) {
