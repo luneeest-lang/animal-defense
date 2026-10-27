@@ -2,6 +2,7 @@ import { MAPS } from './data/maps.js';
 import {
   createGame, summonTower, canMerge, mergeTowers, sellTower, callNextWave, step, upgradeAnimal, chooseCard,
 } from './core/game.js';
+import { craftMythic } from './core/mythics.js';
 import { loadSave, writeSave, recordResult, starsFor } from './storage.js';
 import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
@@ -27,7 +28,8 @@ let game = null;
 let mapId = null;
 let selectedTower = null;
 let drag = null; // { towerId, x, y } 끌고 있는 타워와 포인터 위치(캔버스 CSS 픽셀)
-const ui = { paused: false, speed: 1 };
+// mythicOpen: 신화 조합표가 열려 있는지 (열려 있는 동안 게임이 멈춘다)
+const ui = { paused: false, speed: 1, mythicOpen: false };
 let autoPaused = false;
 let finished = false;
 let lastTs = 0;
@@ -38,6 +40,17 @@ const hud = createHud(document.getElementById('app'), {
   onSummon: summon,
   onUpgradeAnimal: (id) => { if (game) upgradeAnimal(game, id); },
   onPickCard: (id) => { if (game) chooseCard(game, id); },
+  onOpenMythic: () => { if (game && game.status === 'running') { ui.mythicOpen = true; selectTower(null); } },
+  onCloseMythic: () => { ui.mythicOpen = false; },
+  onCraft: (id) => {
+    if (!game) return;
+    // 조합표가 열린 동안은 게임이 멈춰 있어 이벤트로는 연출이 안 나오므로 직접 부른다
+    const tower = craftMythic(game, id);
+    if (tower) {
+      ui.mythicOpen = false;
+      renderer.celebrate('mythic', tower);
+    }
+  },
   onCallWave: () => { if (game) callNextWave(game); },
   onSpeed: () => { ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length]; },
   onPause: togglePause,
@@ -107,6 +120,7 @@ function startMap(id) {
   finished = false;
   ui.paused = false;
   ui.speed = 1;
+  ui.mythicOpen = false;
   autoPaused = false;
   drag = null;
   selectTower(null);
@@ -137,7 +151,7 @@ function frame(ts) {
   const dt = Math.min(Math.max((ts - lastTs) / 1000, 0), MAX_FRAME_DT);
   lastTs = ts;
   if (game) {
-    if (!ui.paused && game.status === 'running') step(game, dt * ui.speed);
+    if (!ui.paused && !ui.mythicOpen && game.status === 'running') step(game, dt * ui.speed);
     // 끌고 있는 타워가 사라졌으면(판매, 게임 종료) 드래그를 끝낸다
     if (drag && !game.towers.some((t) => t.id === drag.towerId)) drag = null;
     const mergeTargets = drag
@@ -148,7 +162,8 @@ function frame(ts) {
       drag,
       mergeTargets,
     });
-    hud.update(game, ui);
+    hud.update(game, ui, ui.mythicOpen);
+    if (game.status !== 'running') ui.mythicOpen = false;
     if (game.status !== 'running' && !finished) finish();
   }
   requestAnimationFrame(frame);
@@ -159,7 +174,8 @@ window.addEventListener('keydown', (e) => {
   if (game.cardChoices && ['1', '2', '3'].includes(e.key)) chooseCard(game, game.cardChoices[Number(e.key) - 1]);
   else if (e.key === 's' || e.key === 'S') summon();
   else if (e.code === 'Space') { e.preventDefault(); togglePause(); }
-  else if (e.key === 'Escape') selectTower(null);
+  else if (e.key === 'Escape') { selectTower(null); ui.mythicOpen = false; }
+  else if (e.key === 'm' || e.key === 'M') ui.mythicOpen = !ui.mythicOpen && game.status === 'running';
 });
 
 document.addEventListener('visibilitychange', () => {

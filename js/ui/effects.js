@@ -3,11 +3,12 @@
 
 export const EFFECT_LIMIT = 400;
 export const LIFE = {
-  projectile: 180, shock: 320, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320, damage: 650,
+  projectile: 180, beam: 260, shock: 320, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320, damage: 650,
 };
 export const SHAKE_MS = 450;
 
 import { ENEMIES } from '../data/enemies.js';
+import { MYTHICS } from '../data/mythics.js';
 
 // 처치 파편 색 (몬스터 도트의 주색)
 export const ENEMY_COLORS = {
@@ -16,6 +17,7 @@ export const ENEMY_COLORS = {
   slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
+const RAINBOW = ['#ff5e5e', '#ffb03b', '#ffe94d', '#6bff8a', '#4fc3ff', '#b77dff'];
 // 보스 능력 문구
 const SKILL_TEXT = { rage: '분노!', split: '분열!', summon: '소환!', dash: '질주!', roar: '포효!' };
 
@@ -90,6 +92,20 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'text', x: ev.x, y: ev.y, text: SKILL_TEXT[ev.skill] ?? '!', big: roar, warn: true, t: now, life: LIFE.text });
         add({ kind: 'ring', x: ev.x, y: ev.y, color: roar ? '#ff3b30' : '#ff9f43', big: roar, reach: roar ? 2.5 : 0.8, t: now, life: LIFE.ring });
         if (roar) shake(0.6, now);
+      } else if (ev.type === 'mythic') {
+        add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ff5ec4', big: true, reach: 2.2, t: now, life: LIFE.ring * 2 });
+        burst(ev.x, ev.y, 30, RAINBOW, 3, 0.11, now);
+        add({ kind: 'text', x: ev.x, y: ev.y, text: `신화 탄생! ${MYTHICS[ev.mythic]?.name ?? ''}`, big: true, t: now, life: LIFE.text * 1.6 });
+        shake(0.7, now);
+      } else if (ev.type === 'mythicShot') {
+        if (ev.mythic === 'cheonma') add({ kind: 'beam', from: ev.from, to: ev.to, t: now, life: LIFE.beam });
+        else add({ kind: 'projectile', tower: ev.mythic, from: ev.from, to: ev.to, t: now, life: LIFE.projectile });
+        if (ev.mythic === 'phoenix') add({ kind: 'ring', x: ev.to.x, y: ev.to.y, color: '#ff7a1a', big: false, reach: 0.8, t: now, life: LIFE.ring });
+      } else if (ev.type === 'quake') {
+        add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ffd23f', big: true, reach: 6, t: now, life: LIFE.ring * 2 });
+        shake(0.25, now);
+      } else if (ev.type === 'charm') {
+        add({ kind: 'text', x: ev.x, y: ev.y, text: '홀림!', big: false, charm: true, t: now, life: LIFE.text });
       } else if (ev.type === 'leak') {
         flashAt = now;
       }

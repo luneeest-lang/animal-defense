@@ -115,3 +115,27 @@ test('보스 능력은 경고 문구와 고리를 띄우고, 포효는 크게 �
   assert.deepEqual(rings.map((f) => f.reach), [0.8, 2.5]);
   assert.ok(fx.shake(0) > 0);
 });
+
+test('신화 탄생은 큰 문구와 무지개 파편, 흔들림을 만든다', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'mythic', mythic: 'phoenix', towerId: 1, x: 3, y: 3 }, 0);
+  const text = fx.active(0).find((f) => f.kind === 'text');
+  assert.equal(text.text, '신화 탄생! 불사조');
+  assert.equal(text.big, true);
+  assert.ok(fx.active(0).filter((f) => f.kind === 'particle').length >= 20);
+  assert.ok(fx.shake(0) > 0);
+});
+
+test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람 줄기, 해태는 넓은 고리, 홀림은 문구', () => {
+  const fx = createEffects(fixed);
+  const from = { x: 1, y: 1 };
+  const to = { x: 3, y: 1 };
+  for (const mythic of ['phoenix', 'gumiho', 'girin', 'cheonma']) fx.fromEvent({ type: 'mythicShot', mythic, towerId: 1, from, to }, 0);
+  fx.fromEvent({ type: 'quake', towerId: 2, x: 5, y: 5 }, 0);
+  fx.fromEvent({ type: 'charm', enemyId: 3, x: 2, y: 2 }, 0);
+  const all = fx.active(0);
+  assert.deepEqual(all.filter((f) => f.kind === 'projectile').map((f) => f.tower), ['phoenix', 'gumiho', 'girin']);
+  assert.equal(all.filter((f) => f.kind === 'beam').length, 1);
+  assert.ok(all.some((f) => f.kind === 'ring' && f.reach >= 3));
+  assert.ok(all.some((f) => f.kind === 'text' && f.text === '홀림!'));
+});

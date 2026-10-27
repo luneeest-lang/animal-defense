@@ -5,7 +5,9 @@ import { isBoss } from '../core/enemies.js';
 import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes } from './pixel.js';
+import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics } from './pixel.js';
+import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
+import { MYTHIC_SIZE } from '../data/mythicSprites.js';
 import { createEffects } from './effects.js';
 
 const HIT_FLASH_MS = 90;
@@ -44,6 +46,7 @@ export function createRenderer(canvas) {
   const silhouettes = bakeSilhouettes();
   const tiles = bakeTiles();
   const animals = bakeAnimals();
+  const mythics = bakeMythics();
   const towerFacing = new Map();
   const facing = new WeakMap();
   // 세로 화면에서는 맵을 90도 돌려 그린다(길이 위에서 아래로). boardH는 돌리기 전 맵의 세로 길이(px)
@@ -427,12 +430,94 @@ export function createRenderer(canvas) {
     ctx.globalAlpha = 1;
   }
 
+  // 등급 받침: 발밑에 희귀는 파랑, 전설은 보라 고리 (일반은 없음)
+  function drawGradeRing(grade, cx, feetY, s) {
+    if (grade < 1) return;
+    ctx.save();
+    ctx.strokeStyle = GRADE_COLORS[grade];
+    ctx.lineWidth = Math.max(2, s * 0.06);
+    ctx.globalAlpha *= 0.9;
+    ctx.beginPath();
+    ctx.ellipse(cx, feetY, s * 0.4, s * 0.13, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 신화 동물: 더 큰 20x20 그림, 돌아가는 무지개 오라와 반짝이, 위아래로 살짝 떠 있다
+  function drawMythic(tower, cx, cy, cell, dpr, now, theme, stunned) {
+    const unit = Math.max(1, Math.round((1.15 * cell * dpr) / MYTHIC_SIZE)) / dpr;
+    const s = unit * MYTHIC_SIZE;
+    const bob = Math.round(Math.sin(now / 400 + tower.id) * s * 0.03 * dpr) / dpr;
+    const feet = cy + s * 0.4;
+    if (theme !== 'sea') dropShadow(cx, feet, s * 0.38, s * 0.11, 0.35);
+    // 무지개 고리 (색이 돈다)
+    ctx.save();
+    ctx.lineWidth = Math.max(2, s * 0.07);
+    for (let i = 0; i < 6; i++) {
+      ctx.strokeStyle = `hsl(${(now / 8 + i * 60) % 360}, 95%, 62%)`;
+      ctx.beginPath();
+      ctx.ellipse(cx, feet, s * 0.46, s * 0.15, 0, (i * Math.PI) / 3, ((i + 1) * Math.PI) / 3);
+      ctx.stroke();
+    }
+    // 몸 뒤의 은은한 빛
+    const glow = ctx.createRadialGradient(cx, cy, s * 0.1, cx, cy, s * 0.7);
+    glow.addColorStop(0, `${MYTHICS[tower.type].color}66`);
+    glow.addColorStop(1, `${MYTHICS[tower.type].color}00`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+    ctx.restore();
+    ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.translate(cx, cy - s * 0.06 + bob);
+    if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+    if (stunned) ctx.globalAlpha *= 0.55;
+    ctx.drawImage(mythics[tower.type], -s / 2, -s / 2, s, s);
+    ctx.restore();
+    // 반짝이: 무지개색 점이 몸 주위를 돈다
+    for (let i = 0; i < 4; i++) {
+      const a = now / 600 + (i * Math.PI) / 2;
+      const r = s * 0.5;
+      const size = Math.max(2, Math.round(unit * 1.5));
+      ctx.fillStyle = `hsl(${(now / 5 + i * 90) % 360}, 100%, 70%)`;
+      ctx.fillRect(Math.round(cx + Math.cos(a) * r - size / 2), Math.round(cy + Math.sin(a) * r * 0.6 - size / 2), size, size);
+    }
+  }
+
+  // 불사조가 남긴 불길: 깜빡이는 주황 원과 불티
+  function drawZones(game, cell, now) {
+    for (const z of game.zones) {
+      const fade = Math.min(1, z.left / 0.6);
+      const flicker = 0.85 + Math.sin(now / 70 + z.x * 7) * 0.15;
+      const g = ctx.createRadialGradient(z.x * cell, z.y * cell, 0, z.x * cell, z.y * cell, z.r * cell);
+      g.addColorStop(0, `rgba(255, 230, 120, ${0.55 * fade * flicker})`);
+      g.addColorStop(0.5, `rgba(255, 110, 20, ${0.4 * fade * flicker})`);
+      g.addColorStop(1, 'rgba(200, 30, 0, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(z.x * cell, z.y * cell, z.r * cell, 0, Math.PI * 2);
+      ctx.fill();
+      const u = Math.max(2, cell * 0.06);
+      for (let i = 0; i < 5; i++) {
+        const h = cellHash(i, Math.floor(z.x * 13 + z.y * 7));
+        const ang = (h % 628) / 100;
+        const rise = ((now / 600 + i / 5) % 1);
+        upright((z.x + Math.cos(ang) * z.r * 0.6) * cell, (z.y + Math.sin(ang) * z.r * 0.6) * cell, (sx, sy) => {
+          ctx.globalAlpha = fade * (1 - rise);
+          ctx.fillStyle = i % 2 ? '#ffd23f' : '#ff7a1a';
+          ctx.fillRect(Math.round(sx), Math.round(sy - rise * cell * 0.6), u, u);
+          ctx.globalAlpha = 1;
+        });
+      }
+    }
+  }
+
   function drawTower(tower, cell, selected, theme, stunned = false) {
     const x = tower.col * cell;
     const y = tower.row * cell;
     if (selected) {
-      const st = towerStats(tower.type, tower.level); // 사거리 원: 강화는 사거리를 바꾸지 않는다
-      rangeCircle(x + cell / 2, y + cell / 2, st.range, cell, true);
+      // 사거리 원: 강화는 사거리를 바꾸지 않는다. 해태는 맵 전체라 원이 없다
+      const range = tower.mythic ? MYTHICS[tower.type].base.range : towerStats(tower.type, tower.level).range;
+      if (range) rangeCircle(x + cell / 2, y + cell / 2, range, cell, true);
     }
     upright(x + cell / 2, y + cell / 2, (px, py) => {
       // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
@@ -443,9 +528,14 @@ export function createRenderer(canvas) {
       const s = unit * SPRITE_SIZE;
       const cx = Math.round(px * dpr) / dpr;
       const cy = Math.round(py * dpr) / dpr;
-      const awakened = tower.level >= AURA_LEVEL;
       const now = performance.now();
+      if (tower.mythic) {
+        drawMythic(tower, cx, cy, cell, dpr, now, theme, stunned);
+        return;
+      }
+      const awakened = tower.level >= AURA_LEVEL;
       if (theme !== 'sea') dropShadow(cx, cy + s * 0.38, s * 0.36, s * 0.11, 0.32);
+      drawGradeRing(gradeOf(tower), cx, cy + s * 0.38, s);
       if (awakened) drawAuraGlow(tower, cx, cy, s, now);
       ctx.imageSmoothingEnabled = false;
       ctx.save();
@@ -561,7 +651,7 @@ export function createRenderer(canvas) {
       effects.fromEvent(ev, now);
       if (ev.type === 'waveClear') effects.waveClear(game.map.cols / 2, game.map.rows / 2, ev.bonus, now);
       // 타워는 마지막으로 쏜 적 쪽을 바라본다
-      if (ev.type === 'shot') {
+      if (ev.type === 'shot' || ev.type === 'mythicShot') {
         const side = screenSide(ev.to.x - ev.from.x, ev.to.y - ev.from.y);
         if (side) towerFacing.set(ev.towerId, side);
       }
@@ -600,6 +690,38 @@ export function createRenderer(canvas) {
         ctx.arc(q.x, q.y, u * (1.3 - i * 0.3), 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (f.tower === 'phoenix') {
+      // 불꽃 깃털: 꼬리가 긴 불덩이
+      for (let i = 4; i >= 0; i--) {
+        const q = at(Math.max(0, k - i * 0.08));
+        ctx.fillStyle = ['#fff3b0', '#ffd23f', '#ffae3b', '#ff7a1a', '#e8341c'][i];
+        ctx.globalAlpha = 1 - i * 0.15;
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, u * (2 - i * 0.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else if (f.tower === 'gumiho') {
+      // 여우불: 푸른 불꽃이 살짝 흔들리며 날아간다
+      const wob = Math.sin(k * Math.PI * 3) * cell * 0.15;
+      ctx.fillStyle = 'rgba(79, 195, 255, 0.45)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y + wob, u * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#bff0ff';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y + wob, u * 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (f.tower === 'girin') {
+      const tail = at(Math.max(0, k - 0.5));
+      ctx.strokeStyle = '#7dffb0';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(tail.x, tail.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(p.x - u, p.y - u, u * 2, u * 2);
     } else if (f.tower === 'elephant') {
       ctx.fillStyle = '#e8d2a6';
       ctx.fillRect(p.x - u * 1.2, p.y - u * 1.2, u * 2.4, u * 2.4);
@@ -628,7 +750,7 @@ export function createRenderer(canvas) {
       ctx.strokeStyle = f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
       ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
       // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색
-      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
+      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.charm ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
       ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
     });
   }
@@ -640,6 +762,19 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
       if (f.kind === 'projectile') {
         drawProjectile(f, k, cell);
+      } else if (f.kind === 'beam') {
+        // 천마의 날개 바람: 굵은 하얀 줄기가 빠르게 사라진다
+        ctx.globalAlpha = 1 - k;
+        ctx.lineCap = 'round';
+        for (const [w, c] of [[cell * 0.5, 'rgba(127, 200, 255, 0.5)'], [cell * 0.2, '#ffffff']]) {
+          ctx.strokeStyle = c;
+          ctx.lineWidth = w * (1 - k * 0.5);
+          ctx.beginPath();
+          ctx.moveTo(f.from.x * cell, f.from.y * cell);
+          ctx.lineTo(f.to.x * cell, f.to.y * cell);
+          ctx.stroke();
+        }
+        ctx.lineCap = 'butt';
       } else if (f.kind === 'shock') {
         ctx.globalAlpha = 1 - k;
         ctx.strokeStyle = '#f3e3bf';
@@ -692,6 +827,7 @@ export function createRenderer(canvas) {
     const x = tower.col + 0.5;
     const y = tower.row + 0.5;
     if (kind === 'summon') effects.summon(x, y, now);
+    else if (kind === 'mythic') effects.fromEvent({ type: 'mythic', mythic: tower.type, x, y }, now);
     else effects.merge(x, y, tower.level, now, TOWERS[tower.type].name);
   }
 
@@ -716,6 +852,7 @@ export function createRenderer(canvas) {
     }
     drawBoard(game, cell, now);
     drawLighting();
+    drawZones(game, cell, now);
     for (const t of game.towers) {
       if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
       // 끌고 있는 타워는 원래 자리에 흐리게 남긴다

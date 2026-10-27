@@ -6,6 +6,7 @@ import { createEnemy } from '../js/core/enemies.js';
 import {
   CONFIG, createGame, addTower, summonCost, emptyCells, summonTower, canMerge, mergeTowers,
   sellTower, callNextWave, step, upgradeCost, upgradeAnimal, chooseCard,
+  mapHpMult,
 } from '../js/core/game.js';
 
 const meadow = MAPS[0];
@@ -392,19 +393,26 @@ test('맞은 적마다 실제 피해량을 담은 hit 이벤트가 생긴다 (�
   for (const h of hits2) assert.equal(h.amount, 20);
 });
 
+test('맵 체력 배율은 1~8웨이브 동안 서서히 올라 8웨이브부터 다 적용된다', () => {
+  const hard = { ...meadow, hpMult: 2 };
+  assert.deepEqual([1, 4, 8, 20].map((w) => mapHpMult(hard, w)), [1.125, 1.5, 2, 2]);
+  assert.equal(mapHpMult(meadow, 1), 1);
+});
+
 test('맵의 체력 배율이 스폰되는 몬스터와 분열체 새끼에 적용된다', () => {
   const hard = { ...meadow, hpMult: 2 };
   const g = createGame(hard, oneSoldier);
   callNextWave(g);
   step(g, 0.05);
   const base = createEnemy(0, 'soldier', 1);
-  assert.equal(g.enemies[0].maxHp, base.maxHp * 2);
+  assert.equal(g.enemies[0].maxHp, base.maxHp * mapHpMult(hard, 1));
   const g2 = createGame(hard, [{ number: 1, groups: [{ type: 'splitter', count: 1, interval: 1 }] }]);
   callNextWave(g2);
   step(g2, 0.05);
   g2.enemies[0].hp = 0;
   step(g2, 0.05);
-  assert.deepEqual(g2.enemies.map((e) => e.maxHp), [createEnemy(0, 'mini', 1).maxHp * 2, createEnemy(0, 'mini', 1).maxHp * 2]);
+  const mini = createEnemy(0, 'mini', 1).maxHp * mapHpMult(hard, 1);
+  assert.deepEqual(g2.enemies.map((e) => e.maxHp), [mini, mini]);
 });
 
 test('합성 결과는 5종 중 무작위 동물의 다음 단계다', () => {

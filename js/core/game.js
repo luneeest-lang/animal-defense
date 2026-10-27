@@ -2,6 +2,7 @@ import { waypointPoints, pathLength, positionAt, canBuild, pathCells } from './p
 import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
+import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js';
 import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from './waves.js';
 import { CARDS, drawCards } from '../data/cards.js';
 
@@ -45,6 +46,7 @@ export function createGame(map, waves = buildWaves()) {
     rng: Math.random, // 카드 뽑기·행운의 소환에 쓰는 무작위 (테스트에서 바꿔 끼운다)
     cardChoices: null, // 웨이브를 끝내고 고를 카드 id 3개. 고르는 동안 게임이 멈춘다
     cardsTaken: [],
+    zones: [], // 불사조가 남긴 불길 { x, y, r, dps, left }
     // 카드로 얻은 효과
     mods: {
       damage: Object.fromEntries(Object.keys(TOWERS).map((id) => [id, 1])),
@@ -95,11 +97,12 @@ const pick = (list, rng) => list[Math.min(list.length - 1, Math.floor(rng() * li
 
 // 강화와 카드 효과가 반영된 실제 능력치
 export function effectiveStats(game, tower) {
+  if (tower.mythic) return mythicStats(game, tower);
   const stats = towerStats(tower.type, tower.level, game.upgrades[tower.type]);
   const { mods } = game;
   stats.damage *= mods.damage[tower.type];
   if (stats.poisonDps !== undefined) stats.poisonDps *= mods.damage[tower.type];
-  stats.cooldown /= mods.attackSpeed;
+  stats.cooldown /= mods.attackSpeed * cheonmaBuff(game, tower);
   stats.range += mods.range;
   stats.bossDamage = mods.bossDamage;
   return stats;
@@ -148,7 +151,7 @@ export function canMerge(game, fromId, toId) {
   const from = findTower(game, fromId);
   const to = findTower(game, toId);
   return game.status === 'running' && !!from && !!to && from !== to
-    && from.type === to.type && from.level === to.level && to.level < MAX_LEVEL;
+    && !from.mythic && !to.mythic && from.type === to.type && from.level === to.level && to.level < MAX_LEVEL;
 }
 
 // from을 to 위에 합친다. to 자리에 5종 중 무작위 동물이 한 단계 성장해 나오고 from은 사라진다.
@@ -197,9 +200,17 @@ const BOSS_SKILLS = {
   dragon: () => ({ timer: 8 }),
 };
 
+// 맵 난이도(체력 배율)는 첫 웨이브부터 바로 다 걸지 않고 HP_RAMP_WAVES 웨이브 동안 서서히 올린다.
+// 어려운 맵에서 소환·합성 운이 나쁘면 2~3웨이브에 바로 지던 것을 줄인다.
+const HP_RAMP_WAVES = 8;
+export function mapHpMult(map, waveNumber) {
+  const m = map.hpMult ?? 1;
+  return 1 + (m - 1) * Math.min(1, waveNumber / HP_RAMP_WAVES);
+}
+
 // 몬스터를 길 위 dist 지점에 만든다. 맵 체력 배율과 보스 능력을 함께 정한다.
 export function spawnEnemy(game, type, waveNumber, dist = 0) {
-  const e = createEnemy(game.nextId++, type, waveNumber, game.map.hpMult ?? 1);
+  const e = createEnemy(game.nextId++, type, waveNumber, mapHpMult(game.map, waveNumber));
   e.dist = dist;
   if (game.map.bossAbilities && BOSS_SKILLS[type]) {
     e.skill = BOSS_SKILLS[type]();
@@ -281,6 +292,10 @@ function fireTowers(game, dt) {
   for (const tower of game.towers) {
     // 흑룡의 포효에 기절한 동물은 쏘지 않는다
     if (tower.stunUntil > game.time) continue;
+    if (tower.mythic) {
+      fireMythic(game, tower, targets, dt);
+      continue;
+    }
     tower.cooldown -= dt;
     if (tower.cooldown > 0) continue;
     const stats = effectiveStats(game, tower);
@@ -314,12 +329,12 @@ function resolveEnemies(game) {
   for (const e of game.enemies) {
     const def = ENEMIES[e.type];
     if (e.hp <= 0) {
-      const reward = def.reward + game.mods.bounty;
+      const reward = def.reward + game.mods.bounty + (e.bonusGold ?? 0);
       game.gold += reward;
       game.events.push({ type: 'death', enemy: e.type, reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
         for (let i = 0; i < def.splitInto.count; i++) {
-          born.push(createEnemy(game.nextId++, def.splitInto.type, e.waveNumber, game.map.hpMult ?? 1));
+          born.push(createEnemy(game.nextId++, def.splitInto.type, e.waveNumber, mapHpMult(game.map, e.waveNumber)));
           born[born.length - 1].dist = e.dist;
         }
       }
@@ -347,6 +362,7 @@ function substep(game, dt) {
   updateBossSkills(game, dt);
   for (const e of game.enemies) stepEnemy(e, dt, game.mods.enemySpeed);
   fireTowers(game, dt);
+  updateZones(game, dt);
   resolveEnemies(game);
   // 스폰이 끝나고 필드의 적을 모두 처리하면 보너스를 주고 다음 웨이브까지 카운트다운을 시작한다
   const cleared = game.waveNumber > 0 && game.spawnQueue.length === 0 && game.enemies.length === 0;

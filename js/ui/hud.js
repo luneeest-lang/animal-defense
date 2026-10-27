@@ -4,7 +4,9 @@ import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG, summonCost, emptyCells, upgradeCost, effectiveStats } from '../core/game.js';
 import { CARDS } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
-import { bakeAnimals } from './pixel.js';
+import { bakeAnimals, bakeMythics } from './pixel.js';
+import { MYTHICS, GRADE_NAMES, gradeOf } from '../data/mythics.js';
+import { findMaterials, canCraft, RECIPE_LEVELS } from '../core/mythics.js';
 
 // 이름 끝 글자에 받침이 있으면 '이', 없으면 '가'
 const subjectParticle = (word) => {
@@ -22,6 +24,7 @@ export function createHud(root, handlers) {
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     cardPick: $('card-pick'), cardList: $('card-list'),
+    mythicPick: $('mythic-pick'), mythicList: $('mythic-list'), btnCloseMythic: $('btn-close-mythic'),
     bossSub: root.querySelector('.boss-sub'), bossSkill: root.querySelector('.boss-skill'),
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
@@ -50,6 +53,17 @@ export function createHud(root, handlers) {
   summon.innerHTML = '<span class="label">🎲 소환</span><span class="cost"></span>';
   summon.addEventListener('click', () => handlers.onSummon());
   const summonCostEl = summon.querySelector('.cost');
+  // 신화 조합 버튼: 만들 수 있는 신화가 있으면 반짝인다
+  const mythicBtn = document.createElement('button');
+  mythicBtn.type = 'button';
+  mythicBtn.id = 'btn-mythic';
+  mythicBtn.className = 'mythic-btn';
+  mythicBtn.textContent = '✨ 신화';
+  mythicBtn.addEventListener('click', () => handlers.onOpenMythic());
+  const leftCol = document.createElement('div');
+  leftCol.className = 'panel-left';
+  leftCol.append(summon, mythicBtn);
+  const mythicIcons = bakeMythics();
   // 동물별 강화 버튼: 누르면 그 동물 전체가 강해진다
   const upgrades = document.createElement('div');
   upgrades.className = 'upgrades';
@@ -70,7 +84,7 @@ export function createHud(root, handlers) {
   hint.className = 'hint';
   const HINT = '같은 동물·같은 단계를 끌어다 겹치면 무작위 동물로 성장해요';
   hint.textContent = HINT;
-  el.panel.append(summon, upgrades, hint);
+  el.panel.append(leftCol, upgrades, hint);
   let shownChoices = '';
   let shownTaken = '';
 
@@ -104,6 +118,44 @@ export function createHud(root, handlers) {
     hint.title = Object.keys(counts).map((id) => CARDS[id].name).join(', ');
   }
 
+  // 신화 조합표: 신화마다 재료 칸(있으면 ✔)과 만들기 버튼
+  const mythicRows = {};
+  for (const [id, def] of Object.entries(MYTHICS)) {
+    const row = document.createElement('div');
+    row.className = 'mythic-row';
+    row.dataset.mythic = id;
+    const mats = def.recipe.map((type, i) => {
+      const stage = RECIPE_LEVELS[i] === 3 ? '각성' : '성체';
+      return `<span class="mat" data-slot="${i}"><span class="icon" style="background-image:url(${icons[type][2].toDataURL()})"></span>`
+        + `<span class="mat-name">${stage} ${TOWERS[type].name}</span><span class="mat-ok"></span></span>`;
+    }).join('<span class="plus">+</span>');
+    row.innerHTML = `<span class="m-icon" style="background-image:url(${mythicIcons[id].toDataURL()})"></span>`
+      + `<span class="m-body"><span class="m-name">${def.icon} ${def.name}</span><span class="m-desc">${def.desc}</span>`
+      + `<span class="mats">${mats}</span></span><button type="button" class="btn primary m-make">만들기</button>`;
+    row.querySelector('.m-make').addEventListener('click', () => handlers.onCraft(id));
+    el.mythicList.appendChild(row);
+    mythicRows[id] = { make: row.querySelector('.m-make'), oks: [...row.querySelectorAll('.mat')] };
+  }
+  el.btnCloseMythic.addEventListener('click', () => handlers.onCloseMythic());
+
+  function renderMythics(game, open) {
+    el.mythicPick.hidden = !open;
+    let any = false;
+    for (const [id, r] of Object.entries(mythicRows)) {
+      const ok = canCraft(game, id);
+      any ||= ok;
+      if (!open) continue;
+      const { main, subs } = findMaterials(game, id);
+      [main, ...subs].forEach((t, i) => {
+        r.oks[i].classList.toggle('have', !!t);
+        setText(r.oks[i].querySelector('.mat-ok'), t ? '✔' : '✖');
+      });
+      r.make.disabled = !ok;
+    }
+    mythicBtn.classList.toggle('ready', any);
+    mythicBtn.disabled = game.status !== 'running';
+  }
+
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
   el.btnSpeed.addEventListener('click', () => handlers.onSpeed());
   el.btnPause.addEventListener('click', () => handlers.onPause());
@@ -117,10 +169,12 @@ export function createHud(root, handlers) {
     const s = effectiveStats(game, tower);
     const parts = [
       `공격력 ${Math.round(s.damage * 10) / 10}`,
-      `사거리 ${s.range.toFixed(1)}`,
+      s.range ? `사거리 ${s.range.toFixed(1)}` : '사거리 맵 전체',
       `속도 ${(1 / s.cooldown).toFixed(1)}/초`,
     ];
     if (s.splash) parts.push(`범위 ${s.splash.toFixed(1)}`);
+    if (s.shots) parts.push(`여우불 ${s.shots}개`);
+    if (s.burnDps) parts.push(`불길 ${Math.round(s.burnDps)}/초`);
     if (s.slowFactor) parts.push(`감속 ${Math.round((1 - s.slowFactor) * 100)}%`);
     if (s.poisonDps) parts.push(`독 ${Math.round(s.poisonDps * 10) / 10}/초`);
     if (s.bossMult) parts.push(`보스 x${s.bossMult}`);
@@ -134,8 +188,11 @@ export function createHud(root, handlers) {
       return;
     }
     el.info.hidden = false;
-    setText(el.infoTitle, `${TOWERS[shownTower.type].name} · ${STAGE_NAMES[shownTower.level]}`);
-    setText(el.infoStats, statsLine(game, shownTower));
+    const t = shownTower;
+    setText(el.infoTitle, t.mythic
+      ? `${MYTHICS[t.type].icon} ${MYTHICS[t.type].name} · 신화`
+      : `${TOWERS[t.type].name} · ${STAGE_NAMES[t.level]} (${GRADE_NAMES[gradeOf(t)]})`);
+    setText(el.infoStats, t.mythic ? `${MYTHICS[t.type].desc}. ${statsLine(game, t)}` : statsLine(game, t));
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }
 
@@ -181,7 +238,7 @@ export function createHud(root, handlers) {
       el.result.hidden = false;
     },
     hideResult() { el.result.hidden = true; },
-    update(game, ui) {
+    update(game, ui, mythicOpen = false) {
       const gold = Math.floor(game.gold);
       if (lastLives !== null && game.lives < lastLives) replay(el.lives, 'hurt');
       if (lastGold !== null && gold > lastGold) replay(el.gold, 'gain');
@@ -205,6 +262,7 @@ export function createHud(root, handlers) {
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused || !!game.cardChoices;
       renderCards(game);
+      renderMythics(game, mythicOpen && !game.cardChoices);
       renderTaken(game);
       // 보스 경고는 남은 시간 동안 보이고, 끝나기 직전에 서서히 사라진다
       el.bossBanner.hidden = !(running && game.bossWarning > 0);
