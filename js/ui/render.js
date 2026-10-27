@@ -48,6 +48,8 @@ export function createRenderer(canvas) {
   const facing = new WeakMap();
   // 세로 화면에서는 맵을 90도 돌려 그린다(길이 위에서 아래로). boardH는 돌리기 전 맵의 세로 길이(px)
   let rotated = false;
+  // 캔버스는 맵 자리 전체를 덮고, 실제 맵(board)은 그 가운데에 놓인다. 바깥은 같은 배경으로 채운다
+  const board = { x: 0, y: 0, width: 0, height: 0 };
   let boardH = 0;
 
   // 맵 좌표(px)의 점을 화면 기준으로 똑바로 서 있게 그린다. draw(sx, sy)는 화면 좌표를 받는다
@@ -58,7 +60,7 @@ export function createRenderer(canvas) {
     }
     const dpr = window.devicePixelRatio || 1;
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, shakeX * dpr, shakeY * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, (board.x + shakeX) * dpr, (board.y + shakeY) * dpr);
     draw(boardH - y, x);
     ctx.restore();
   }
@@ -80,11 +82,15 @@ export function createRenderer(canvas) {
   function resize() {
     const dpr = window.devicePixelRatio || 1;
     const box = canvas.parentElement;
-    const fit = fitBoard(box.clientWidth, box.clientHeight);
-    canvas.style.width = `${fit.width}px`;
-    canvas.style.height = `${fit.height}px`;
-    width = fit.width;
-    height = fit.height;
+    width = box.clientWidth;
+    height = box.clientHeight;
+    const fit = fitBoard(width, height);
+    rotated = fit.portrait;
+    Object.assign(board, {
+      x: Math.floor((width - fit.width) / 2), y: Math.floor((height - fit.height) / 2), width: fit.width, height: fit.height,
+    });
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -167,7 +173,7 @@ export function createRenderer(canvas) {
   function inScreen(draw) {
     const dpr = window.devicePixelRatio || 1;
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, shakeX * dpr, shakeY * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, (board.x + shakeX) * dpr, (board.y + shakeY) * dpr);
     draw();
     ctx.restore();
   }
@@ -267,16 +273,68 @@ export function createRenderer(canvas) {
           ctx.fillRect(x0, y0 + h - u, w, u);
         }
       }
-      // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게
-      const W = (rotated ? map.rows : map.cols) * cell;
-      const H = (rotated ? map.cols : map.rows) * cell;
-      const g = ctx.createLinearGradient(0, 0, W, H);
-      g.addColorStop(0, 'rgba(255,240,200,0.07)');
-      g.addColorStop(0.5, 'rgba(0,0,0,0)');
-      g.addColorStop(1, 'rgba(0,0,30,0.16)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
     });
+  }
+
+  // 맵 바깥(화면을 꽉 채우는 여백)을 같은 배경 타일로 채우고, 놀 수 없는 곳이라 살짝 어둡게 한다.
+  // 좌표는 맵 왼쪽 위가 (0, 0)인 화면 기준이다
+  function drawMargins(map, cell, now) {
+    const sc = rotated ? map.rows : map.cols;
+    const sr = rotated ? map.cols : map.rows;
+    const i0 = Math.floor(-board.x / cell) - 1;
+    const j0 = Math.floor(-board.y / cell) - 1;
+    const i1 = Math.ceil((width - board.x) / cell) + 1;
+    const j1 = Math.ceil((height - board.y) / cell) + 1;
+    const tick = Math.floor(now / WATER_FRAME_MS);
+    const deco = { mountain: [tiles.mountainBoulder, 9], forest: [tiles.forestTree, 4], sea: [tiles.seaReef, 11] }[map.theme] ?? [tiles.mountainBoulder, 9];
+    ctx.imageSmoothingEnabled = false;
+    for (let j = j0; j < j1; j++) {
+      for (let i = i0; i < i1; i++) {
+        if (i >= 0 && j >= 0 && i < sc && j < sr) continue;
+        const hc = i + 1000;
+        const hr = j + 1000;
+        let img;
+        if (map.theme === 'sea') {
+          const frames = pickVariant(tiles.seaWater, hc, hr);
+          img = frames[(tick + hc + hr) % frames.length];
+        } else if (map.theme === 'forest') img = pickVariant(tiles.forestGrass, hc, hr, FOREST_GRASS_WEIGHTS)[0];
+        else img = pickVariant(tiles.mountainGround, hc, hr, MOUNTAIN_GROUND_WEIGHTS)[0];
+        drawTile(img, i, j, cell);
+        // 맵 가장자리에 바로 붙은 칸은 비워 두고, 그 밖에 나무·바위·암초를 드문드문 놓는다
+        const near = i >= -1 && j >= -1 && i <= sc && j <= sr;
+        if (!near && (cellHash(hc, hr) >> 3) % deco[1] === 0) {
+          const x = (i + 0.5) * cell;
+          const y = (j + 0.5) * cell;
+          dropShadow(x, y + cell * 0.36, cell * 0.4, cell * 0.12);
+          ctx.drawImage(deco[0][0][0], Math.floor(x - cell / 2), Math.floor(y - cell / 2), Math.ceil(cell), Math.ceil(cell));
+        }
+      }
+    }
+    // 여백은 살짝 어둡게, 맵과의 경계에는 얇은 그림자
+    const bw = sc * cell;
+    const bh = sr * cell;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.rect(-board.x - cell, -board.y - cell, width + cell * 2, height + cell * 2);
+    ctx.rect(bw, 0, -bw, bh);
+    ctx.fill('evenodd');
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-1, -1, bw + 2, bh + 2);
+  }
+
+  // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게 (캔버스 전체)
+  function drawLighting() {
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = ctx.createLinearGradient(0, 0, width, height);
+    g.addColorStop(0, 'rgba(255,240,200,0.07)');
+    g.addColorStop(0.5, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,30,0.16)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
   }
 
   function drawBoard(game, cell, now) {
@@ -640,8 +698,7 @@ export function createRenderer(canvas) {
   function draw(game, view) {
     const { cols, rows } = game.map;
     const dpr = window.devicePixelRatio || 1;
-    rotated = height > width;
-    const cell = rotated ? height / cols : width / cols;
+    const cell = rotated ? board.height / cols : board.width / cols;
     boardH = rows * cell;
     const now = performance.now();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -651,12 +708,14 @@ export function createRenderer(canvas) {
     const shake = reduceMotion ? 0 : effects.shake(now);
     shakeX = shake ? Math.sin(now * 0.09) * shake * cell * 0.18 : 0;
     shakeY = shake ? Math.cos(now * 0.113) * shake * cell * 0.18 : 0;
-    ctx.translate(shakeX, shakeY);
+    ctx.translate(board.x + shakeX, board.y + shakeY);
+    drawMargins(game.map, cell, now);
     if (rotated) {
       ctx.translate(boardH, 0);
       ctx.rotate(Math.PI / 2);
     }
     drawBoard(game, cell, now);
+    drawLighting();
     for (const t of game.towers) {
       if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
       // 끌고 있는 타워는 원래 자리에 흐리게 남긴다
@@ -678,5 +737,7 @@ export function createRenderer(canvas) {
   }
 
   resize();
-  return { draw, resize, celebrate };
+  // 캔버스 안에서 실제 맵이 차지하는 자리(CSS 픽셀). 터치 좌표를 맵 칸으로 바꿀 때 쓴다
+  const boardRect = () => ({ ...board });
+  return { draw, resize, celebrate, boardRect };
 }

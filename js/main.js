@@ -72,6 +72,7 @@ const towerAt = (col, row) => game.towers.find((t) => t.col === col && t.row ===
 attachInput(document.getElementById('board'), {
   cols: MAPS[0].cols,
   rows: MAPS[0].rows,
+  boardRect: () => renderer.boardRect(),
   onTap(col, row) {
     if (!game || game.status !== 'running') return;
     const tower = towerAt(col, row);
