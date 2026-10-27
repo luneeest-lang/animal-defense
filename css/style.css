@@ -79,10 +79,15 @@ button { font: inherit; color: inherit; }
   align-items: center; gap: 4px 6px;
   padding: 6px; background: var(--bar);
 }
-#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 34px; align-items: center; min-width: 0; }
+#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 34px 34px; align-items: center; min-width: 0; gap: 0 2px; }
 .sound-btn {
   width: 32px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: #2c3f2c;
-  font-size: 1rem; line-height: 1; cursor: pointer; touch-action: manipulation;
+  font-size: 1rem; line-height: 1; cursor: pointer; touch-action: manipulation; position: relative;
+}
+.sound-btn.off { opacity: 0.55; }
+.sound-btn.off::after {
+  content: ''; position: absolute; left: 4px; right: 4px; top: 50%; height: 2px;
+  background: #ff5a4a; transform: rotate(-35deg); border-radius: 1px;
 }
 #btn-wave { grid-area: wave; }
 #btn-speed { grid-area: speed; }
@@ -235,7 +240,7 @@ button { font: inherit; color: inherit; }
     grid-template-rows: 40px;
     grid-template-areas: "stats wave speed pause menu";
   }
-  #stats { grid-template-columns: repeat(3, max-content) 34px; gap: 8px; }
+  #stats { grid-template-columns: repeat(3, max-content) 34px 34px; gap: 8px; }
   #screen-game {
     grid-template-areas: "bar bar" "stage panel";
     grid-template-columns: minmax(0, 1fr) var(--panel-w);

@@ -14,10 +14,6 @@ const subjectParticle = (word) => {
   return code >= 0 && code <= 11171 && code % 28 !== 0 ? '이' : '가';
 };
 
-// 소리 버튼: 전체 켜기 → 효과음만 → 끄기
-const SOUND_ICON = { all: '🔊', sfx: '🔉', off: '🔇' };
-const SOUND_TITLE = { all: '소리: 효과음과 배경음', sfx: '소리: 효과음만', off: '소리 끄기' };
-
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
 export function createHud(root, handlers) {
@@ -25,7 +21,7 @@ export function createHud(root, handlers) {
   const el = {
     menu: $('screen-menu'), game: $('screen-game'), maps: $('map-list'), warning: $('save-warning'),
     lives: $('stat-lives'), gold: $('stat-gold'), wave: $('stat-wave'),
-    btnContinue: $('btn-continue'), btnSound: $('btn-sound'),
+    btnContinue: $('btn-continue'), btnSound: $('btn-sound'), btnMusic: $('btn-music'),
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     cardPick: $('card-pick'), cardList: $('card-list'),
@@ -163,6 +159,7 @@ export function createHud(root, handlers) {
 
   el.btnContinue.addEventListener('click', () => handlers.onContinue());
   el.btnSound.addEventListener('click', () => handlers.onSound());
+  el.btnMusic.addEventListener('click', () => handlers.onMusic());
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
   el.btnSpeed.addEventListener('click', () => handlers.onSpeed());
   el.btnPause.addEventListener('click', () => handlers.onPause());
@@ -269,8 +266,12 @@ export function createHud(root, handlers) {
         el.btnWave.disabled = true;
       }
       setText(el.btnSpeed, `${ui.speed}x`);
-      setText(el.btnSound, SOUND_ICON[ui.sound] ?? '🔊');
-      el.btnSound.title = SOUND_TITLE[ui.sound] ?? '';
+      // 꺼진 소리 버튼은 흐려지고 빨간 사선이 그어진다
+      setText(el.btnSound, ui.sfx ? '🔊' : '🔇');
+      el.btnSound.classList.toggle('off', !ui.sfx);
+      el.btnSound.title = ui.sfx ? '효과음 끄기' : '효과음 켜기';
+      el.btnMusic.classList.toggle('off', !ui.music);
+      el.btnMusic.title = ui.music ? '배경음 끄기' : '배경음 켜기';
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused || !!game.cardChoices;
       renderCards(game);

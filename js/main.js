@@ -7,7 +7,7 @@ import { snapshotGame, restoreGame, isBetweenWaves } from './core/snapshot.js';
 import {
   loadSave, writeSave, recordResult, starsFor, loadRun, writeRun, clearRun,
 } from './storage.js';
-import { createSound, loadSoundMode, saveSoundMode, nextSoundMode } from './ui/sound.js';
+import { createSound, loadSoundSettings, saveSoundSettings } from './ui/sound.js';
 import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
 import { createHud } from './ui/hud.js';
@@ -38,9 +38,10 @@ let mapId = null;
 let selectedTower = null;
 let drag = null; // { towerId, x, y } 끌고 있는 타워와 포인터 위치(캔버스 CSS 픽셀)
 // mythicOpen: 신화 조합표가 열려 있는지 (열려 있는 동안 게임이 멈춘다)
-const ui = { paused: false, speed: 1, mythicOpen: false, sound: loadSoundMode(store) };
+// music, sfx: 배경음·효과음을 켰는지 (따로 켜고 끈다)
+const ui = { paused: false, speed: 1, mythicOpen: false, ...loadSoundSettings(store) };
 const sound = createSound();
-sound.setMode(ui.sound);
+sound.setSettings(ui);
 let lastBossWarning = 0;
 let autoPaused = false;
 let finished = false;
@@ -84,14 +85,16 @@ const hud = createHud(document.getElementById('app'), {
     startMap(id);
   },
   onContinue: continueRun,
-  onSound: () => {
-    ui.sound = nextSoundMode(ui.sound);
-    sound.setMode(ui.sound);
-    saveSoundMode(store, ui.sound);
-    sound.unlock();
-    sound.play('card');
-  },
+  onSound: () => toggleSound('sfx'),
+  onMusic: () => toggleSound('music'),
 });
+
+function toggleSound(key) {
+  ui[key] = !ui[key];
+  sound.setSettings(ui);
+  saveSoundSettings(store, ui);
+  sound.unlock();
+}
 
 // 소환·합성·강화 같은 행동 뒤: 효과음을 내고, 웨이브 사이라면 바로 저장한다
 function afterAction(soundName) {

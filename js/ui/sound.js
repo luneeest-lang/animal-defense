@@ -1,34 +1,41 @@
 // 효과음과 배경음. 소리 파일 없이 브라우저(Web Audio)에서 도트 게임풍 소리를 직접 만든다.
 // 브라우저는 사용자가 화면을 누르기 전에는 소리를 막으므로, 처음 누를 때 unlock()으로 소리를 켠다.
 
-export const SOUND_KEY = 'td-sound-v1';
-export const SOUND_MODES = ['all', 'sfx', 'off']; // 전체, 효과음만, 끄기
-export const nextSoundMode = (mode) => SOUND_MODES[(SOUND_MODES.indexOf(mode) + 1) % SOUND_MODES.length];
+// 배경음과 효과음은 따로 켜고 끈다: { music, sfx }
+export const SOUND_KEY = 'td-sound-v2';
+// 예전 설정(한 버튼으로 전체 → 효과음만 → 끄기)
+export const OLD_SOUND_KEY = 'td-sound-v1';
+const OLD_MODES = { all: { music: true, sfx: true }, sfx: { music: false, sfx: true }, off: { music: false, sfx: false } };
 
-export function loadSoundMode(store) {
+export function loadSoundSettings(store) {
   try {
-    const v = store.getItem(SOUND_KEY);
-    return SOUND_MODES.includes(v) ? v : 'all';
+    const raw = store.getItem(SOUND_KEY);
+    if (raw !== null && raw !== undefined) {
+      const v = JSON.parse(raw);
+      if (v && typeof v.music === 'boolean' && typeof v.sfx === 'boolean') return { music: v.music, sfx: v.sfx };
+      return { music: true, sfx: true };
+    }
+    return { ...(OLD_MODES[store.getItem(OLD_SOUND_KEY)] ?? OLD_MODES.all) };
   } catch {
-    return 'all';
+    return { music: true, sfx: true };
   }
 }
 
-export function saveSoundMode(store, mode) {
+export function saveSoundSettings(store, settings) {
   try {
-    store.setItem(SOUND_KEY, mode);
+    store.setItem(SOUND_KEY, JSON.stringify({ music: settings.music, sfx: settings.sfx }));
   } catch {
     // 저장이 막혀 있어도 이번 판에는 그대로 쓴다
   }
 }
 
-// 게임 규칙이 내보낸 이벤트 → 낼 효과음 이름. 발사·피해 숫자처럼 아주 잦은 것은 소리를 내지 않는다
+// 게임 규칙이 내보낸 이벤트 → 낼 효과음 이름. 발사·피해 숫자처럼 아주 잦은 것은 소리를 내지 않는다.
+// 웨이브 클리어(카드 3장이 뜨는 순간)도 소리 없이, 카드를 고를 때만 소리를 낸다
 export function soundsFor(events) {
   const out = [];
   for (const ev of events) {
     if (ev.type === 'death') out.push(BOSSES.has(ev.enemy) ? 'bossDeath' : 'pop');
     else if (ev.type === 'leak') out.push('hurt');
-    else if (ev.type === 'waveClear') out.push('clear');
     else if (ev.type === 'bossSkill') out.push(ev.skill === 'roar' ? 'roar' : 'skill');
     else if (ev.type === 'quake') out.push('quake');
     else if (ev.type === 'charm') out.push('charm');
@@ -40,18 +47,27 @@ const BOSSES = new Set(['boss', 'slimeKing', 'lich', 'lavaGolem', 'shadowWolf', 
 // 같은 소리가 너무 촘촘히 겹치지 않게 하는 최소 간격(초)
 const GAP = { pop: 0.05, hurt: 0.12, quake: 0.5, charm: 0.15, skill: 0.3 };
 
-// 배경음: 도·레·미·솔·라 음계의 잔잔한 반복 (8분음표, 0은 쉼표)
-const TEMPO = 0.21;
-const MELODY = [
-  523, 0, 659, 784, 0, 659, 587, 0, 523, 0, 440, 523, 0, 587, 659, 0,
-  784, 0, 880, 784, 0, 659, 587, 0, 659, 0, 587, 523, 0, 440, 523, 0,
+// 배경음: 긴장감 있는 라단조. 8분음표로 쉬지 않고 달리는 베이스와 북, 띄엄띄엄 나오는 선율 (0은 쉼표)
+const TEMPO = 0.17;
+const BASS = [
+  110, 110, 110, 110, 87.3, 87.3, 98, 98,
+  110, 110, 110, 110, 87.3, 87.3, 98, 98,
+  110, 110, 130.8, 110, 82.4, 82.4, 103.8, 103.8,
+  110, 110, 130.8, 110, 82.4, 82.4, 103.8, 103.8,
 ];
-const BASS = [131, 131, 165, 165, 110, 110, 147, 147];
+const MELODY = [
+  440, 0, 523, 0, 494, 0, 440, 0,
+  659, 0, 0, 587, 523, 0, 494, 0,
+  440, 0, 523, 0, 659, 0, 698, 0,
+  659, 0, 587, 0, 523, 0, 494, 415,
+];
+// 북: k 큰북, s 작은북, h 하이햇, . 쉼
+const DRUMS = 'khshkhsh';
 
 export function createSound() {
   let ctx = null;
   let master = null;
-  let mode = 'all';
+  let settings = { music: true, sfx: true };
   let musicWanted = false;
   let musicTimer = null;
   let nextNoteAt = 0;
@@ -87,8 +103,8 @@ export function createSound() {
     osc.stop(t + dur + 0.02);
   }
 
-  // 잡음 (폭발, 우르릉): 낮은 주파수만 남기면 묵직해진다
-  function noise(dur, { vol = 0.15, cutoff = 1200, at = 0 } = {}) {
+  // 잡음 (폭발, 우르릉, 북): 낮은 주파수만 남기면 묵직해지고, 높은 주파수만 남기면 찰랑인다
+  function noise(dur, { vol = 0.15, cutoff = 1200, at = 0, filter: kind = 'lowpass' } = {}) {
     const t = ctx.currentTime + at;
     const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -96,7 +112,7 @@ export function createSound() {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
+    filter.type = kind;
     filter.frequency.value = cutoff;
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
@@ -129,7 +145,6 @@ export function createSound() {
       arpeggio([523, 659, 784, 1047], 0.08, { type: 'triangle', vol: 0.08, at: 0.3 });
     },
     hurt: () => tone(240, 0.18, { slideTo: 110, vol: 0.08 }),
-    clear: () => arpeggio([784, 988, 1175, 1568], 0.07, { type: 'triangle', vol: 0.08 }),
     skill: () => tone(320, 0.22, { slideTo: 180, type: 'sawtooth', vol: 0.05 }),
     roar: () => {
       noise(0.9, { vol: 0.28, cutoff: 380 });
@@ -137,11 +152,36 @@ export function createSound() {
     },
     quake: () => noise(0.35, { vol: 0.12, cutoff: 220 }),
     charm: () => tone(1200, 0.12, { slideTo: 1800, type: 'sine', vol: 0.04 }),
-    // 보스 경고: 낮게 깔리는 불길한 울림
+    // 보스 경고(약 3초): 낮은 종소리, 서로 어긋나 맥놀이하는 불협화음, 쿵쿵 심장 박동, 스산한 바람
     bossWarning: () => {
-      tone(55, 2.2, { type: 'sawtooth', vol: 0.09 });
-      tone(58, 2.2, { type: 'sawtooth', vol: 0.07 });
-      noise(1.8, { vol: 0.06, cutoff: 160 });
+      const t = ctx.currentTime;
+      // 종: 배음이 어긋난 낮은 종이 길게 울린다
+      for (const [f, v] of [[98, 0.12], [98 * 2.76, 0.05], [98 * 5.4, 0.03]]) tone(f, 2.8, { type: 'sine', vol: v });
+      // 불협화음: 라·라#·레#(세 온음)이 어둡게 깔렸다가 서서히 커진다
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(200, t);
+      lp.frequency.linearRampToValueAtTime(700, t + 2.4);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.1, t + 1.4);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
+      lp.connect(g).connect(master);
+      for (const f of [55, 58.3, 77.8]) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        o.connect(lp);
+        o.start(t);
+        o.stop(t + 3.3);
+      }
+      // 심장 박동: 쿵-쿵 세 번
+      for (const beat of [0.3, 1.25, 2.2]) {
+        tone(70, 0.18, { type: 'sine', slideTo: 38, vol: 0.32, at: beat });
+        tone(62, 0.16, { type: 'sine', slideTo: 34, vol: 0.24, at: beat + 0.24 });
+      }
+      // 스산한 바람
+      noise(3, { vol: 0.05, cutoff: 900, filter: 'bandpass' });
     },
     win: () => {
       arpeggio([523, 659, 784, 1047], 0.12, { type: 'triangle', vol: 0.12 });
@@ -151,7 +191,7 @@ export function createSound() {
   };
 
   function play(name) {
-    if (!ctx || mode === 'off' || ctx.state !== 'running' || !SOUNDS[name]) return;
+    if (!ctx || !settings.sfx || ctx.state !== 'running' || !SOUNDS[name]) return;
     const now = ctx.currentTime;
     if (now - (lastPlayed[name] ?? -1) < (GAP[name] ?? 0.03)) return;
     lastPlayed[name] = now;
@@ -163,15 +203,19 @@ export function createSound() {
     while (nextNoteAt < ctx.currentTime + 0.25) {
       const at = nextNoteAt - ctx.currentTime;
       const note = MELODY[step % MELODY.length];
-      if (note) tone(note, TEMPO * 0.9, { type: 'triangle', vol: 0.035, at });
-      if (step % 4 === 0) tone(BASS[(step / 4) % BASS.length], TEMPO * 3.6, { type: 'square', vol: 0.018, at });
+      if (note) tone(note, TEMPO * 1.6, { type: 'triangle', vol: 0.032, at });
+      tone(BASS[step % BASS.length], TEMPO * 0.8, { type: 'square', vol: 0.022, at });
+      const drum = DRUMS[step % DRUMS.length];
+      if (drum === 'k') tone(120, 0.12, { type: 'sine', slideTo: 45, vol: 0.09, at });
+      else if (drum === 's') noise(0.09, { vol: 0.035, cutoff: 1800, filter: 'bandpass', at });
+      else if (drum === 'h') noise(0.03, { vol: 0.018, cutoff: 7000, filter: 'highpass', at });
       step += 1;
       nextNoteAt += TEMPO;
     }
   }
 
   function syncMusic() {
-    const on = !!ctx && musicWanted && mode === 'all';
+    const on = !!ctx && musicWanted && settings.music;
     if (on && !musicTimer) {
       nextNoteAt = ctx.currentTime + 0.1;
       musicTimer = setInterval(scheduleMusic, 60);
@@ -194,12 +238,10 @@ export function createSound() {
         syncMusic();
       }
     },
-    setMode(m) {
-      mode = m;
+    // { music, sfx }: 배경음과 효과음을 따로 켜고 끈다
+    setSettings(next) {
+      settings = { music: !!next.music, sfx: !!next.sfx };
       syncMusic();
-    },
-    get mode() {
-      return mode;
     },
   };
 }
