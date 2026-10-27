@@ -1,5 +1,6 @@
 // 신화 동물 20x20 도트 그림 (오른쪽을 본다). '.'은 투명, 나머지 글자는 palette의 색이다.
 // 기본 동물(16x16)보다 크고, 뾰족한 실루엣과 째려보는 눈으로 날카롭게 그린다. 불사조의 불꽃은 테두리 없이 빛나게 둔다.
+// 해태는 광화문 해태처럼 갈기에 둘러싸인 얼굴이 정면을 본다.
 export const MYTHIC_SIZE = 20;
 
 export const MYTHIC_SPRITES = {
@@ -79,28 +80,28 @@ export const MYTHIC_SPRITES = {
     ],
   },
   haetae: {
-    palette: { 'K': '#1a0f02', 'Y': '#f2c14e', 'O': '#b77a18', 'G': '#2fbf6a', 'T': '#1a7a40', 'W': '#ffffff', 'E': '#ff2e4a', 'H': '#ffe680', 'M': '#7a1010' },
+    palette: { 'K': '#1a0f02', 'Y': '#f2c14e', 'O': '#c98a22', 'G': '#2fbf6a', 'T': '#1a7a40', 'H': '#ffe680', 'W': '#ffffff', 'M': '#7a1010', 'E': '#ff2e4a', 'B': '#3a2408' },
     rows: [
       '.............K......',
       '............KHK.....',
-      '........K..KHHK.K...',
-      '.......KGK.KHK.KGK..',
-      '......KGTGKKKKKGTK..',
-      '.....KGTGKYYYYKTGK..',
-      '.....KTGKYEYYYYKGK..',
-      '....KGTGKYYYYYYYYK..',
-      '....KTGKYYYYYYYYYYK.',
-      '...KGTGKYYYYKWKWKK..',
-      '..K.KTGKOYYKMMMMK...',
-      '.KGK.KGKKYYYKWKWK...',
-      '.KTGKKKYYYYOKKKK....',
-      '..KKKYYOYYYYYOK.....',
-      '....KOYYYOYYYYK.....',
-      '....KYOKKKKKKOK.....',
-      '....KYYK....KYK.....',
-      '...KOYK.....KOYK....',
+      '.........K.KKHKK.K..',
+      '........KGKGTGTGKGK.',
+      '.......KGTGKKKKKGTGK',
+      '.......KTGKYYYYYKGTK',
+      '.......KGKEEKYKEEKGK',
+      '.......KTKYYYBYYYKTK',
+      '.......KGKWMMMMMWKGK',
+      '.......KTKMWMWMWMKTK',
+      '........KGKYYYYYKGK.',
+      '.........KGTGTGTGK..',
+      '..........KK.K.KK...',
+      '.KK.KKYOYYYYYYK.....',
+      'KGTKYYYYOYYYOYYK....',
+      '.KTKYOYYYYYOYYYK....',
+      '...KOYKKKKKKKKOYK...',
+      '...KYYK......KYYK...',
+      '..KOYYK.....KOYYK...',
       '..KWKWK.....KWKWK...',
-      '....................',
     ],
   },
   girin: {
