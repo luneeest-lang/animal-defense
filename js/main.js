@@ -43,6 +43,9 @@ const ui = { paused: false, speed: 1, mythicOpen: false, ...loadSoundSettings(st
 const sound = createSound();
 sound.setSettings(ui);
 let lastBossWarning = 0;
+// 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
+// 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
+let handledEvents = null;
 let autoPaused = false;
 let finished = false;
 let lastTs = 0;
@@ -55,7 +58,8 @@ const hud = createHud(document.getElementById('app'), {
     if (game && upgradeAnimal(game, id)) afterAction('upgrade');
   },
   onPickCard: (id) => {
-    if (game && chooseCard(game, id)) afterAction('card');
+    // 카드 고르는 동안과 고를 때는 효과음을 내지 않는다 (저장만 한다)
+    if (game && chooseCard(game, id)) afterAction(null);
   },
   onOpenMythic: () => { if (game && game.status === 'running') { ui.mythicOpen = true; selectTower(null); } },
   onCloseMythic: () => { ui.mythicOpen = false; },
@@ -192,6 +196,7 @@ function enterGame(g) {
   mapId = g.map.id;
   game = g;
   lastBossWarning = 0;
+  handledEvents = g.events;
   finished = false;
   ui.paused = false;
   ui.speed = 1;
@@ -234,6 +239,9 @@ function frame(ts) {
   if (game) {
     if (!ui.paused && !ui.mythicOpen && game.status === 'running') {
       step(game, dt * ui.speed);
+    }
+    if (game.events !== handledEvents) {
+      handledEvents = game.events;
       sound.playEvents(game.events);
       if (game.events.some((e) => e.type === 'waveClear')) autosave();
     }

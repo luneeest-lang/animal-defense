@@ -30,7 +30,7 @@ export function saveSoundSettings(store, settings) {
 }
 
 // 게임 규칙이 내보낸 이벤트 → 낼 효과음 이름. 발사·피해 숫자처럼 아주 잦은 것은 소리를 내지 않는다.
-// 웨이브 클리어(카드 3장이 뜨는 순간)도 소리 없이, 카드를 고를 때만 소리를 낸다
+// 웨이브 클리어(카드 3장이 뜨는 순간)와 카드를 고를 때는 소리를 내지 않는다
 export function soundsFor(events) {
   const out = [];
   for (const ev of events) {
@@ -133,7 +133,6 @@ export function createSound() {
       [523, 659, 784].forEach((f) => tone(f, 1.1, { type: 'triangle', vol: 0.05, at: 0.35 }));
     },
     upgrade: () => tone(440, 0.14, { slideTo: 880, type: 'triangle', vol: 0.08 }),
-    card: () => arpeggio([880, 1175], 0.05, { type: 'triangle', vol: 0.07 }),
     sell: () => arpeggio([784, 523], 0.06, { vol: 0.05 }),
     pop: () => {
       tone(320, 0.06, { slideTo: 140, vol: 0.035 });
