@@ -10,7 +10,7 @@ test('게임 이벤트마다 알맞은 효과음 (발사·피해 숫자처럼 �
     { type: 'bossSkill', skill: 'roar' }, { type: 'bossSkill', skill: 'dash' },
     { type: 'quake' }, { type: 'mythicShot', mythic: 'gumiho' }, { type: 'charm' },
   ];
-  assert.deepEqual(soundsFor(events), ['pop', 'bossDeath', 'hurt', 'roar', 'skill', 'quake', 'charm']);
+  assert.deepEqual(soundsFor(events), ['pop', 'bossDeath', 'suck', 'roar', 'skill', 'quake', 'charm']);
 });
 
 test('배경음과 효과음은 따로 켜고 끄며 저장된다', () => {

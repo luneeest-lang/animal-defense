@@ -16,6 +16,8 @@ import { createEffects } from './effects.js';
 const HIT_FLASH_MS = 90;
 const WATER_FRAME_MS = 700;
 const AURA_LEVEL = 3;
+// 타워(동물·신화) 크기 배율 (2026-10-28: 10% 키움)
+const TOWER_SCALE = 1.1;
 
 const withAlpha = (hex, a) => {
   const n = parseInt(hex.slice(1), 16);
@@ -475,14 +477,73 @@ export function createRenderer(canvas) {
     if (map.theme === 'forest') drawForest(map, path, cell);
     else if (map.theme === 'sea') drawSea(map, path, cell, now);
     else drawMountain(map, path, cell);
-    const end = game.points[game.points.length - 1];
-    upright(end.x * cell, end.y * cell, (sx, sy) => {
-      ctx.font = `${cell * 0.7}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // 크롬은 컬러 이모지에도 fillStyle의 투명도를 적용하므로 불투명한 색으로 둔다
-      ctx.fillStyle = '#000';
-      ctx.fillText('🏠', sx, sy);
+    drawPortal(game.points[game.points.length - 1], cell, now);
+  }
+
+  // 길 끝(몬스터가 도착하는 곳)의 빨간 블랙홀: 붉은 빛무리, 도는 나선 팔, 빨려 드는 불티, 검은 핵.
+  // 몬스터를 삼키면 크게 꿀렁이며 밝아진다
+  function drawPortal(end, cell, now) {
+    const pulse = effects.portalPulse(now);
+    const breathe = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now / 500);
+    const R = cell * (0.55 + 0.05 * breathe + 0.25 * pulse);
+    const spin = reduceMotion ? 0 : now / 650;
+    upright(end.x * cell, end.y * cell, (cx, cy) => {
+      ctx.save();
+      const glow = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.7);
+      glow.addColorStop(0, `rgba(255, 60, 40, ${0.55 + 0.35 * pulse})`);
+      glow.addColorStop(0.5, `rgba(200, 0, 30, ${0.25 + 0.25 * pulse})`);
+      glow.addColorStop(1, 'rgba(120, 0, 20, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.7, 0, Math.PI * 2);
+      ctx.fill();
+      // 소용돌이 원반: 바깥은 밝은 빨강, 안쪽으로 갈수록 검붉게
+      const disk = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R);
+      disk.addColorStop(0, '#2a0004');
+      disk.addColorStop(0.45, '#9a0018');
+      disk.addColorStop(0.8, '#ff3b2f');
+      disk.addColorStop(1, 'rgba(255, 90, 60, 0)');
+      ctx.fillStyle = disk;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fill();
+      // 나선 팔 세 개가 돌며 안으로 말려 든다
+      ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(1.5, cell * 0.045);
+      ctx.strokeStyle = `rgba(255, ${150 + Math.round(80 * pulse)}, 120, 0.8)`;
+      for (let a = 0; a < 3; a++) {
+        ctx.beginPath();
+        for (let i = 0; i <= 24; i++) {
+          const t = i / 24;
+          const ang = -spin + (a * Math.PI * 2) / 3 + t * Math.PI * 1.6;
+          const r = R * (0.95 - 0.68 * t);
+          if (i) ctx.lineTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+          else ctx.moveTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+        }
+        ctx.stroke();
+      }
+      // 빨려 드는 불티: 바깥에서 나타나 돌면서 핵으로 떨어진다
+      for (let i = 0; i < 10; i++) {
+        const ph = reduceMotion ? i / 10 : (now / 900 + i / 10) % 1;
+        const r = R * 1.35 * (1 - ph) + R * 0.2;
+        const ang = i * 2.4 - ph * Math.PI * 2.5 - spin;
+        const size = Math.max(1.5, cell * 0.05 * (1 - ph * 0.5));
+        ctx.globalAlpha = Math.min(1, ph * 3) * (1 - ph * 0.3);
+        ctx.fillStyle = ph < 0.5 ? '#ffb070' : '#ff4030';
+        ctx.fillRect(Math.round(cx + Math.cos(ang) * r - size / 2), Math.round(cy + Math.sin(ang) * r - size / 2), size, size);
+      }
+      ctx.globalAlpha = 1;
+      // 검은 핵과 붉은 테두리
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 80, 60, ${0.7 + 0.3 * pulse})`;
+      ctx.lineWidth = Math.max(1, cell * 0.03);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     });
   }
 
@@ -550,7 +611,7 @@ export function createRenderer(canvas) {
   // 손가락(마우스)을 따라오는 타워. 손가락에 가리지 않게 조금 위에 그린다
   function drawDragged(tower, x, y, cell) {
     const dpr = window.devicePixelRatio || 1;
-    const unit = artUnit(1.1 * cell, ART_SIZE, dpr);
+    const unit = artUnit(1.1 * TOWER_SCALE * cell, ART_SIZE, dpr);
     const s = unit * ART_SIZE;
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 0.9;
@@ -573,7 +634,7 @@ export function createRenderer(canvas) {
 
   // 신화 동물: 더 큰 20x20 그림, 돌아가는 무지개 오라와 반짝이, 위아래로 살짝 떠 있다
   function drawMythic(tower, cx, cy, cell, dpr, now, theme, stunned) {
-    const unit = artUnit(1.15 * cell, (MYTHIC_SIZE * ART_SCALE), dpr);
+    const unit = artUnit(1.15 * TOWER_SCALE * cell, (MYTHIC_SIZE * ART_SCALE), dpr);
     const s = unit * MYTHIC_SIZE * ART_SCALE;
     const bob = Math.round(Math.sin(now / 400 + tower.id) * s * 0.03 * dpr) / dpr;
     const feet = cy + s * 0.4;
@@ -714,10 +775,13 @@ export function createRenderer(canvas) {
     }
     upright(x + cell / 2, y + cell / 2, (px, py) => {
       // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
-      if (theme === 'sea') ctx.drawImage(tiles.seaIslet[0][0], px - cell * 0.55, py - cell * 0.3, cell * 1.1, cell * 0.95);
+      if (theme === 'sea') {
+        const k = TOWER_SCALE;
+        ctx.drawImage(tiles.seaIslet[0][0], px - cell * 0.55 * k, py - cell * 0.3 * k, cell * 1.1 * k, cell * 0.95 * k);
+      }
       // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
       const dpr = window.devicePixelRatio || 1;
-      const unit = artUnit(0.95 * cell, ART_SIZE, dpr);
+      const unit = artUnit(0.95 * TOWER_SCALE * cell, ART_SIZE, dpr);
       const s = unit * ART_SIZE;
       const cx = Math.round(px * dpr) / dpr;
       const cy = Math.round(py * dpr) / dpr;
@@ -927,6 +991,28 @@ export function createRenderer(canvas) {
     }
   }
 
+  // 블랙홀에 빨려 드는 몬스터: 블랙홀 주위를 돌며 비틀리고 작아지다 사라진다 (k: 0→1)
+  function drawSucked(f, k, cell) {
+    const look = ENEMY_LOOK[f.enemy];
+    if (!look) return;
+    const img = sprites[look.sprite][0];
+    const dpr = window.devicePixelRatio || 1;
+    const s = artUnit(look.size * cell, ART_SIZE, dpr) * ART_SIZE;
+    const orbit = Math.sin(k * Math.PI) * cell * 0.3;
+    const ang = f.spin * k * Math.PI * 3;
+    const shrink = Math.max(0.02, 1 - k * k);
+    upright(f.x * cell, f.y * cell, (sx, sy) => {
+      ctx.save();
+      ctx.translate(sx + Math.cos(ang) * orbit, sy + Math.sin(ang) * orbit * 0.6);
+      ctx.rotate(f.spin * k * Math.PI * 4);
+      ctx.scale(shrink * (1 + 0.3 * k), shrink * (1 - 0.4 * k));
+      ctx.globalAlpha = 1 - k * k * k;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, -s / 2, -s / 2, s, s);
+      ctx.restore();
+    });
+  }
+
   // 화면 기준으로 똑바로 쓰는 떠오르는 글자 (보상 숫자, 성장 문구)
   function floatingText(f, k, cell) {
     const big = f.kind === 'text' && f.big;
@@ -955,6 +1041,8 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
       if (f.kind === 'projectile') {
         drawProjectile(f, k, cell);
+      } else if (f.kind === 'suck') {
+        drawSucked(f, k, cell);
       } else if (f.kind === 'beam') {
         // 천마의 날개 바람: 굵은 하얀 줄기가 빠르게 사라진다
         ctx.globalAlpha = 1 - k;

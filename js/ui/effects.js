@@ -3,7 +3,7 @@
 
 export const EFFECT_LIMIT = 400;
 export const LIFE = {
-  projectile: 180, beam: 260, shock: 320, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320, damage: 650,
+  projectile: 180, beam: 260, shock: 320, suck: 650, particle: 520, coin: 950, ring: 420, text: 1100, flash: 320, damage: 650,
 };
 export const SHAKE_MS = 450;
 
@@ -36,6 +36,7 @@ export function createEffects(rng = effectRng(Date.now())) {
   let shakeAt = -Infinity;
   let shakePower = 0;
   let flashAt = -Infinity;
+  let pulseAt = -Infinity; // 블랙홀이 몬스터를 삼킨 시각
 
   const add = (fx) => {
     list.push(fx);
@@ -108,6 +109,9 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'text', x: ev.x, y: ev.y, text: '홀림!', big: false, charm: true, t: now, life: LIFE.text });
       } else if (ev.type === 'leak') {
         flashAt = now;
+        // 블랙홀에 빨려 들어간다: 그 자리에서 돌며 작아지고, 블랙홀이 꿀렁인다
+        pulseAt = now;
+        add({ kind: 'suck', enemy: ev.enemy, x: ev.x, y: ev.y, spin: rng() < 0.5 ? -1 : 1, t: now, life: LIFE.suck });
       }
     },
     summon(x, y, now) {
@@ -137,6 +141,11 @@ export function createEffects(rng = effectRng(Date.now())) {
     // 화면 흔들림 세기 0~1
     shake(now) {
       return shakeLevel(now);
+    },
+    // 블랙홀이 몬스터를 삼킨 뒤 꿀렁임 세기 0~1
+    portalPulse(now) {
+      const k = 1 - (now - pulseAt) / (LIFE.suck * 1.4);
+      return k > 0 ? Math.min(1, k) : 0;
     },
     // 적이 집에 도착했을 때 붉은 번쩍임 세기 0~1
     flash(now) {

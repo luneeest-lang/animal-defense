@@ -139,3 +139,15 @@ test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람
   assert.ok(all.some((f) => f.kind === 'ring' && f.reach >= 3));
   assert.ok(all.some((f) => f.kind === 'text' && f.text === '홀림!'));
 });
+
+test('몬스터가 블랙홀에 닿으면 빨려 들어가는 효과가 생기고, 블랙홀이 크게 꿀렁인다', () => {
+  const fx = createEffects(fixed);
+  assert.equal(fx.portalPulse(0), 0);
+  fx.fromEvent({ type: 'leak', enemy: 'tank', lives: 1, x: 2, y: 9 }, 100);
+  const suck = fx.active(100).find((f) => f.kind === 'suck');
+  assert.deepEqual([suck.enemy, suck.x, suck.y], ['tank', 2, 9]);
+  assert.equal(fx.portalPulse(100), 1);
+  assert.ok(fx.portalPulse(100 + LIFE.suck / 2) > 0);
+  assert.equal(fx.portalPulse(100 + LIFE.suck * 2), 0);
+  assert.ok(!fx.active(100 + LIFE.suck).some((f) => f.kind === 'suck'));
+});

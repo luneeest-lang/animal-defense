@@ -35,7 +35,7 @@ export function soundsFor(events) {
   const out = [];
   for (const ev of events) {
     if (ev.type === 'death') out.push(BOSSES.has(ev.enemy) ? 'bossDeath' : 'pop');
-    else if (ev.type === 'leak') out.push('hurt');
+    else if (ev.type === 'leak') out.push('suck');
     else if (ev.type === 'bossSkill') out.push(ev.skill === 'roar' ? 'roar' : 'skill');
     else if (ev.type === 'quake') out.push('quake');
     else if (ev.type === 'charm') out.push('charm');
@@ -45,7 +45,7 @@ export function soundsFor(events) {
 const BOSSES = new Set(['boss', 'slimeKing', 'lich', 'lavaGolem', 'shadowWolf', 'dragon']);
 
 // 같은 소리가 너무 촘촘히 겹치지 않게 하는 최소 간격(초)
-const GAP = { pop: 0.05, hurt: 0.12, quake: 0.5, charm: 0.15, skill: 0.3 };
+const GAP = { pop: 0.05, hurt: 0.12, suck: 0.12, quake: 0.5, charm: 0.15, skill: 0.3 };
 
 // 배경음: 긴장감 있는 라단조. 8분음표로 쉬지 않고 달리는 베이스와 북, 띄엄띄엄 나오는 선율 (0은 쉼표)
 const TEMPO = 0.17;
@@ -144,6 +144,12 @@ export function createSound() {
       arpeggio([523, 659, 784, 1047], 0.08, { type: 'triangle', vol: 0.08, at: 0.3 });
     },
     hurt: () => tone(240, 0.18, { slideTo: 110, vol: 0.08 }),
+    // 블랙홀에 빨려 들어가는 슈욱: 아래로 미끄러지는 소리와 휘몰아치는 바람
+    suck: () => {
+      tone(520, 0.45, { type: 'sawtooth', slideTo: 60, vol: 0.06 });
+      tone(780, 0.35, { type: 'sine', slideTo: 90, vol: 0.05, at: 0.03 });
+      noise(0.4, { vol: 0.08, cutoff: 1400, filter: 'bandpass' });
+    },
     skill: () => tone(320, 0.22, { slideTo: 180, type: 'sawtooth', vol: 0.05 }),
     roar: () => {
       noise(0.9, { vol: 0.28, cutoff: 380 });
