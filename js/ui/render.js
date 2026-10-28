@@ -5,7 +5,8 @@ import { isBoss } from '../core/enemies.js';
 import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
 import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics } from './pixel.js';
+import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor } from './pixel.js';
+import { decorFor, marginDecor } from './decor.js';
 import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
 import { createEffects } from './effects.js';
@@ -47,6 +48,8 @@ export function createRenderer(canvas) {
   const tiles = bakeTiles();
   const animals = bakeAnimals();
   const mythics = bakeMythics();
+  const decor = bakeDecor();
+  const decorCache = new Map(); // 맵 id → 장식 목록
   const towerFacing = new Map();
   const facing = new WeakMap();
   // 세로 화면에서는 맵을 90도 돌려 그린다(길이 위에서 아래로). boardH는 돌리기 전 맵의 세로 길이(px)
@@ -138,6 +141,7 @@ export function createRenderer(canvas) {
       }
     }
     drawRelief(map, cell);
+    drawDecor(map, cell);
     for (const [c, r] of map.blocked) drawObject(tiles.mountainBoulder[0][0], c, r, cell);
   }
 
@@ -151,6 +155,7 @@ export function createRenderer(canvas) {
       }
     }
     drawRelief(map, cell);
+    drawDecor(map, cell);
     for (const [c, r] of map.blocked) drawObject(tiles.forestTree[0][0], c, r, cell);
   }
 
@@ -169,6 +174,7 @@ export function createRenderer(canvas) {
       }
     }
     drawRelief(map, cell);
+    drawDecor(map, cell);
     for (const [c, r] of map.blocked) drawObject(tiles.seaReef[0][0], c, r, cell);
   }
 
@@ -289,11 +295,12 @@ export function createRenderer(canvas) {
     const i1 = Math.ceil((width - board.x) / cell) + 1;
     const j1 = Math.ceil((height - board.y) / cell) + 1;
     const tick = Math.floor(now / WATER_FRAME_MS);
-    const deco = { mountain: [tiles.mountainBoulder, 9], forest: [tiles.forestTree, 4], sea: [tiles.seaReef, 11] }[map.theme] ?? [tiles.mountainBoulder, 9];
     ctx.imageSmoothingEnabled = false;
     for (let j = j0; j < j1; j++) {
       for (let i = i0; i < i1; i++) {
-        if (i >= 0 && j >= 0 && i < sc && j < sr) continue;
+        // 맵 안쪽까지 바닥을 깐다: 맵을 돌려 그릴 때 가장자리에 생기는 1픽셀 미만의 틈을 메운다
+        const inside = i >= 0 && j >= 0 && i < sc && j < sr;
+        if (inside && i > 0 && j > 0 && i < sc - 1 && j < sr - 1) continue;
         const hc = i + 1000;
         const hr = j + 1000;
         let img;
@@ -303,27 +310,141 @@ export function createRenderer(canvas) {
         } else if (map.theme === 'forest') img = pickVariant(tiles.forestGrass, hc, hr, FOREST_GRASS_WEIGHTS)[0];
         else img = pickVariant(tiles.mountainGround, hc, hr, MOUNTAIN_GROUND_WEIGHTS)[0];
         drawTile(img, i, j, cell);
-        // 맵 가장자리에 바로 붙은 칸은 비워 두고, 그 밖에 나무·바위·암초를 드문드문 놓는다
-        const near = i >= -1 && j >= -1 && i <= sc && j <= sr;
-        if (!near && (cellHash(hc, hr) >> 3) % deco[1] === 0) {
-          const x = (i + 0.5) * cell;
-          const y = (j + 0.5) * cell;
-          dropShadow(x, y + cell * 0.36, cell * 0.4, cell * 0.12);
-          ctx.drawImage(deco[0][0][0], Math.floor(x - cell / 2), Math.floor(y - cell / 2), Math.ceil(cell), Math.ceil(cell));
-        }
       }
     }
-    // 여백은 살짝 어둡게, 맵과의 경계에는 얇은 그림자
-    const bw = sc * cell;
-    const bh = sr * cell;
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.beginPath();
-    ctx.rect(-board.x - cell, -board.y - cell, width + cell * 2, height + cell * 2);
-    ctx.rect(bw, 0, -bw, bh);
-    ctx.fill('evenodd');
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-1, -1, bw + 2, bh + 2);
+    // 장식은 바닥을 다 깐 뒤에 위에서 아래 줄 순서로 놓아, 아래 줄 물체가 위 줄 물체를 가리게 한다
+    for (let j = j0; j < j1; j++) {
+      for (let i = i0; i < i1; i++) {
+        if (i >= 0 && j >= 0 && i < sc && j < sr) continue;
+        const d = marginDecor(map.theme, i, j);
+        if (d) drawDecorAt(d.big ? tiles[d.name][0][0] : decor[d.name], (i + 0.5 + d.dx) * cell, (j + 0.5 + d.dy) * cell, cell, d.tall);
+      }
+    }
+  }
+
+  // 장식 하나를 (화면 좌표 x, y가 칸 가운데) 그린다. 키 큰 장식은 발밑 그림자를 깐다
+  function drawDecorAt(img, x, y, cell, tall) {
+    if (tall) dropShadow(x, y + cell * 0.36, cell * 0.36, cell * 0.1, 0.25);
+    ctx.drawImage(img, Math.floor(x - cell / 2), Math.floor(y - cell / 2), Math.ceil(cell), Math.ceil(cell));
+  }
+
+  // 맵 안 장식: 맵 좌표에서 위치를 정하고, 세로 화면에서도 똑바로 서게 그린다
+  function drawDecor(map, cell) {
+    if (!decorCache.has(map.id)) decorCache.set(map.id, decorFor(map));
+    for (const d of decorCache.get(map.id)) {
+      upright((d.c + 0.5 + d.dx) * cell, (d.r + 0.5 + d.dy) * cell, (sx, sy) => drawDecorAt(decor[d.name], sx, sy, cell, d.tall));
+    }
+  }
+
+  // 살아 있는 맵: 시간에 따라 움직이는 것들. 좌표는 맵 왼쪽 위가 (0, 0)인 화면 기준이고, 화면 전체(여백 포함)를 쓴다.
+  // 동작 줄이기 설정이면 그리지 않는다
+  const screenBox = () => ({ x0: -board.x, y0: -board.y, W: width, H: height });
+
+  // 낮은 층(동물·몬스터 아래): 바다의 물고기 그림자와 물결 반짝임. 다리(길) 아래로 지나가면 보이지 않는다
+  function drawAmbientLow(map, cell, now) {
+    if (reduceMotion || map.theme !== 'sea') return;
+    const path = pathCells(map);
+    const onRoad = (sx, sy) => {
+      const mx = rotated ? sy : sx;
+      const my = rotated ? boardH - sx : sy;
+      return path.has(`${Math.floor(mx / cell)},${Math.floor(my / cell)}`);
+    };
+    const t = now / 1000;
+    const { x0, y0, W, H } = screenBox();
+    inScreen(() => {
+      ctx.fillStyle = 'rgba(10, 45, 85, 0.3)';
+      for (let k = 0; k < 6; k++) {
+        const dir = k % 2 ? 1 : -1;
+        const span = W + cell * 4;
+        const along = (t * cell * (0.35 + (k % 3) * 0.12) + (k * span) / 6) % span;
+        const x = dir > 0 ? x0 - cell * 2 + along : x0 + W + cell * 2 - along;
+        const y = y0 + H * ((k * 0.37 + 0.12) % 1) + Math.sin(t * 1.3 + k) * cell * 0.25;
+        if (onRoad(x, y)) continue;
+        const wag = Math.sin(t * 8 + k) * cell * 0.04;
+        const tail = x - dir * cell * 0.2;
+        ctx.beginPath();
+        ctx.ellipse(x, y, cell * 0.2, cell * 0.075, 0, 0, Math.PI * 2);
+        ctx.moveTo(tail, y);
+        ctx.lineTo(tail - dir * cell * 0.13, y - cell * 0.07 + wag);
+        ctx.lineTo(tail - dir * cell * 0.13, y + cell * 0.07 + wag);
+        ctx.closePath();
+        ctx.fill();
+      }
+      const u = Math.max(1, Math.round(cell / 16));
+      ctx.fillStyle = '#ffffff';
+      for (let k = 0; k < 16; k++) {
+        const h = cellHash(k, 99);
+        const twinkle = Math.sin(t * 2.2 + k * 1.9);
+        if (twinkle < 0.55) continue;
+        const x = Math.round(x0 + ((h % 1000) / 1000) * W);
+        const y = Math.round(y0 + (((h >>> 10) % 1000) / 1000) * H);
+        if (onRoad(x, y)) continue;
+        const len = u * (1 + (twinkle - 0.55) * 5);
+        ctx.globalAlpha = (twinkle - 0.55) / 0.45;
+        ctx.fillRect(x - len, y - u / 2, len * 2, u);
+        ctx.fillRect(x - u / 2, y - len, u, len * 2);
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // 높은 층(모든 것 위): 천천히 지나가는 구름 그림자, 숲의 나비, 돌산의 새와 바다의 갈매기
+  function drawAmbientHigh(map, cell, now) {
+    if (reduceMotion) return;
+    const t = now / 1000;
+    const { x0, y0, W, H } = screenBox();
+    const u = Math.max(1, Math.round(cell / 16));
+    inScreen(() => {
+      ctx.fillStyle = 'rgba(0, 0, 25, 0.07)';
+      for (let k = 0; k < 2; k++) {
+        const r = cell * (1.6 + k * 0.6);
+        const span = W + r * 4;
+        const x = x0 - r * 2 + ((t * cell * 0.18 + k * span * 0.55) % span);
+        const y = y0 + H * (0.25 + k * 0.45);
+        ctx.beginPath();
+        for (const [ox, oy, sz] of [[0, 0, 1], [r * 0.7, r * 0.15, 0.75], [-r * 0.65, r * 0.2, 0.7]]) {
+          ctx.moveTo(x + ox + r * sz, y + oy);
+          ctx.ellipse(x + ox, y + oy, r * sz, r * sz * 0.55, 0, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+      if (map.theme === 'forest') {
+        const colors = ['#ffffff', '#ffd23f', '#ff9fd0', '#9fe0ff'];
+        for (let k = 0; k < 4; k++) {
+          const x = Math.round(x0 + W * (0.5 + 0.42 * Math.sin(t * 0.13 + k * 1.7)));
+          const y = Math.round(y0 + H * (0.5 + 0.42 * Math.sin(t * 0.17 + k * 2.3)) + Math.sin(t * 3 + k) * cell * 0.08);
+          const w = u * (1 + Math.round(2 * Math.abs(Math.sin(t * 12 + k))));
+          ctx.fillStyle = colors[k];
+          ctx.fillRect(x - w - u, y - u * 2, w, u * 2);
+          ctx.fillRect(x + u, y - u * 2, w, u * 2);
+          ctx.fillRect(x - w - u + u, y, w - u || u, u);
+          ctx.fillRect(x + u, y, w - u || u, u);
+          ctx.fillStyle = '#2a1d10';
+          ctx.fillRect(x - u / 2, y - u * 2, u, u * 3);
+        }
+      } else {
+        // 돌산은 검은 새, 바다는 하얀 갈매기. 땅에는 흐린 그림자가 따라간다
+        const color = map.theme === 'sea' ? '#ffffff' : '#2a2420';
+        for (let k = 0; k < 2; k++) {
+          const span = W + cell * 2;
+          const x = x0 - cell + ((t * cell * 0.9 + k * span * 0.6) % span);
+          const y = y0 + H * (0.2 + k * 0.35) + Math.sin(t * 0.8 + k) * cell * 0.3;
+          const s = cell * 0.22;
+          const flap = Math.sin(t * 9 + k * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+          ctx.beginPath();
+          ctx.ellipse(x + cell * 0.6, y + cell * 1.2, s * 0.9, s * 0.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = Math.max(1.5, u * 1.2);
+          ctx.beginPath();
+          ctx.moveTo(x - s, y - flap * s * 0.5);
+          ctx.lineTo(x, y);
+          ctx.lineTo(x + s, y - flap * s * 0.5);
+          ctx.stroke();
+        }
+      }
+    });
   }
 
   // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게 (캔버스 전체)
@@ -916,6 +1037,7 @@ export function createRenderer(canvas) {
       ctx.rotate(Math.PI / 2);
     }
     drawBoard(game, cell, now);
+    drawAmbientLow(game.map, cell, now);
     drawLighting();
     drawZones(game, cell, now);
     for (const t of game.towers) {
@@ -926,6 +1048,7 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
     }
     for (const e of game.enemies) drawEnemy(game, e, cell);
+    drawAmbientHigh(game.map, cell, now);
     for (const e of game.enemies) drawEnemyHp(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);

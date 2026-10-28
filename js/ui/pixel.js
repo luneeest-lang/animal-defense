@@ -2,6 +2,7 @@ import { SPRITES, SPRITE_SIZE } from '../data/sprites.js';
 import { TILES } from '../data/tiles.js';
 import { ANIMAL_SPRITES } from '../data/animals.js';
 import { MYTHIC_SPRITES } from '../data/mythicSprites.js';
+import { DECOR_SPRITES } from '../data/decor.js';
 
 // 문자 그림 한 장을 캔버스로 굽는다. 크기는 그림 크기를 따른다(보통 16x16, 신화 20x20).
 function bake(palette, rows) {
@@ -59,4 +60,9 @@ export function bakeAnimals() {
 // 신화 동물: { id: 캔버스 }
 export function bakeMythics() {
   return Object.fromEntries(Object.entries(MYTHIC_SPRITES).map(([id, def]) => [id, bake(def.palette, def.rows)]));
+}
+
+// 맵 장식: { 이름: 캔버스 }
+export function bakeDecor() {
+  return Object.fromEntries(Object.entries(DECOR_SPRITES).map(([id, def]) => [id, bake(def.palette, def.rows)]));
 }
