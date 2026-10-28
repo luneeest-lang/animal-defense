@@ -121,5 +121,5 @@ test('미션·황금 몬스터 일정과 진행도 저장되고, 예전 저장(�
   const r2 = restoreGame(old);
   assert.ok(r2);
   assert.equal(r2.mission, null);
-  assert.equal(r2.schedule.golden.length, 4);
+  assert.equal(r2.schedule.golden.length, 1);
 });

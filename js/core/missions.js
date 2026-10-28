@@ -1,12 +1,11 @@
 import { buildWaves, isBossWave, spawnSchedule } from './waves.js';
 import { CONFIG, placeFree } from './game.js';
 
-// 판마다 무작위로 정하는 이벤트: 황금 몬스터 4번(3~25웨이브의 일반 웨이브), 판 중 미션 5번(2~24웨이브에 시작).
-// 미션이 진행 중이면 다음 미션은 다음 웨이브로 미뤄지고, 25웨이브가 넘으면 새 미션은 시작하지 않는다.
+// 판마다 무작위로 정하는 이벤트: 황금 몬스터 1번(3~25웨이브의 일반 웨이브), 판 중 미션 1번(2~24웨이브에 시작).
 export const GOLDEN_LAST_WAVE = 25;
 export const MISSION_LAST_WAVE = 25;
-const GOLDEN_PER_GAME = 4;
-const MISSIONS_PER_GAME = 5;
+const GOLDEN_PER_GAME = 1;
+const MISSIONS_PER_GAME = 1;
 
 export const goldenReward = (wave) => 50 + 5 * wave;
 

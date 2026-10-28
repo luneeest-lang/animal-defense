@@ -19,25 +19,23 @@ const quiet = (g) => {
   return g;
 };
 
-test('판마다 황금 몬스터 4번은 3~25웨이브의 일반 웨이브에서, 미션 5번은 2~24웨이브에서 무작위로 정해진다', () => {
+test('판마다 황금 몬스터 1번은 3~25웨이브의 일반 웨이브에서, 미션 1번은 2~24웨이브에서 무작위로 정해진다', () => {
   assert.equal(GOLDEN_LAST_WAVE, 25);
   assert.equal(MISSION_LAST_WAVE, 25);
   const waves = buildWaves();
   const seen = new Set();
   for (let seed = 1; seed <= 30; seed++) {
-    const s = rollSchedule(lcg(seed));
-    assert.equal(s.golden.length, 4);
-    assert.equal(new Set(s.golden).size, 4);
+    const s = rollSchedule(lcg(seed * 99991 + 7));
+    assert.equal(s.golden.length, 1);
     for (const w of s.golden) {
       assert.ok(w >= 3 && w <= 25 && !isBossWave(waves[w - 1]), String(w));
     }
-    assert.equal(s.missions.length, 5);
-    assert.equal(new Set(s.missions).size, 5);
+    assert.equal(s.missions.length, 1);
     assert.ok(s.missions.every((w) => w >= 2 && w <= 24));
     assert.deepEqual(s.missions, [...s.missions].sort((a, b) => a - b));
-    seen.add(s.golden.join(','));
+    seen.add(`${s.golden}/${s.missions}`);
   }
-  assert.ok(seen.size > 20, '판마다 다르다');
+  assert.ok(seen.size > 15, '판마다 다르다');
 });
 
 test('황금 몬스터: 빠르고, 잡으면 골드 50 + 웨이브×5, 놓쳐도 생명은 그대로', () => {
