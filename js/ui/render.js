@@ -4,8 +4,10 @@ import { positionAt, pathCells } from '../core/path.js';
 import { isBoss } from '../core/enemies.js';
 import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
-import { ENEMY_LOOK, SPRITE_SIZE } from '../data/sprites.js';
-import { bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor } from './pixel.js';
+import { ENEMY_LOOK } from '../data/sprites.js';
+import {
+  bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, ART_SIZE, ART_SCALE,
+} from './pixel.js';
 import { decorFor, marginDecor } from './decor.js';
 import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
@@ -57,6 +59,10 @@ export function createRenderer(canvas) {
   // 캔버스는 맵 자리 전체를 덮고, 실제 맵(board)은 그 가운데에 놓인다. 바깥은 같은 배경으로 채운다
   const board = { x: 0, y: 0, width: 0, height: 0 };
   let boardH = 0;
+
+  // 그림(base 픽셀)을 target(CSS px) 크기에 맞출 때 그림 픽셀 하나의 크기(CSS px).
+  // 도트가 고르게 보이도록 화면 픽셀 기준 0.5배 단위로 맞춘다(32픽셀 그림은 정수 배만 쓰면 크기 오차가 크다)
+  const artUnit = (target, base, dpr) => Math.max(1, Math.round(((target * dpr) / base) * 2) / 2) / dpr;
 
   // 맵 좌표(px)의 점을 화면 기준으로 똑바로 서 있게 그린다. draw(sx, sy)는 화면 좌표를 받는다
   function upright(x, y, draw) {
@@ -204,7 +210,8 @@ export function createRenderer(canvas) {
   // 단차 블록: 높은 칸의 앞면 벽, 옆 그림자, 모서리 빛을 화면 기준으로 그린다
   function drawRelief(map, cell) {
     const look = RELIEF[map.theme] ?? RELIEF.mountain;
-    const u = cell / 16; // 도트 한 칸
+    const u = cell / 16; // 원본 도트 한 칸 (벽 높이·기둥 같은 큰 모양)
+    const f = u / ART_SCALE; // 다듬은 해상도의 도트 한 칸 (가는 선과 무늬)
     const wallH = Math.round(cell * look.wall / u) * u;
     inScreen(() => {
       for (const k of reliefCells(map, rotated)) {
@@ -229,7 +236,7 @@ export function createRenderer(canvas) {
         }
         if (k.lipBottom) {
           ctx.fillStyle = 'rgba(0,0,0,0.2)';
-          ctx.fillRect(x0, y0 + h - u, w, u);
+          ctx.fillRect(x0, y0 + h - f, w, f);
         }
         if (k.wallTop) {
           // 벽 아래로 떨어지는 그림자
@@ -243,14 +250,14 @@ export function createRenderer(canvas) {
           ctx.fillRect(x0, y0, w, wallH);
           ctx.fillStyle = look.stripe;
           const hash = cellHash(k.i, k.j);
-          for (let n = 0; n < 16; n += 3) {
-            const len = 0.45 + ((hash >> n) & 3) * 0.15;
-            ctx.fillRect(x0 + (n + ((hash >> (n + 2)) & 1)) * u, y0 + wallH * (1 - len), u, wallH * len);
+          for (let n = 0; n < 16 * ART_SCALE; n += 3) {
+            const len = 0.45 + ((hash >> (n % 29)) & 3) * 0.15;
+            ctx.fillRect(x0 + (n + ((hash >> ((n + 2) % 29)) & 1)) * f, y0 + wallH * (1 - len), f, wallH * len);
           }
           // 지층: 벽 가운데쯤 밝은 가로줄이 끊겨 가며 지나간다
           if (look.strata) {
             ctx.fillStyle = look.strata;
-            for (let n = 0; n < 16; n += 4) if ((hash >> (n + 1)) & 1) ctx.fillRect(x0 + n * u, y0 + Math.round(wallH * 0.55 / u) * u, u * 3, u);
+            for (let n = 0; n < 16 * ART_SCALE; n += 4) if ((hash >> ((n + 1) % 29)) & 1) ctx.fillRect(x0 + n * f, y0 + Math.round(wallH * 0.55 / f) * f, f * 3, f);
           }
           // 바다 다리: 기둥
           if (look.post) {
@@ -263,23 +270,23 @@ export function createRenderer(canvas) {
           ctx.fillRect(x0, y0, w, u * 2);
           if (look.grass) {
             ctx.fillStyle = look.grass;
-            for (let n = 0; n < 16; n += 2) if ((hash >> n) & 1) ctx.fillRect(x0 + n * u, y0 + u * 2, u, u * (1 + ((hash >> (n + 1)) & 1)));
+            for (let n = 0; n < 16 * ART_SCALE; n += 2) if ((hash >> (n % 29)) & 1) ctx.fillRect(x0 + n * f, y0 + u * 2, f, f * (2 + 2 * ((hash >> ((n + 1) % 29)) & 1)));
           }
           // 벽 아래 어두운 접지선
           ctx.fillStyle = 'rgba(0,0,0,0.35)';
-          ctx.fillRect(x0, y0 + wallH - u, w, u);
+          ctx.fillRect(x0, y0 + wallH - f, w, f);
         }
         if (k.rimTop) {
           ctx.fillStyle = 'rgba(255,255,255,0.2)';
-          ctx.fillRect(x0, y0, w, u);
+          ctx.fillRect(x0, y0, w, f);
         }
         if (k.rimLeft) {
           ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.fillRect(x0, y0, u, h);
+          ctx.fillRect(x0, y0, f, h);
         }
         if (k.rimBottom) {
           ctx.fillStyle = 'rgba(0,0,0,0.25)';
-          ctx.fillRect(x0, y0 + h - u, w, u);
+          ctx.fillRect(x0, y0 + h - f, w, f);
         }
       }
     });
@@ -393,7 +400,7 @@ export function createRenderer(canvas) {
     if (reduceMotion) return;
     const t = now / 1000;
     const { x0, y0, W, H } = screenBox();
-    const u = Math.max(1, Math.round(cell / 16));
+    const u = Math.max(1, Math.round(cell / 24));
     inScreen(() => {
       ctx.fillStyle = 'rgba(0, 0, 25, 0.07)';
       for (let k = 0; k < 2; k++) {
@@ -543,8 +550,8 @@ export function createRenderer(canvas) {
   // 손가락(마우스)을 따라오는 타워. 손가락에 가리지 않게 조금 위에 그린다
   function drawDragged(tower, x, y, cell) {
     const dpr = window.devicePixelRatio || 1;
-    const unit = Math.max(1, Math.round((1.1 * cell * dpr) / SPRITE_SIZE)) / dpr;
-    const s = unit * SPRITE_SIZE;
+    const unit = artUnit(1.1 * cell, ART_SIZE, dpr);
+    const s = unit * ART_SIZE;
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 0.9;
     ctx.drawImage(animals[tower.type][tower.level], Math.round(x - s / 2), Math.round(y - s * 0.75), s, s);
@@ -566,8 +573,8 @@ export function createRenderer(canvas) {
 
   // 신화 동물: 더 큰 20x20 그림, 돌아가는 무지개 오라와 반짝이, 위아래로 살짝 떠 있다
   function drawMythic(tower, cx, cy, cell, dpr, now, theme, stunned) {
-    const unit = Math.max(1, Math.round((1.15 * cell * dpr) / MYTHIC_SIZE)) / dpr;
-    const s = unit * MYTHIC_SIZE;
+    const unit = artUnit(1.15 * cell, (MYTHIC_SIZE * ART_SCALE), dpr);
+    const s = unit * MYTHIC_SIZE * ART_SCALE;
     const bob = Math.round(Math.sin(now / 400 + tower.id) * s * 0.03 * dpr) / dpr;
     const feet = cy + s * 0.4;
     if (theme !== 'sea') dropShadow(cx, feet, s * 0.38, s * 0.11, 0.35);
@@ -610,8 +617,8 @@ export function createRenderer(canvas) {
     for (let i = 0; i < 6; i++) {
       const a = now / 700 + (i * Math.PI) / 3;
       const twinkle = 0.5 + 0.5 * Math.sin(now / 140 + i * 1.7 + tower.id);
-      const len = Math.max(2, unit * (1.5 + 2.5 * twinkle));
-      const w = Math.max(1, unit * 0.8);
+      const len = Math.max(2, unit * ART_SCALE * (1.5 + 2.5 * twinkle));
+      const w = Math.max(1, unit * ART_SCALE * 0.8);
       const x = Math.round(cx + Math.cos(a) * s * 0.55);
       const y = Math.round(cy - s * 0.1 + Math.sin(a) * s * 0.35);
       ctx.globalAlpha = 0.5 + 0.5 * twinkle;
@@ -657,7 +664,7 @@ export function createRenderer(canvas) {
     glow.addColorStop(1, 'rgba(255, 80, 0, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
-    const size = Math.max(2, Math.round(unit * 1.2));
+    const size = Math.max(2, Math.round(unit * ART_SCALE * 1.2));
     for (let i = 0; i < 7; i++) {
       const life = (now / 900 + i / 7 + (tower.id % 7) / 7) % 1;
       const x = cx + (((i * 37) % 13) / 13 - 0.5) * s * 0.8 + Math.sin(now / 200 + i) * s * 0.05;
@@ -710,8 +717,8 @@ export function createRenderer(canvas) {
       if (theme === 'sea') ctx.drawImage(tiles.seaIslet[0][0], px - cell * 0.55, py - cell * 0.3, cell * 1.1, cell * 0.95);
       // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
       const dpr = window.devicePixelRatio || 1;
-      const unit = Math.max(1, Math.round((0.95 * cell * dpr) / SPRITE_SIZE)) / dpr;
-      const s = unit * SPRITE_SIZE;
+      const unit = artUnit(0.95 * cell, ART_SIZE, dpr);
+      const s = unit * ART_SIZE;
       const cx = Math.round(px * dpr) / dpr;
       const cy = Math.round(py * dpr) / dpr;
       const now = performance.now();
@@ -763,8 +770,8 @@ export function createRenderer(canvas) {
   function drawEnemyAt(e, look, face, px, py, cell) {
     // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
     const dpr = window.devicePixelRatio || 1;
-    const unit = Math.max(1, Math.round((look.size * cell * dpr) / SPRITE_SIZE)) / dpr;
-    const s = unit * SPRITE_SIZE;
+    const unit = artUnit(look.size * cell, ART_SIZE, dpr);
+    const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
     const cy = Math.round(py * dpr) / dpr;
     const feet = cy + s * 0.32;
@@ -810,8 +817,8 @@ export function createRenderer(canvas) {
 
   function drawHpBarAt(e, look, px, py, cell) {
     const dpr = window.devicePixelRatio || 1;
-    const unit = Math.max(1, Math.round((look.size * cell * dpr) / SPRITE_SIZE)) / dpr;
-    const s = unit * SPRITE_SIZE;
+    const unit = artUnit(look.size * cell, ART_SIZE, dpr);
+    const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
     const cy = Math.round(py * dpr) / dpr;
     // 체력바: 두꺼운 빨간 바 (어두운 테두리와 배경)
