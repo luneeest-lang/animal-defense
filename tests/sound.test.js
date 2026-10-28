@@ -9,8 +9,12 @@ test('게임 이벤트마다 알맞은 효과음 (발사·피해 숫자처럼 �
     { type: 'leak' }, { type: 'waveClear' },
     { type: 'bossSkill', skill: 'roar' }, { type: 'bossSkill', skill: 'dash' },
     { type: 'quake' }, { type: 'mythicShot', mythic: 'gumiho' }, { type: 'charm' },
+    { type: 'goldenSpawn' }, { type: 'death', enemy: 'golden' }, { type: 'goldenEscape' },
+    { type: 'missionStart' }, { type: 'missionDone' }, { type: 'missionFail' },
   ];
-  assert.deepEqual(soundsFor(events), ['pop', 'bossDeath', 'suck', 'roar', 'skill', 'quake', 'charm']);
+  assert.deepEqual(soundsFor(events), [
+    'pop', 'bossDeath', 'suck', 'roar', 'skill', 'quake', 'charm', 'golden', 'jackpot', 'escape', 'mission', 'missionDone', 'missionFail',
+  ]);
 });
 
 test('배경음과 효과음은 따로 켜고 끄며 저장된다', () => {
@@ -33,4 +37,9 @@ test('예전 소리 설정(전체·효과음만·끄기)은 새 설정으로 옮
     const store = { getItem: (k) => data[k] ?? null, setItem: (k, v) => { data[k] = v; } };
     assert.deepEqual(loadSoundSettings(store), want, old);
   }
+});
+
+test('소리는 Math.random을 쓰지 않는다 (소환 같은 게임의 무작위와 섞이지 않게)', async () => {
+  const src = (await import('node:fs')).readFileSync(new URL('../js/ui/sound.js', import.meta.url), 'utf8');
+  assert.ok(!src.includes('Math.random'));
 });

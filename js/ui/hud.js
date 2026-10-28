@@ -7,6 +7,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { bakeAnimals, bakeMythics } from './pixel.js';
 import { MYTHICS, GRADE_NAMES, gradeOf } from '../data/mythics.js';
 import { findMaterials, canCraft, RECIPE_LEVELS } from '../core/mythics.js';
+import { missionText } from '../core/missions.js';
 
 // 이름 끝 글자에 받침이 있으면 '이', 없으면 '가'
 const subjectParticle = (word) => {
@@ -24,7 +25,7 @@ export function createHud(root, handlers) {
     btnContinue: $('btn-continue'), btnSound: $('btn-sound'), btnMusic: $('btn-music'),
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
-    cardPick: $('card-pick'), cardList: $('card-list'),
+    cardPick: $('card-pick'), cardList: $('card-list'), mission: $('mission'),
     mythicPick: $('mythic-pick'), mythicList: $('mythic-list'), btnCloseMythic: $('btn-close-mythic'),
     bossSub: root.querySelector('.boss-sub'), bossSkill: root.querySelector('.boss-skill'),
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
@@ -157,6 +158,21 @@ export function createHud(root, handlers) {
     mythicBtn.disabled = game.status !== 'running';
   }
 
+  // 진행 중인 미션: 맵 위쪽 띠에 목표·진행·보상·남은 웨이브
+  const missionGoal = el.mission.querySelector('.m-goal');
+  const missionMeta = el.mission.querySelector('.m-meta');
+  const rewardText = (r) => [
+    r.gold && `🪙${r.gold}`, r.lives && `❤️+${r.lives}`, r.summons && `무료 소환 ${r.summons}`, r.upgrade && '강화 1단계',
+  ].filter(Boolean).join(' ');
+  function renderMission(game) {
+    const m = game.mission;
+    el.mission.hidden = !m || game.status !== 'running';
+    if (!m) return;
+    setText(missionGoal, `🎯 ${missionText(m)}`);
+    const left = Math.max(1, m.deadline - Math.max(1, game.waveNumber) + 1);
+    setText(missionMeta, `보상 ${rewardText(m.reward)} · 남은 웨이브 ${left}`);
+  }
+
   el.btnContinue.addEventListener('click', () => handlers.onContinue());
   el.btnSound.addEventListener('click', () => handlers.onSound());
   el.btnMusic.addEventListener('click', () => handlers.onMusic());
@@ -275,6 +291,7 @@ export function createHud(root, handlers) {
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused || !!game.cardChoices;
       renderCards(game);
+      renderMission(game);
       renderMythics(game, mythicOpen && !game.cardChoices);
       renderTaken(game);
       // 보스 경고는 남은 시간 동안 보이고, 끝나기 직전에 서서히 사라진다

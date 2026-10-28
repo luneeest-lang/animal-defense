@@ -105,3 +105,21 @@ test('저장소: 쓰고 읽고 지울 수 있고, 저장소가 막혀도 오류 
   assert.equal(writeRun(blocked, snap), false);
   clearRun(blocked);
 });
+
+test('미션·황금 몬스터 일정과 진행도 저장되고, 예전 저장(이 정보 없음)도 되살린다', async () => {
+  const { startMission } = await import('../js/core/missions.js');
+  const g = midGame();
+  g.schedule = { golden: [12, 18], missions: [9, 21] };
+  g.counters.kills = 77;
+  startMission(g, 'kill');
+  const r = restoreGame(JSON.parse(JSON.stringify(snapshotGame(g))));
+  assert.deepEqual(r.schedule, { golden: [12, 18], missions: [9, 21] });
+  assert.equal(r.counters.kills, 77);
+  assert.deepEqual(r.mission, g.mission);
+  const old = snapshotGame(midGame());
+  delete old.schedule; delete old.mission; delete old.counters; delete old.lastMission;
+  const r2 = restoreGame(old);
+  assert.ok(r2);
+  assert.equal(r2.mission, null);
+  assert.equal(r2.schedule.golden.length, 4);
+});

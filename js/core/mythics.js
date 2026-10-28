@@ -30,6 +30,7 @@ export function craftMythic(game, id) {
   game.towers = game.towers.filter((t) => !subs.includes(t));
   main.invested += subs.reduce((s, t) => s + t.invested, 0);
   Object.assign(main, { type: id, mythic: true, level: 0, cooldown: 0 });
+  if (game.counters) game.counters.mythics += 1;
   game.events.push({ type: 'mythic', mythic: id, towerId: main.id, ...center(main) });
   return main;
 }

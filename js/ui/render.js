@@ -854,6 +854,26 @@ export function createRenderer(canvas) {
       ctx.stroke();
     }
 
+    // 황금 몬스터: 금빛 후광과 몸 주위에서 반짝이는 금가루
+    if (e.type === 'golden') {
+      const now = performance.now();
+      const glow = ctx.createRadialGradient(cx, cy, s * 0.1, cx, cy, s * 0.75);
+      glow.addColorStop(0, 'rgba(255, 220, 80, 0.55)');
+      glow.addColorStop(1, 'rgba(255, 200, 40, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+      const size = Math.max(2, Math.round(unit * ART_SCALE));
+      for (let i = 0; i < 6; i++) {
+        const life = (now / 600 + i / 6 + e.id * 0.37) % 1;
+        const ang = i * 1.05 + e.id;
+        const x = cx + Math.cos(ang) * s * (0.25 + 0.3 * life) - face * life * s * 0.4;
+        const y = cy + Math.sin(ang) * s * 0.3 - life * s * 0.2;
+        ctx.globalAlpha = 1 - life;
+        ctx.fillStyle = i % 2 ? '#fff3b0' : '#ffd23f';
+        ctx.fillRect(Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+      }
+      ctx.globalAlpha = 1;
+    }
     const frameIndex = Math.floor(e.dist * 4) % 2;
     const frame = sprites[look.sprite][frameIndex];
     // 슬라임은 몸이 눌리는 프레임이 있어서 위아래 통통거림은 다른 적에게만 준다
@@ -905,7 +925,7 @@ export function createRenderer(canvas) {
     if (game.events === lastEvents) return;
     lastEvents = game.events;
     for (const ev of game.events) {
-      effects.fromEvent(ev, now);
+      effects.fromEvent(ev, now, { x: game.map.cols / 2, y: game.map.rows / 2 });
       if (ev.type === 'waveClear') effects.waveClear(game.map.cols / 2, game.map.rows / 2, ev.bonus, now);
       // 타워는 마지막으로 쏜 적 쪽을 바라본다
       if (ev.type === 'shot' || ev.type === 'mythicShot') {

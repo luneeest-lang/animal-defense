@@ -124,7 +124,7 @@ button { font: inherit; color: inherit; }
 #board { display: block; touch-action: none; }
 
 #pause-label {
-  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
   padding: 4px 14px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); font-weight: 700;
   pointer-events: none;
 }
@@ -322,3 +322,14 @@ button { font: inherit; color: inherit; }
 }
 .continue-btn .c-title { font-size: 1.2rem; font-weight: 800; }
 .continue-btn .c-sub { font-size: 0.85rem; font-weight: 600; }
+
+/* 판 중 미션 띠: 맵 위쪽 가운데 */
+#mission {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  max-width: calc(100% - 16px); padding: 4px 12px; border-radius: 12px;
+  background: rgba(20, 18, 8, 0.78); border: 1px solid #ffd23f88; pointer-events: none;
+  font-variant-numeric: tabular-nums; text-align: center;
+}
+#mission .m-goal { font-weight: 800; font-size: 0.85rem; color: #ffe680; white-space: nowrap; }
+#mission .m-meta { font-size: 0.7rem; opacity: 0.85; white-space: nowrap; }

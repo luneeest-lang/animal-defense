@@ -34,11 +34,16 @@ export function saveSoundSettings(store, settings) {
 export function soundsFor(events) {
   const out = [];
   for (const ev of events) {
-    if (ev.type === 'death') out.push(BOSSES.has(ev.enemy) ? 'bossDeath' : 'pop');
+    if (ev.type === 'death') out.push(ev.enemy === 'golden' ? 'jackpot' : BOSSES.has(ev.enemy) ? 'bossDeath' : 'pop');
     else if (ev.type === 'leak') out.push('suck');
     else if (ev.type === 'bossSkill') out.push(ev.skill === 'roar' ? 'roar' : 'skill');
     else if (ev.type === 'quake') out.push('quake');
     else if (ev.type === 'charm') out.push('charm');
+    else if (ev.type === 'goldenSpawn') out.push('golden');
+    else if (ev.type === 'goldenEscape') out.push('escape');
+    else if (ev.type === 'missionStart') out.push('mission');
+    else if (ev.type === 'missionDone') out.push('missionDone');
+    else if (ev.type === 'missionFail') out.push('missionFail');
   }
   return out;
 }
@@ -64,7 +69,17 @@ const MELODY = [
 // 북: k 큰북, s 작은북, h 하이햇, . 쉼
 const DRUMS = 'khshkhsh';
 
+// 잡음용 난수: 게임 규칙의 무작위(소환·합성)를 소리가 가져가지 않도록 따로 쓴다
+function noiseRng(seed = 12345) {
+  let x = seed >>> 0;
+  return () => {
+    x = (x * 1664525 + 1013904223) >>> 0;
+    return x / 2 ** 32;
+  };
+}
+
 export function createSound() {
+  const rand = noiseRng();
   let ctx = null;
   let master = null;
   let settings = { music: true, sfx: true };
@@ -108,7 +123,7 @@ export function createSound() {
     const t = ctx.currentTime + at;
     const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < d.length; i++) d[i] = rand() * 2 - 1;
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const filter = ctx.createBiquadFilter();
@@ -144,6 +159,17 @@ export function createSound() {
       arpeggio([523, 659, 784, 1047], 0.08, { type: 'triangle', vol: 0.08, at: 0.3 });
     },
     hurt: () => tone(240, 0.18, { slideTo: 110, vol: 0.08 }),
+    // 황금 몬스터 출현: 높게 반짝이는 소리
+    golden: () => arpeggio([1319, 1568, 1976, 2637], 0.05, { type: 'triangle', vol: 0.07 }),
+    // 황금 몬스터 처치: 동전이 쏟아지는 소리
+    jackpot: () => {
+      for (let i = 0; i < 8; i++) tone(1800 + (i % 3) * 300, 0.06, { type: 'square', vol: 0.035, at: i * 0.045 });
+      arpeggio([784, 988, 1175, 1568], 0.07, { type: 'triangle', vol: 0.08, at: 0.1 });
+    },
+    escape: () => tone(900, 0.3, { type: 'triangle', slideTo: 300, vol: 0.05 }),
+    mission: () => arpeggio([659, 880], 0.08, { type: 'triangle', vol: 0.06 }),
+    missionDone: () => arpeggio([523, 659, 784, 1047, 1319], 0.07, { type: 'triangle', vol: 0.09 }),
+    missionFail: () => arpeggio([330, 262], 0.12, { type: 'triangle', vol: 0.06 }),
     // 블랙홀에 빨려 들어가는 슈욱: 아래로 미끄러지는 소리와 휘몰아치는 바람
     suck: () => {
       tone(520, 0.45, { type: 'sawtooth', slideTo: 60, vol: 0.06 });

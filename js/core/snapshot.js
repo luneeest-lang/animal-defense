@@ -5,6 +5,7 @@ import { TOWERS, MAX_LEVEL } from './towers.js';
 import { canBuild } from './path.js';
 import { WAVE_COUNT } from './waves.js';
 import { createGame, CONFIG } from './game.js';
+import { MISSIONS } from './missions.js';
 
 // 이어하기: 웨이브와 웨이브 사이의 상태만 저장한다(움직이는 몬스터는 저장하지 않는다).
 // 웨이브 도중에 나가면 그 웨이브가 시작되기 직전으로 돌아간다.
@@ -29,6 +30,10 @@ export function snapshotGame(game) {
     mods: { ...game.mods, damage: { ...game.mods.damage } },
     cardsTaken: [...game.cardsTaken],
     cardChoices: game.cardChoices ? [...game.cardChoices] : null,
+    schedule: { golden: [...game.schedule.golden], missions: [...game.schedule.missions] },
+    mission: game.mission ? { ...game.mission, reward: { ...game.mission.reward } } : null,
+    lastMission: game.lastMission,
+    counters: { ...game.counters },
     towers: game.towers.map((t) => ({
       id: t.id, type: t.type, level: t.level, col: t.col, row: t.row, invested: t.invested, mythic: !!t.mythic,
     })),
@@ -52,6 +57,20 @@ function validTowers(map, towers) {
     ids.add(t.id);
   }
   return true;
+}
+
+// 황금 몬스터·미션 상태. 예전 저장(이 필드가 없음)이나 이상한 값이면 새 게임처럼 무작위 일정을 그대로 둔다
+function restoreMissions(game, snap) {
+  const waves = (list) => Array.isArray(list) && list.every((w) => int(w, 1, WAVE_COUNT));
+  const s = snap.schedule;
+  if (s && waves(s.golden) && waves(s.missions)) game.schedule = { golden: [...s.golden], missions: [...s.missions] };
+  const c = snap.counters;
+  if (c && Object.keys(game.counters).every((k) => int(c[k], 0, 1e7))) game.counters = { ...game.counters, ...c };
+  const m = snap.mission;
+  if (m && MISSIONS[m.id] && num(m.goal) && num(m.progress) && num(m.base) && int(m.deadline, 0, WAVE_COUNT + 10) && m.reward && typeof m.reward === 'object') {
+    game.mission = { ...m, reward: { ...m.reward } };
+  }
+  if (MISSIONS[snap.lastMission]) game.lastMission = snap.lastMission;
 }
 
 // 저장을 게임으로 되살린다. 이상한 값이 하나라도 있으면 null
@@ -81,5 +100,6 @@ export function restoreGame(snap) {
   game.nextId = Math.max(num(snap.nextId) ? snap.nextId : 1, ...game.towers.map((t) => t.id + 1), 1);
   // 카운트다운은 처음부터 다시 센다. 카드를 고르는 중이면 고른 뒤에 시작된다
   game.countdown = game.cardChoices ? null : waveNumber === 0 ? CONFIG.firstCountdown : CONFIG.waveGap;
+  restoreMissions(game, snap);
   return game;
 }

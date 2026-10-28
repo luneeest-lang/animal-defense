@@ -7,6 +7,7 @@ export const SPRITE_SIZE = 16;
 export const ENEMY_LOOK = {
   soldier: { sprite: 'soldier', size: 0.9 },
   runner: { sprite: 'runner', size: 0.9 },
+  golden: { sprite: 'golden', size: 1.0 },
   tank: { sprite: 'tank', size: 1.1 },
   shield: { sprite: 'shield', size: 0.95 },
   splitter: { sprite: 'splitter', size: 0.9 },
@@ -562,4 +563,10 @@ export const SPRITES = {
       ],
     ],
   },
+};
+
+// 황금 몬스터: 달리기 몬스터 그림을 금빛으로 칠한다
+SPRITES.golden = {
+  palette: { K: '#5a3a00', R: '#ffd23f', r: '#c9930f', O: '#fff3b0', Y: '#ffffff' },
+  frames: SPRITES.runner.frames,
 };

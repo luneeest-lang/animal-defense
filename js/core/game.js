@@ -3,7 +3,10 @@ import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
 import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js';
-import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO } from './waves.js';
+import {
+  rollSchedule, onWaveStart, onWaveClear, updateMission, goldenReward,
+} from './missions.js';
+import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO, WAVE_COUNT } from './waves.js';
 import { CARDS, CARD_POWER, drawCards } from '../data/cards.js';
 
 export const CONFIG = {
@@ -47,6 +50,13 @@ export function createGame(map, waves = buildWaves()) {
     cardChoices: null, // 웨이브를 끝내고 고를 카드 id 3개. 고르는 동안 게임이 멈춘다
     cardsTaken: [],
     zones: [], // 불사조가 남긴 불길 { x, y, r, dps, left }
+    // 판마다 무작위로 정하는 황금 몬스터·미션 웨이브 (core/missions.js). 테스트용 짧은 웨이브 목록에는 없다
+    schedule: waves.length === WAVE_COUNT ? rollSchedule(Math.random, waves) : { golden: [], missions: [] },
+    mission: null, // 진행 중인 미션
+    lastMission: null,
+    waveLeaked: false, // 이번 웨이브에 생명을 잃었는지 (무손실 미션)
+    // 미션 진행을 세는 카운터
+    counters: { kills: 0, golden: 0, skips: 0, upgrades: 0, awakens: 0, mythics: 0 },
     // 카드로 얻은 효과
     mods: {
       damage: Object.fromEntries(Object.keys(TOWERS).map((id) => [id, 1])),
@@ -128,6 +138,9 @@ export function chooseCard(game, cardId) {
 }
 
 // 무작위 동물을 무작위 빈 칸에 아기로 놓는다 (비용 없음). 칸이 없으면 null
+// 미션 보상의 무료 소환에도 쓴다
+export const placeFree = (game, rng) => placeRandom(game, rng);
+
 function placeRandom(game, rng) {
   const cells = emptyCells(game);
   if (cells.length === 0) return null;
@@ -162,6 +175,7 @@ export function mergeTowers(game, fromId, toId, rng = Math.random) {
   const to = findTower(game, toId);
   to.type = pick(Object.keys(TOWERS), rng);
   to.level += 1;
+  if (to.level === MAX_LEVEL) game.counters.awakens += 1;
   to.invested += from.invested;
   game.towers = game.towers.filter((t) => t !== from);
   return true;
@@ -188,6 +202,7 @@ export function upgradeAnimal(game, typeId) {
   if (game.status !== 'running' || cost === null || cost > game.gold) return false;
   game.gold -= cost;
   game.upgrades[typeId] += 1;
+  game.counters.upgrades += 1;
   return true;
 }
 
@@ -213,6 +228,10 @@ export function mapHpMult(map, waveNumber) {
 export function spawnEnemy(game, type, waveNumber, dist = 0) {
   const e = createEnemy(game.nextId++, type, waveNumber, mapHpMult(game.map, waveNumber));
   e.dist = dist;
+  if (ENEMIES[type].golden) {
+    e.bonusGold = goldenReward(waveNumber);
+    game.events.push({ type: 'goldenSpawn', enemyId: e.id, ...positionAt(game.points, dist) });
+  }
   if (game.map.bossAbilities && BOSS_SKILLS[type]) {
     e.skill = BOSS_SKILLS[type]();
     if (type === 'lavaGolem') e.armor = 0.7;
@@ -274,15 +293,18 @@ function startWave(game) {
   const wave = game.waves[game.waveNumber - 1];
   game.bossWarning = isBossWave(wave) ? BOSS_INTRO : 0;
   game.bossWarningType = isBossWave(wave) ? wave.groups[0].type : null;
-  for (const s of spawnSchedule(wave)) {
+  const schedule = spawnSchedule(wave);
+  for (const s of schedule) {
     game.spawnQueue.push({ at: game.time + s.at, type: s.type, wave: game.waveNumber });
   }
   game.countdown = null;
+  onWaveStart(game, schedule.length ? Math.max(...schedule.map((s) => s.at)) : 0);
 }
 
 export function callNextWave(game) {
   if (game.status !== 'running' || game.cardChoices || game.countdown === null || game.waveNumber >= game.waves.length) return 0;
   const bonus = Math.ceil(game.countdown);
+  game.counters.skips += 1;
   startWave(game);
   game.gold += bonus;
   return bonus;
@@ -332,6 +354,8 @@ function resolveEnemies(game) {
     if (e.hp <= 0) {
       const reward = def.reward + game.mods.bounty + (e.bonusGold ?? 0);
       game.gold += reward;
+      game.counters.kills += 1;
+      if (def.golden) game.counters.golden += 1;
       game.events.push({ type: 'death', enemy: e.type, reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
         for (let i = 0; i < def.splitInto.count; i++) {
@@ -339,8 +363,12 @@ function resolveEnemies(game) {
           born[born.length - 1].dist = e.dist;
         }
       }
+    } else if (e.dist >= game.length && def.golden) {
+      // 황금 몬스터는 블랙홀로 도망칠 뿐 생명을 깎지 않는다
+      game.events.push({ type: 'goldenEscape', enemy: e.type, ...positionAt(game.points, e.dist) });
     } else if (e.dist >= game.length) {
       game.lives -= def.leak;
+      game.waveLeaked = true;
       game.events.push({ type: 'leak', enemy: e.type, lives: def.leak, ...positionAt(game.points, e.dist) });
     } else {
       alive.push(e);
@@ -365,12 +393,14 @@ function substep(game, dt) {
   fireTowers(game, dt);
   updateZones(game, dt);
   resolveEnemies(game);
+  updateMission(game);
   // 스폰이 끝나고 필드의 적을 모두 처리하면 보너스를 주고 다음 웨이브까지 카운트다운을 시작한다
   const cleared = game.waveNumber > 0 && game.spawnQueue.length === 0 && game.enemies.length === 0;
   if (cleared && game.clearedWave < game.waveNumber && game.lives > 0) {
     game.clearedWave = game.waveNumber;
     game.gold += CONFIG.waveClearBonus;
     game.events.push({ type: 'waveClear', wave: game.waveNumber, bonus: CONFIG.waveClearBonus });
+    onWaveClear(game);
     // 보스 웨이브(5·10·15·20·25)를 깨면 카드 3장 중 1장을 고른다 (고를 때까지 게임이 멈춘다). 마지막 웨이브는 없다
     const wave = game.waves[game.waveNumber - 1];
     if (game.waveNumber < game.waves.length && isBossWave(wave)) game.cardChoices = drawCards(game.rng);

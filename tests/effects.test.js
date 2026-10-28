@@ -151,3 +151,22 @@ test('몬스터가 블랙홀에 닿으면 빨려 들어가는 효과가 생기�
   assert.equal(fx.portalPulse(100 + LIFE.suck * 2), 0);
   assert.ok(!fx.active(100 + LIFE.suck).some((f) => f.kind === 'suck'));
 });
+
+test('황금 몬스터: 나타나면 큰 알림, 잡으면 금화 폭죽, 놓치면 도망 문구', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'goldenSpawn', enemyId: 1, x: 1, y: 1 }, 0);
+  assert.ok(fx.active(0).some((f) => f.kind === 'text' && f.text === '✨ 황금 몬스터 출현!' && f.big));
+  fx.fromEvent({ type: 'death', enemy: 'golden', reward: 100, x: 3, y: 3 }, 0);
+  assert.ok(fx.active(0).filter((f) => f.kind === 'particle').length >= 30);
+  fx.fromEvent({ type: 'goldenEscape', enemy: 'golden', x: 5, y: 5 }, 0);
+  assert.ok(fx.active(0).some((f) => f.kind === 'text' && f.text === '도망갔다…'));
+});
+
+test('미션: 시작·성공·실패 문구', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'missionStart', mission: 'kill' }, 0, { x: 8, y: 5 });
+  fx.fromEvent({ type: 'missionDone', mission: 'kill', reward: { gold: 120 } }, 0, { x: 8, y: 5 });
+  fx.fromEvent({ type: 'missionFail', mission: 'kill' }, 0, { x: 8, y: 5 });
+  const texts = fx.active(0).filter((f) => f.kind === 'text').map((f) => f.text);
+  assert.deepEqual(texts, ['🎯 새 미션!', '🎯 미션 성공!', '미션 실패…']);
+});

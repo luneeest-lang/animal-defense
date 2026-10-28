@@ -13,7 +13,7 @@ import { MYTHICS } from '../data/mythics.js';
 // 처치 파편 색 (몬스터 도트의 주색)
 export const ENEMY_COLORS = {
   soldier: '#5fbf4a', runner: '#e0453a', tank: '#8d99a3', shield: '#eceff1',
-  splitter: '#a85be0', mini: '#a85be0', boss: '#c8302a',
+  splitter: '#a85be0', mini: '#a85be0', boss: '#c8302a', golden: '#ffd23f',
   slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
@@ -69,7 +69,8 @@ export function createEffects(rng = effectRng(Date.now())) {
   }
 
   return {
-    fromEvent(ev, now) {
+    // center: 맵 가운데(칸 좌표). 미션 문구를 띄울 자리
+    fromEvent(ev, now, center = { x: 8, y: 5 }) {
       if (ev.type === 'shot') {
         add({ kind: 'projectile', tower: ev.tower, from: ev.from, to: ev.to, t: now, life: LIFE.projectile });
         if (ev.tower === 'elephant') add({ kind: 'shock', x: ev.to.x, y: ev.to.y, t: now, life: LIFE.shock });
@@ -80,6 +81,24 @@ export function createEffects(rng = effectRng(Date.now())) {
           kind: 'damage', x: ev.x + (rng() - 0.5) * 0.5, y: ev.y, text: String(Math.max(1, Math.round(ev.amount))),
           t: now, life: LIFE.damage,
         });
+      } else if (ev.type === 'death' && ev.enemy === 'golden') {
+        // 황금 몬스터 처치: 금화 폭죽과 큰 보상 숫자
+        burst(ev.x, ev.y, 34, GOLD, 3.4, 0.11, now);
+        add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ffd23f', big: true, t: now, life: LIFE.ring });
+        add({ kind: 'text', x: ev.x, y: ev.y, text: `+${ev.reward}🪙`, big: true, t: now, life: LIFE.text });
+        shake(0.35, now);
+      } else if (ev.type === 'goldenSpawn') {
+        add({ kind: 'text', x: center.x, y: center.y, text: '✨ 황금 몬스터 출현!', big: true, t: now, life: LIFE.text * 1.4 });
+        burst(ev.x, ev.y, 14, GOLD, 2, 0.08, now);
+      } else if (ev.type === 'goldenEscape') {
+        add({ kind: 'text', x: ev.x, y: ev.y, text: '도망갔다…', big: false, t: now, life: LIFE.text });
+      } else if (ev.type === 'missionStart') {
+        add({ kind: 'text', x: center.x, y: center.y, text: '🎯 새 미션!', big: false, t: now, life: LIFE.text });
+      } else if (ev.type === 'missionDone') {
+        add({ kind: 'text', x: center.x, y: center.y, text: '🎯 미션 성공!', big: true, t: now, life: LIFE.text * 1.4 });
+        burst(center.x, center.y, 24, GOLD, 2.6, 0.1, now);
+      } else if (ev.type === 'missionFail') {
+        add({ kind: 'text', x: center.x, y: center.y, text: '미션 실패…', big: false, warn: true, t: now, life: LIFE.text });
       } else if (ev.type === 'death') {
         const boss = !!ENEMIES[ev.enemy]?.boss;
         burst(ev.x, ev.y, boss ? 28 : 8, [ENEMY_COLORS[ev.enemy] ?? '#ffffff', '#ffffff'], boss ? 3.2 : 2.2, boss ? 0.12 : 0.08, now);

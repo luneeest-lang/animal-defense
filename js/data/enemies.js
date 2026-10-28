@@ -7,6 +7,8 @@ export const ENEMIES = {
   shield: { hp: 80, speed: 0.9, reward: 9, leak: 1, directMult: 0.5 },
   splitter: { hp: 60, speed: 1.0, reward: 8, leak: 1, splitInto: { type: 'mini', count: 2 } },
   mini: { hp: 20, speed: 1.4, reward: 2, leak: 1 },
+  // 황금 몬스터: 판마다 무작위 웨이브에 가끔 나온다. 아주 빠르고, 잡으면 골드를 크게 주며(core/missions.js의 goldenReward), 놓쳐도 생명은 그대로다
+  golden: { name: '황금 몬스터', golden: true, hp: 100, speed: 2.6, reward: 0, leak: 0 },
   // 보스: 5웨이브마다 다른 보스가 1마리 나온다 (boss는 첫 보스 붉은 악마)
   // skill: 중급·고급에서 쓰는 고유 능력 설명
   boss: { name: '붉은 악마', skill: '분노 — 체력이 절반 아래면 1.5배 빨라진다', boss: true, hp: 1500, speed: 0.5, reward: 200, leak: 5 },
