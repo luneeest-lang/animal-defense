@@ -67,15 +67,16 @@ test('성장 단계 이름과 오라 색이 모든 타워에 정해져 있다', 
   for (const id of Object.keys(TOWERS)) assert.match(AURA_COLORS[id], /^#[0-9a-f]{6}$/i, id);
 });
 
-test('신화 동물 그림: 5종 모두 20x20이고 팔레트에 없는 글자를 쓰지 않는다', async () => {
-  const { MYTHIC_SPRITES, MYTHIC_SIZE } = await import('../js/data/mythicSprites.js');
+test('신화 동물 그림: 5종 모두 20x20(또는 직접 그린 40x40)이고 팔레트에 없는 글자를 쓰지 않는다', async () => {
+  const { MYTHIC_SPRITES, MYTHIC_SIZE, MYTHIC_NATIVE } = await import('../js/data/mythicSprites.js');
   const { MYTHICS } = await import('../js/data/mythics.js');
   assert.equal(MYTHIC_SIZE, 20);
   assert.deepEqual(Object.keys(MYTHIC_SPRITES).sort(), Object.keys(MYTHICS).sort());
   for (const [name, def] of Object.entries(MYTHIC_SPRITES)) {
-    assert.equal(def.rows.length, MYTHIC_SIZE, name);
+    const size = def.rows.length;
+    assert.ok(size === MYTHIC_SIZE || size === MYTHIC_NATIVE, `${name}: ${size}`);
     for (const row of def.rows) {
-      assert.equal(row.length, MYTHIC_SIZE, `${name}: ${row}`);
+      assert.equal(row.length, size, `${name}: ${row}`);
       for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown ${ch}`);
     }
     assert.ok(def.rows.join('').replace(/\./g, '').length > 120, `${name} nearly empty`);

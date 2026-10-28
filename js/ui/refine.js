@@ -55,9 +55,10 @@ const noise = (x, y, seed) => {
 };
 
 export function refine(palette, rows, {
-  outline = true, shade = true, rim = null, grain = 0, mute = 0, seed = 0, tile = false,
+  outline = true, shade = true, rim = null, grain = 0, mute = 0, seed = 0, tile = false, scale = true,
 } = {}) {
-  const g = scale2x(toGrid(palette, rows), tile);
+  // scale: false면 이미 2배 해상도로 그린 그림이라 크기를 바꾸지 않는다
+  const g = scale ? scale2x(toGrid(palette, rows), tile) : toGrid(palette, rows);
   const h = g.length;
   const w = g[0].length;
   const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? null : g[y][x]);

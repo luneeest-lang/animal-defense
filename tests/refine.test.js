@@ -72,3 +72,10 @@ test('바닥 타일(tile)은 다듬어도 빈 픽셀이 생기지 않는다 (모
   assert.ok(refine(pal, tile, { outline: false, shade: false, tile: true }).flat().every((c) => c !== null));
   assert.ok(refine(pal, tile, { outline: false, shade: false }).flat().some((c) => c === null), '물체 그림은 바깥이 투명');
 });
+
+test('scale: false면 크기를 바꾸지 않고 rim만 두를 수 있다 (직접 그린 큰 그림)', () => {
+  const g = refine(pal, rows, { scale: false, outline: false, shade: false, rim: '#ffffffaa' });
+  assert.equal(g.length, 6);
+  assert.equal(g[1][1], R);
+  assert.equal(g[0][0], '#ffffffaa');
+});

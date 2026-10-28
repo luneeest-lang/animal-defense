@@ -1,7 +1,7 @@
 import { SPRITES, SPRITE_SIZE } from '../data/sprites.js';
 import { TILES } from '../data/tiles.js';
 import { ANIMAL_SPRITES } from '../data/animals.js';
-import { MYTHIC_SPRITES } from '../data/mythicSprites.js';
+import { MYTHIC_SPRITES, MYTHIC_NATIVE } from '../data/mythicSprites.js';
 import { DECOR_SPRITES } from '../data/decor.js';
 import { refine } from './refine.js';
 
@@ -74,7 +74,11 @@ function bakeAnimalsRaw() {
 
 // 신화 동물: { id: 캔버스 }
 function bakeMythicsRaw() {
-  return Object.fromEntries(Object.entries(MYTHIC_SPRITES).map(([id, def]) => [id, bake(def.palette, def.rows, { rim: RIM_ANIMAL })]));
+  // 40x40으로 직접 그린 그림(백호)은 다듬지 않고 테두리만 두른다
+  return Object.fromEntries(Object.entries(MYTHIC_SPRITES).map(([id, def]) => {
+    const native = def.rows.length === MYTHIC_NATIVE;
+    return [id, bake(def.palette, def.rows, native ? { rim: RIM_ANIMAL, scale: false, outline: false, shade: false } : { rim: RIM_ANIMAL })];
+  }));
 }
 
 // 맵 장식: { 이름: 캔버스 }
