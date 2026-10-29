@@ -333,3 +333,78 @@ button { font: inherit; color: inherit; }
 }
 #mission .m-goal { font-weight: 800; font-size: 0.85rem; color: #ffe680; white-space: nowrap; }
 #mission .m-meta { font-size: 0.7rem; opacity: 0.85; white-space: nowrap; }
+
+/* ───────── 입체 UI (2026-10-29) ─────────
+   도트 게임에 어울리는 두툼한 블록: 윗면은 빛을 받아 밝고, 아랫면에는 두꺼운 어두운 테두리와 바닥 그림자.
+   그림자(box-shadow)로만 입체감을 내서 버튼 크기가 바뀌지 않는다(상단 바 배치가 흔들리지 않게). 누르면 아래로 눌려 들어간다 */
+:root {
+  --bevel: inset 0 2px 0 rgba(255, 255, 255, 0.28), inset 0 -4px 0 rgba(0, 0, 0, 0.32), 0 3px 0 rgba(0, 0, 0, 0.5), 0 5px 8px rgba(0, 0, 0, 0.28);
+  --bevel-pressed: inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -2px 0 rgba(0, 0, 0, 0.3), 0 1px 0 rgba(0, 0, 0, 0.5);
+  --bevel-flat: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  --well: inset 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  --raised-panel: inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 0 rgba(0, 0, 0, 0.3), 0 6px 0 rgba(0, 0, 0, 0.45), 0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.btn, .summon-btn, .upgrade-btn, .mythic-btn, .continue-btn, .map-card, .card, .sound-btn {
+  box-shadow: var(--bevel);
+  transition: transform 0.06s ease-out, box-shadow 0.06s ease-out;
+}
+.btn { background: linear-gradient(180deg, #557a54 0%, #3d593d 55%, #334c33 100%); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+.btn.primary, .summon-btn, .continue-btn {
+  background: linear-gradient(180deg, #ffd766 0%, #ffbe2e 50%, #f0a200 100%);
+  color: var(--accent-text); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.sound-btn { background: linear-gradient(180deg, #3f5a3d, #2a3f29); }
+.upgrade-btn { background: linear-gradient(180deg, #3e5a3b 0%, #2c4229 100%); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+.map-card { background: linear-gradient(180deg, #3d5a3b 0%, #2a3f28 100%); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); }
+.mythic-btn { border: 0; background: linear-gradient(180deg, #57407a 0%, #3a2a52 100%); }
+.mythic-btn.ready { border: 0; }
+.card { border: 0; background: linear-gradient(180deg, #45683f 0%, #2c4527 100%); }
+
+/* 누르면 눌려 들어가고, 마우스를 올리면 살짝 떠오른다 */
+:is(.btn, .summon-btn, .upgrade-btn, .mythic-btn, .continue-btn, .map-card, .card, .sound-btn):active:not(:disabled) {
+  transform: translateY(2px); box-shadow: var(--bevel-pressed);
+}
+@media (hover: hover) {
+  :is(.map-card, .card, .continue-btn):hover:not(:disabled) { transform: translateY(-2px); }
+}
+/* 꺼진 버튼은 납작하게 눌린 모습 */
+:is(.btn, .summon-btn, .upgrade-btn, .mythic-btn, .map-card, .sound-btn):disabled {
+  box-shadow: var(--bevel-flat); transform: translateY(2px); filter: saturate(0.5);
+}
+
+/* 상단 바와 아래 패널: 가장자리에 빛 받는 선과 그림자가 있는 도톰한 판 */
+#infobar {
+  position: relative; z-index: 2;
+  background: linear-gradient(180deg, #24361f 0%, #182616 100%);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 6px rgba(0, 0, 0, 0.45);
+}
+#panel {
+  position: relative; z-index: 2;
+  background: linear-gradient(180deg, #1f2f1c 0%, #131d12 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), 0 -3px 6px rgba(0, 0, 0, 0.45);
+}
+/* 생명·골드·웨이브는 판에 파인 홈 안에 */
+.stat {
+  margin: 0 2px; padding: 2px 6px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3); box-shadow: var(--well);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* 떠 있는 판들: 정보창, 결과, 신화 조합표, 미션 띠 */
+#tower-info, .result-card, .mythic-inner {
+  border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: var(--raised-panel);
+}
+.result-card { background: linear-gradient(180deg, #34502f 0%, #223520 100%); }
+.mythic-inner { background: linear-gradient(180deg, #2e2142 0%, #1f1630 100%); }
+.mythic-row { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 0 rgba(0, 0, 0, 0.35); }
+.mat { box-shadow: var(--well); }
+#mission { box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+
+/* 제목 글자도 도톰하게 */
+#screen-menu h1 { text-shadow: 0 3px 0 #0d160c, 0 6px 10px rgba(0, 0, 0, 0.45); }
+.card-inner h2, .mythic-head h2, .result-card h2 { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .summon-btn, .upgrade-btn, .mythic-btn, .continue-btn, .map-card, .card, .sound-btn { transition: none; }
+}
