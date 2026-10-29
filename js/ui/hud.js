@@ -269,7 +269,8 @@ export function createHud(root, handlers) {
       lastGold = gold;
       setText(el.lives, `❤️ ${game.lives}`);
       setText(el.gold, `🪙 ${gold}`);
-      setText(el.wave, `웨이브 ${game.waveNumber}/${WAVE_COUNT}`);
+      // 좁은 휴대폰에서도 잘리지 않게 글자 대신 깃발 아이콘으로 줄인다 (읽는 사람에게는 aria-label로 '웨이브'를 알린다)
+      setText(el.wave, `🚩 ${game.waveNumber}/${WAVE_COUNT}`);
       const running = game.status === 'running';
       if (game.countdown !== null && running && !game.cardChoices) {
         const left = Math.ceil(game.countdown);

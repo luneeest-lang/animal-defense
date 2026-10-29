@@ -79,7 +79,7 @@ button { font: inherit; color: inherit; }
   align-items: center; gap: 4px 6px;
   padding: 6px; background: var(--bar);
 }
-#stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 34px 34px; align-items: center; min-width: 0; gap: 0 2px; }
+#stats { grid-area: stats; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 34px 34px; align-items: center; min-width: 0; gap: 0 2px; }
 .sound-btn {
   width: 32px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: #2c3f2c;
   font-size: 1rem; line-height: 1; cursor: pointer; touch-action: manipulation; position: relative;
@@ -231,6 +231,12 @@ button { font: inherit; color: inherit; }
   #infobar { padding: 4px 6px; }
   .stat { font-size: 0.92rem; }
   #btn-wave { font-size: 0.92rem; }
+}
+/* 아주 좁은 휴대폰(폭 340px 이하): 웨이브 버튼 글자(⏭ 바로 시작 10초 +10🪙)가 잘리지 않게 줄인다 */
+@media (orientation: portrait) and (max-width: 340px) {
+  #infobar .btn { padding: 0 3px; }
+  #btn-wave { font-size: 0.78rem; }
+  .stat { font-size: 0.85rem; padding: 2px 4px; }
 }
 
 @media (orientation: landscape) and (min-width: 560px) {
