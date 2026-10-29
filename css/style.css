@@ -368,9 +368,9 @@ button { font: inherit; color: inherit; }
 @media (hover: hover) {
   :is(.map-card, .card, .continue-btn):hover:not(:disabled) { transform: translateY(-2px); }
 }
-/* 꺼진 버튼은 납작하게 눌린 모습 */
+/* 꺼진 버튼은 납작한 모습. 위치는 그대로 둔다(웨이브 진행 중 버튼이 내려앉아 상단 바가 흔들리지 않게) */
 :is(.btn, .summon-btn, .upgrade-btn, .mythic-btn, .map-card, .sound-btn):disabled {
-  box-shadow: var(--bevel-flat); transform: translateY(2px); filter: saturate(0.5);
+  box-shadow: var(--bevel-flat); filter: saturate(0.5);
 }
 
 /* 상단 바와 아래 패널: 가장자리에 빛 받는 선과 그림자가 있는 도톰한 판 */
