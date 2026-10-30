@@ -6,16 +6,17 @@ import { createGame, emptyCells } from '../js/core/game.js';
 import { decorFor, marginDecor } from '../js/ui/decor.js';
 import { DECOR_SPRITES, DECOR_THEMES } from '../js/data/decor.js';
 
-test('장식 그림: 테마마다 바닥 장식과 키 큰 장식이 있고 모두 16x16이다', () => {
+test('장식 그림: 테마마다 바닥 장식과 키 큰 장식이 있고 모두 16x16(또는 새로 그린 32x32)이다', () => {
   for (const theme of ['mountain', 'forest', 'sea']) {
     const set = DECOR_THEMES[theme];
     assert.ok(set.flat.length >= 2 && set.tall.length >= 2, theme);
     for (const name of [...set.flat, ...set.tall]) assert.ok(DECOR_SPRITES[name], name);
   }
   for (const [name, def] of Object.entries(DECOR_SPRITES)) {
-    assert.equal(def.rows.length, 16, name);
+    const size = def.rows.length;
+    assert.ok(size === 16 || size === 32, `${name}: ${size}`);
     for (const row of def.rows) {
-      assert.equal(row.length, 16, `${name}: ${row}`);
+      assert.equal(row.length, size, `${name}: ${row}`);
       for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} ${ch}`);
     }
   }
