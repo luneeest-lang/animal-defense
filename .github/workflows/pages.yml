@@ -28,6 +28,9 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html css js _site/
+      # 파일 주소에 커밋 버전을 붙여, 업데이트하면 휴대폰도 바로 새 파일을 받게 한다
+      - name: Cache busting
+        run: node tools/cache-bust.mjs _site ${GITHUB_SHA::8}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
