@@ -774,10 +774,10 @@ export function createRenderer(canvas) {
       if (range) rangeCircle(x + cell / 2, y + cell / 2, range, cell, true);
     }
     upright(x + cell / 2, y + cell / 2, (px, py) => {
-      // 바다에서는 발밑에 모래섬을 깐다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
+      // 바다에서는 발밑에 뗏목을 띄운다. 몸에 가려지지 않도록 조금 아래로 내려 그린다
       if (theme === 'sea') {
         const k = TOWER_SCALE;
-        ctx.drawImage(tiles.seaIslet[0][0], px - cell * 0.55 * k, py - cell * 0.3 * k, cell * 1.1 * k, cell * 0.95 * k);
+        ctx.drawImage(tiles.seaRaft[0][0], px - cell * 0.55 * k, py - cell * 0.3 * k, cell * 1.1 * k, cell * 0.95 * k);
       }
       // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
       const dpr = window.devicePixelRatio || 1;

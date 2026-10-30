@@ -11,7 +11,7 @@ test('맵은 초급(돌산), 중급(숲), 고급(바다) 순서이고 id는 그�
 });
 
 test('돌산, 숲, 바다 테마에 필요한 타일이 모두 있다', () => {
-  for (const name of ['mountainGround', 'mountainPath', 'mountainBoulder', 'forestGrass', 'forestPath', 'forestTree', 'seaWater', 'seaPlank', 'seaReef', 'seaIslet']) {
+  for (const name of ['mountainGround', 'mountainPath', 'mountainBoulder', 'forestGrass', 'forestPath', 'forestTree', 'seaWater', 'seaPlank', 'seaReef', 'seaRaft']) {
     assert.ok(TILES[name], `${name} missing`);
   }
   assert.equal(TILES.forestGrass.variants.length, 5);
