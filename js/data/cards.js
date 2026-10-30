@@ -24,7 +24,7 @@ export const CARDS = {
   haste: { icon: '⚡', name: '날쌘 발톱', desc: `모든 동물 공격 속도 +${pct(CARD_POWER.haste)}%` },
   eye: { icon: '🔭', name: '매의 눈', desc: `모든 동물 사거리 +${CARD_POWER.eye}칸` },
   treasure: { icon: '💰', name: '보물 상자', desc: `골드 +${CARD_POWER.treasure}` },
-  heal: { icon: '❤️', name: '응급 치료', desc: `생명 +${CARD_POWER.heal}` },
+  heal: { icon: '❤️', name: '응급 치료', desc: `생명 +${CARD_POWER.heal} (최대 20)` },
   lucky: { icon: '🎲', name: '행운의 소환', desc: `아기 동물 ${CARD_POWER.lucky}마리 무료 소환` },
   bounty: { icon: '🪙', name: '현상금', desc: `처치 보상 +${CARD_POWER.bounty}골드` },
   frost: { icon: '🧊', name: '서리 바람', desc: `모든 몬스터 이동 속도 -${pct(1 - CARD_POWER.frost)}%` },

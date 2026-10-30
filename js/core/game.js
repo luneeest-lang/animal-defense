@@ -127,7 +127,7 @@ export function chooseCard(game, cardId) {
   else if (cardId === 'haste') mods.attackSpeed += P.haste;
   else if (cardId === 'eye') mods.range += P.eye;
   else if (cardId === 'treasure') game.gold += P.treasure;
-  else if (cardId === 'heal') game.lives += P.heal;
+  else if (cardId === 'heal') game.lives = Math.min(CONFIG.startLives, game.lives + P.heal); // 처음 생명(20)까지만 차고 넘치는 만큼은 사라진다
   else if (cardId === 'lucky') for (let i = 0; i < P.lucky; i++) placeRandom(game, game.rng);
   else if (cardId === 'bounty') mods.bounty += P.bounty;
   else if (cardId === 'frost') mods.enemySpeed *= P.frost;

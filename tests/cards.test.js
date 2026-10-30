@@ -110,8 +110,9 @@ test('보물 상자 +400골드, 응급 치료 +10생명, 행운의 소환은 아
   const gold = g.gold;
   choose(g, 'treasure');
   assert.equal(g.gold, gold + 400);
+  g.lives = 5;
   choose(g, 'heal');
-  assert.equal(g.lives, 30);
+  assert.equal(g.lives, 15);
   const cells = emptyCells(g).length;
   choose(g, 'lucky');
   assert.equal(g.towers.length, 6);
@@ -149,4 +150,15 @@ test('현상금은 처치 보상 +4, 서리 바람은 몬스터 이동 -25%, 보
   g2.enemies.push(boss);
   step(g2, 0.05);
   assert.ok(Math.abs((boss.maxHp - boss.hp) - towerStats('squirrel', 0).damage * 2) < 1e-9);
+});
+
+test('응급 치료로 생명은 최대 20까지만 찬다 (넘치는 생명은 사라진다)', () => {
+  const g = createGame(meadow);
+  assert.equal(g.lives, 20);
+  choose(g, 'heal');
+  assert.equal(g.lives, 20, '가득 찬 상태면 그대로');
+  g.lives = 14;
+  choose(g, 'heal');
+  assert.equal(g.lives, 20, '14 + 10 = 24지만 20까지만');
+  assert.match(CARDS.heal.desc, /최대 20/);
 });
