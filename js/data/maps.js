@@ -21,7 +21,7 @@ export const MAPS = [
     name: '중급',
     place: '숲',
     theme: 'forest',
-    hpMult: 1.05,
+    hpMult: 1,
     bossAbilities: true,
     cols: 16,
     rows: 10,
