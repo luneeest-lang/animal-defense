@@ -14,13 +14,13 @@ export const MYTHICS = {
   },
   gumiho: {
     name: '구미호', icon: '🦊', recipe: ['snake', 'eagle', 'elephant'], color: '#6fd3ff',
-    desc: '여우불이 여러 적을 쫓고, 가끔 적을 홀려 뒤로 밀어내요',
-    base: { damage: 225, range: 3.5, cooldown: 0.8, shots: 4, charmChance: 0.12, charmBack: 1.0 },
+    desc: '여우불이 여러 적을 쫓고, 가끔 적을 1초 기절시켜요',
+    base: { damage: 225, range: 3.5, cooldown: 0.8, shots: 4, stunChance: 0.12, stunTime: 1 },
   },
   cheonma: {
     name: '천마', icon: '🐎', recipe: ['penguin', 'snake', 'elephant'], color: '#9d6bff',
     desc: '날개 바람이 일직선의 적을 꿰뚫고, 주변 동물을 빠르게 해요',
-    base: { damage: 375, range: 4.5, cooldown: 1.0, width: 0.6, buffRange: 2, buffSpeed: 1.25 },
+    base: { damage: 1200, range: 4.5, cooldown: 1.0, width: 0.6, buffRange: 2, buffSpeed: 1.25 },
   },
   haetae: {
     name: '해태', icon: '🐯', recipe: ['elephant', 'snake', 'squirrel'], color: '#dfe8ff',

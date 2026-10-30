@@ -8,12 +8,12 @@ test('게임 이벤트마다 알맞은 효과음 (발사·피해 숫자처럼 �
     { type: 'death', enemy: 'soldier' }, { type: 'death', enemy: 'lich' },
     { type: 'leak' }, { type: 'waveClear' },
     { type: 'bossSkill', skill: 'roar' }, { type: 'bossSkill', skill: 'dash' },
-    { type: 'quake' }, { type: 'mythicShot', mythic: 'gumiho' }, { type: 'charm' },
+    { type: 'quake' }, { type: 'mythicShot', mythic: 'gumiho' }, { type: 'stun' },
     { type: 'goldenSpawn' }, { type: 'death', enemy: 'golden' }, { type: 'goldenEscape' },
     { type: 'missionStart' }, { type: 'missionDone' }, { type: 'missionFail' },
   ];
   assert.deepEqual(soundsFor(events), [
-    'pop', 'bossDeath', 'suck', 'roar', 'skill', 'quake', 'charm', 'golden', 'jackpot', 'escape', 'mission', 'missionDone', 'missionFail',
+    'pop', 'bossDeath', 'suck', 'roar', 'skill', 'quake', 'stun', 'golden', 'jackpot', 'escape', 'mission', 'missionDone', 'missionFail',
   ]);
 });
 

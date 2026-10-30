@@ -138,18 +138,30 @@ test('구미호: 여우불이 여러 적을 한꺼번에 맞힌다', () => {
   assert.equal(es.filter((e) => e.hp < 1e9).length, MYTHICS.gumiho.base.shots);
 });
 
-test('구미호의 홀림은 적을 뒤로 밀어내고, 보스는 홀리지 않는다', () => {
+test('구미호는 가끔 적을 1초 기절시킨다 (밀어내지 않고, 보스는 기절하지 않는다)', () => {
   const g = running();
   const t = craftAt(g, 'gumiho');
-  g.rng = () => 0; // 항상 홀림
+  assert.equal(MYTHICS.gumiho.base.stunTime, 1);
+  assert.equal(MYTHICS.gumiho.base.charmBack, undefined);
+  g.rng = () => 0; // 항상 기절
   const d = nearDist(g, t);
   const e = spawnEnemy(g, 'tank', 30, d);
   const boss = spawnEnemy(g, 'boss', 30, d + 0.1);
   for (const x of [e, boss]) x.hp = x.maxHp = 1e9;
   step(g, 0.05);
-  assert.ok(e.dist < d - 0.5, String(e.dist - d));
-  assert.ok(boss.dist >= d);
-  assert.ok(g.events.some((x) => x.type === 'charm'));
+  assert.ok(g.events.some((x) => x.type === 'stun'));
+  assert.ok(e.dist >= d, '뒤로 밀리지 않는다');
+  const stopped = e.dist; // 같은 프레임에 조금 걸은 뒤 기절한 자리
+  g.rng = () => 0.99; // 이제 더는 기절하지 않는다
+  step(g, 0.8);
+  assert.ok(Math.abs(e.dist - stopped) < 1e-9, '1초 동안은 멈춰 있다');
+  step(g, 0.5);
+  assert.ok(e.dist > stopped, '1초가 지나면 다시 걷는다');
+  assert.ok(boss.dist > d + 0.1, '보스는 멈추지 않는다');
+});
+
+test('천마 피해는 1200', () => {
+  assert.equal(MYTHICS.cheonma.base.damage, 1200);
 });
 
 test('천마: 일직선의 적을 모두 꿰뚫고, 가까운 동물의 공격 속도를 올린다', () => {

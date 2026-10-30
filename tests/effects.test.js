@@ -126,18 +126,18 @@ test('신화 탄생은 큰 문구와 무지개 파편, 흔들림을 만든다', 
   assert.ok(fx.shake(0) > 0);
 });
 
-test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람 줄기, 해태는 넓은 고리, 홀림은 문구', () => {
+test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람 줄기, 해태는 넓은 고리, 기절은 문구', () => {
   const fx = createEffects(fixed);
   const from = { x: 1, y: 1 };
   const to = { x: 3, y: 1 };
   for (const mythic of ['phoenix', 'gumiho', 'girin', 'cheonma']) fx.fromEvent({ type: 'mythicShot', mythic, towerId: 1, from, to }, 0);
   fx.fromEvent({ type: 'quake', towerId: 2, x: 5, y: 5 }, 0);
-  fx.fromEvent({ type: 'charm', enemyId: 3, x: 2, y: 2 }, 0);
+  fx.fromEvent({ type: 'stun', enemyId: 3, x: 2, y: 2 }, 0);
   const all = fx.active(0);
   assert.deepEqual(all.filter((f) => f.kind === 'projectile').map((f) => f.tower), ['phoenix', 'gumiho', 'girin']);
   assert.equal(all.filter((f) => f.kind === 'beam').length, 1);
   assert.ok(all.some((f) => f.kind === 'ring' && f.reach >= 3));
-  assert.ok(all.some((f) => f.kind === 'text' && f.text === '홀림!'));
+  assert.ok(all.some((f) => f.kind === 'text' && f.text === '기절!'));
 });
 
 test('몬스터가 블랙홀에 닿으면 빨려 들어가는 효과가 생기고, 블랙홀이 크게 꿀렁인다', () => {

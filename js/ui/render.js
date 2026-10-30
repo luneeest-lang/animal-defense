@@ -1049,7 +1049,7 @@ export function createRenderer(canvas) {
       ctx.strokeStyle = f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
       ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
       // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색
-      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.charm ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
+      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.stun ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
       ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
     });
   }

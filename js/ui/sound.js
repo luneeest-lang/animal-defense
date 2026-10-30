@@ -38,7 +38,7 @@ export function soundsFor(events) {
     else if (ev.type === 'leak') out.push('suck');
     else if (ev.type === 'bossSkill') out.push(ev.skill === 'roar' ? 'roar' : 'skill');
     else if (ev.type === 'quake') out.push('quake');
-    else if (ev.type === 'charm') out.push('charm');
+    else if (ev.type === 'stun') out.push('stun');
     else if (ev.type === 'goldenSpawn') out.push('golden');
     else if (ev.type === 'goldenEscape') out.push('escape');
     else if (ev.type === 'missionStart') out.push('mission');
@@ -50,7 +50,7 @@ export function soundsFor(events) {
 const BOSSES = new Set(['boss', 'slimeKing', 'lich', 'lavaGolem', 'shadowWolf', 'dragon']);
 
 // 같은 소리가 너무 촘촘히 겹치지 않게 하는 최소 간격(초)
-const GAP = { pop: 0.05, hurt: 0.12, suck: 0.12, quake: 0.5, charm: 0.15, skill: 0.3 };
+const GAP = { pop: 0.05, hurt: 0.12, suck: 0.12, quake: 0.5, stun: 0.15, skill: 0.3 };
 
 // 배경음: 긴장감 있는 라단조. 8분음표로 쉬지 않고 달리는 베이스와 북, 띄엄띄엄 나오는 선율 (0은 쉼표)
 const TEMPO = 0.17;
@@ -182,7 +182,7 @@ export function createSound() {
       tone(90, 0.8, { slideTo: 45, type: 'sawtooth', vol: 0.12 });
     },
     quake: () => noise(0.35, { vol: 0.12, cutoff: 220 }),
-    charm: () => tone(1200, 0.12, { slideTo: 1800, type: 'sine', vol: 0.04 }),
+    stun: () => tone(1200, 0.12, { slideTo: 1800, type: 'sine', vol: 0.04 }),
     // 보스 경고(약 3초): 낮은 종소리, 서로 어긋나 맥놀이하는 불협화음, 쿵쿵 심장 박동, 스산한 바람
     bossWarning: () => {
       const t = ctx.currentTime;

@@ -100,9 +100,10 @@ function attack(game, tower, targets, stats) {
       const p = positionAt(game.points, e.dist);
       hitEnemy(game, e, stats.damage, stats, tower.type);
       shot(p);
-      if (!isBoss(e.type) && e.hp > 0 && game.rng() < stats.charmChance) {
-        e.dist = Math.max(0, e.dist - stats.charmBack);
-        game.events.push({ type: 'charm', enemyId: e.id, ...p });
+      // 가끔 기절: 그 자리에 stunTime초 멈춘다 (보스는 기절하지 않는다)
+      if (!isBoss(e.type) && e.hp > 0 && game.rng() < stats.stunChance) {
+        e.stun = Math.max(e.stun ?? 0, stats.stunTime);
+        game.events.push({ type: 'stun', enemyId: e.id, ...p });
       }
     }
   } else if (tower.type === 'cheonma') {

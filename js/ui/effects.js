@@ -124,8 +124,8 @@ export function createEffects(rng = effectRng(Date.now())) {
       } else if (ev.type === 'quake') {
         add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ffd23f', big: true, reach: 6, t: now, life: LIFE.ring * 2 });
         shake(0.25, now);
-      } else if (ev.type === 'charm') {
-        add({ kind: 'text', x: ev.x, y: ev.y, text: '홀림!', big: false, charm: true, t: now, life: LIFE.text });
+      } else if (ev.type === 'stun') {
+        add({ kind: 'text', x: ev.x, y: ev.y, text: '기절!', big: false, stun: true, t: now, life: LIFE.text });
       } else if (ev.type === 'leak') {
         flashAt = now;
         // 블랙홀에 빨려 들어간다: 그 자리에서 돌며 작아지고, 블랙홀이 꿀렁인다

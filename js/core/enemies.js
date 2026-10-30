@@ -59,6 +59,13 @@ export function stepEnemy(e, dt, speedFactor = 1) {
     e.poison.left -= t;
     if (e.poison.left <= 0) e.poison = null;
   }
+  // 기절(구미호): 남은 기절 시간만큼은 걷지 않는다
+  if (e.stun > 0) {
+    const t = Math.min(dt, e.stun);
+    e.stun -= t;
+    dt -= t;
+    if (dt <= 0) return;
+  }
   if (e.slow) {
     const t = Math.min(dt, e.slow.left);
     e.dist += speed * e.slow.factor * t + speed * (dt - t);
