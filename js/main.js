@@ -4,6 +4,7 @@ import {
 } from './core/game.js';
 import { craftMythic } from './core/mythics.js';
 import { snapshotGame, restoreGame, isBetweenWaves } from './core/snapshot.js';
+import { resultStats } from './core/stats.js';
 import {
   loadSave, writeSave, recordResult, starsFor, loadRun, writeRun, clearRun,
 } from './storage.js';
@@ -243,6 +244,7 @@ function finish() {
   hud.showResult({
     won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0,
     endless: game.endless ? { best: save.records[mapId].endlessBest, newBest: wave > prevBest } : null,
+    stats: resultStats(game),
   });
 }
 
@@ -251,6 +253,8 @@ function frame(ts) {
   lastTs = ts;
   if (game) {
     if (!ui.paused && !ui.mythicOpen && game.status === 'running') {
+      // 결과 화면의 플레이 시간: 멈추거나 카드를 고르는 동안은 세지 않는 실제 시간
+      if (!game.cardChoices) game.stats.playTime += dt;
       step(game, dt * ui.speed * GAME_SPEED);
     }
     if (game.events !== handledEvents) {

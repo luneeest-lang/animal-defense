@@ -3,6 +3,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
 import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js';
+import { emptyStats, credit, creditKill } from './stats.js';
 import {
   rollSchedule, onWaveStart, onWaveClear, updateMission, goldenReward,
 } from './missions.js';
@@ -58,6 +59,8 @@ export function createGame(map, waves = buildWaves(), { endless = false } = {}) 
     waveLeaked: false, // 이번 웨이브에 생명을 잃었는지 (무손실 미션)
     // 미션 진행을 세는 카운터
     counters: { kills: 0, golden: 0, skips: 0, upgrades: 0, awakens: 0, mythics: 0 },
+    // 결과 화면 통계 (core/stats.js). playTime은 화면(main.js)이 실제 흐른 시간으로 센다
+    stats: emptyStats(),
     // 카드로 얻은 효과
     mods: {
       damage: Object.fromEntries(Object.keys(TOWERS).map((id) => [id, 1])),
@@ -344,6 +347,7 @@ function fireTowers(game, dt) {
     const hit = fire(tower, target, targets, game.points, stats);
     // 맞은 적마다 실제로 들어간 피해량 (화면의 데미지 숫자용)
     for (const e of hit) {
+      credit(game, e, tower.type, hpBefore.get(e));
       game.events.push({ type: 'hit', enemyId: e.id, amount: hpBefore.get(e) - e.hp, ...positionAt(game.points, e.dist) });
     }
     // 남은 시간(음수)을 이월해 프레임 크기와 상관없이 공격 간격을 지킨다
@@ -368,6 +372,7 @@ function resolveEnemies(game) {
       const reward = def.reward + game.mods.bounty + (e.bonusGold ?? 0);
       game.gold += reward;
       game.counters.kills += 1;
+      creditKill(game, e);
       if (def.golden) game.counters.golden += 1;
       game.events.push({ type: 'death', enemy: e.type, reward, ...positionAt(game.points, e.dist) });
       if (def.splitInto) {
@@ -382,6 +387,7 @@ function resolveEnemies(game) {
     } else if (e.dist >= game.length) {
       game.lives -= def.leak;
       game.waveLeaked = true;
+      game.stats.leaked += 1;
       game.events.push({ type: 'leak', enemy: e.type, lives: def.leak, ...positionAt(game.points, e.dist) });
     } else {
       alive.push(e);
@@ -402,7 +408,13 @@ function substep(game, dt) {
     spawnEnemy(game, s.type, s.wave);
   }
   updateBossSkills(game, dt);
-  for (const e of game.enemies) stepEnemy(e, dt, game.mods.enemySpeed);
+  for (const e of game.enemies) {
+    // 독 피해는 독을 건 동물(뱀) 몫
+    const before = e.hp;
+    const by = e.poison?.by;
+    stepEnemy(e, dt, game.mods.enemySpeed);
+    credit(game, e, by, before);
+  }
   fireTowers(game, dt);
   updateZones(game, dt);
   resolveEnemies(game);

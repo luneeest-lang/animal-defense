@@ -425,3 +425,41 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .btn, .summon-btn, .upgrade-btn, .mythic-btn, .continue-btn, .map-card, .card, .sound-btn { transition: none; }
 }
+
+/* 결과 화면 통계 */
+/* 통계가 길면 통계 부분만 스크롤하고 제목·버튼은 늘 보인다 */
+.result-card { display: flex; flex-direction: column; max-height: calc(100% - 8px); }
+#result-stars:empty { display: none; }
+#result-detail { margin: 4px 0 8px; }
+#result-stats { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 0 10px; text-align: left; }
+.result-card .result-buttons { flex: none; margin-top: 0; }
+
+.rs-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.rs-chip {
+  display: flex; flex-direction: column; align-items: center; padding: 6px 4px; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3); box-shadow: var(--well); font-variant-numeric: tabular-nums;
+}
+.rs-chip .rs-label { font-size: 0.72rem; opacity: 0.8; }
+.rs-chip b { font-size: 1.05rem; }
+.rs-title { font-size: 0.85rem; font-weight: 700; opacity: 0.85; margin: 2px 0 6px; }
+.rs-row { display: grid; grid-template-columns: 16px 24px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 3px 0; }
+.rs-rank { font-size: 0.8rem; opacity: 0.7; text-align: center; font-weight: 700; }
+.rs-icon { font-size: 1.15rem; text-align: center; }
+.rs-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rs-name { font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-name small, .rs-val small { font-weight: 400; opacity: 0.7; margin-left: 5px; font-size: 0.72rem; }
+.rs-bar { height: 7px; border-radius: 4px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
+.rs-bar span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #ffb347, #ffd23f); }
+.rs-row.mythic .rs-bar span { background: linear-gradient(90deg, #ff5ec4, #b35cff); }
+.rs-val { font-size: 0.85rem; font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* 낮은 가로 화면: 제목을 줄이고 순위는 두 줄로 나눠 놓는다 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .result-card { width: min(100%, 560px); padding: 12px 16px; }
+  .result-card h2 { font-size: 1.2rem; margin: 0; }
+  #result-detail { margin: 2px 0 6px; font-size: 0.9rem; }
+  .rs-summary { margin-bottom: 6px; }
+  .rs-title { margin: 0 0 2px; }
+  .rs-row { padding: 1px 0; }
+  .rs-chip { flex-direction: row; justify-content: center; gap: 6px; padding: 4px; }
+  #result-stats .rs-rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+}

@@ -31,7 +31,7 @@ export function createHud(root, handlers) {
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
-    resultDetail: $('result-detail'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
+    resultDetail: $('result-detail'), resultStats: $('result-stats'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
   };
   let shownTower = null;
   let lastLives = null;
@@ -216,6 +216,42 @@ export function createHud(root, handlers) {
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }
 
+  // 큰 숫자는 '1.2만'처럼 줄인다
+  const short = (n) => (n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : String(Math.round(n)));
+  // 결과 화면 통계: 요약 한 줄과 피해량 순위(많은 순서 5종, 막대는 1등 대비 길이)
+  function renderStats(stats) {
+    el.resultStats.replaceChildren();
+    el.resultStats.hidden = !stats;
+    if (!stats) return;
+    const summary = document.createElement('div');
+    summary.className = 'rs-summary';
+    for (const [icon, label, value] of [['⚔️', '처치', stats.kills], ['💔', '놓침', stats.leaked], ['⏱️', '시간', stats.time]]) {
+      const chip = document.createElement('span');
+      chip.className = 'rs-chip';
+      chip.innerHTML = `<span class="rs-label">${icon} ${label}</span><b>${value}</b>`;
+      summary.append(chip);
+    }
+    el.resultStats.append(summary);
+    if (!stats.ranking.length) return;
+    const title = document.createElement('div');
+    title.className = 'rs-title';
+    title.textContent = '🏅 피해량 순위';
+    el.resultStats.append(title);
+    const top = stats.ranking[0].damage;
+    const rows = document.createElement('div');
+    rows.className = 'rs-rows';
+    el.resultStats.append(rows);
+    stats.ranking.slice(0, 5).forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = `rs-row${r.mythic ? ' mythic' : ''}`;
+      row.innerHTML = `<span class="rs-rank">${i + 1}</span><span class="rs-icon">${r.icon}</span>`
+        + `<span class="rs-main"><span class="rs-name">${r.name}${r.mythic ? ' ✨' : ''}<small>처치 ${r.kills}</small></span>`
+        + `<span class="rs-bar"><span style="width:${Math.max(3, (r.damage / top) * 100)}%"></span></span></span>`
+        + `<span class="rs-val">${short(r.damage)}<small>${Math.round(r.share * 100)}%</small></span>`;
+      rows.append(row);
+    });
+  }
+
   return {
     // run: 이어할 게임 { name, place, wave } (없으면 null)
     showMenu(save, run = null) {
@@ -266,7 +302,9 @@ export function createHud(root, handlers) {
       if (!tower) el.info.hidden = true;
     },
     // endless: 무한 모드 결과 { best: 최고 기록, newBest: 이번에 기록을 넘었는지 }
-    showResult({ won, wave, lives, starCount, endless = null }) {
+    // stats: core/stats.js의 resultStats (처치·놓침·시간 요약과 동물별 피해량 순위)
+    showResult({ won, wave, lives, starCount, endless = null, stats = null }) {
+      renderStats(stats);
       if (endless) {
         setText(el.resultTitle, endless.newBest ? '🏆 새 기록!' : '♾️ 무한 모드 끝');
         setText(el.resultStars, '');

@@ -54,6 +54,6 @@ export function fire(tower, target, enemies, points, stats = towerStats(tower.ty
   }
   for (const e of hit) damageEnemy(e, stats.damage * bossBonus, 'direct');
   if (kind === 'slow') applySlow(target, stats.slowFactor, stats.slowDuration);
-  if (kind === 'poison') applyPoison(target, stats.poisonDps, stats.poisonDuration);
+  if (kind === 'poison') applyPoison(target, stats.poisonDps, stats.poisonDuration, tower.type);
   return hit;
 }

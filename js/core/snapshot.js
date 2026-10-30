@@ -6,6 +6,7 @@ import { canBuild } from './path.js';
 import { WAVE_COUNT } from './waves.js';
 import { createGame, extendEndless, CONFIG } from './game.js';
 import { MISSIONS } from './missions.js';
+import { cleanStats } from './stats.js';
 
 // 이어하기: 웨이브와 웨이브 사이의 상태만 저장한다(움직이는 몬스터는 저장하지 않는다).
 // 웨이브 도중에 나가면 그 웨이브가 시작되기 직전으로 돌아간다.
@@ -35,6 +36,7 @@ export function snapshotGame(game) {
     mission: game.mission ? { ...game.mission, reward: { ...game.mission.reward } } : null,
     lastMission: game.lastMission,
     counters: { ...game.counters },
+    stats: JSON.parse(JSON.stringify(game.stats)),
     towers: game.towers.map((t) => ({
       id: t.id, type: t.type, level: t.level, col: t.col, row: t.row, invested: t.invested, mythic: !!t.mythic,
     })),
@@ -106,5 +108,6 @@ export function restoreGame(snap) {
   // 카운트다운은 처음부터 다시 센다. 카드를 고르는 중이면 고른 뒤에 시작된다
   game.countdown = game.cardChoices ? null : waveNumber === 0 ? CONFIG.firstCountdown : CONFIG.waveGap;
   restoreMissions(game, snap);
+  game.stats = cleanStats(snap.stats);
   return game;
 }

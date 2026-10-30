@@ -44,8 +44,9 @@ export function applySlow(e, factor, duration) {
   else e.slow.left = Math.max(e.slow.left, duration);
 }
 
-export function applyPoison(e, dps, duration) {
-  if (!e.poison || dps >= e.poison.dps) e.poison = { dps, left: duration };
+// by: 독을 건 동물 종류 (결과 통계용)
+export function applyPoison(e, dps, duration, by) {
+  if (!e.poison || dps >= e.poison.dps) e.poison = { dps, left: duration, by };
   else e.poison.left = Math.max(e.poison.left, duration);
 }
 

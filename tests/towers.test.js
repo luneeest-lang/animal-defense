@@ -70,7 +70,7 @@ test('penguin은 감속을, snake는 독을 건다', () => {
   fire(tower('snake'), s, [s], points);
   const sb = TOWERS.snake.base;
   assert.equal(s.hp, s.maxHp - sb.damage);
-  assert.deepEqual(s.poison, { dps: sb.poisonDps, left: sb.poisonDuration });
+  assert.deepEqual(s.poison, { dps: sb.poisonDps, left: sb.poisonDuration, by: 'snake' });
 });
 
 test('eagle은 보스에게 1.5배 피해를 준다', () => {

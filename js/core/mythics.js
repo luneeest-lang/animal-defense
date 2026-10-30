@@ -2,6 +2,7 @@ import { MYTHICS } from '../data/mythics.js';
 import { MAX_LEVEL } from './towers.js';
 import { positionAt } from './path.js';
 import { damageEnemy, applySlow, isBoss } from './enemies.js';
+import { credit } from './stats.js';
 
 const UPGRADE_DAMAGE = 0.2;
 const center = (t) => ({ x: t.col + 0.5, y: t.row + 0.5 });
@@ -56,10 +57,11 @@ export function cheonmaBuff(game, tower) {
   return near ? buffSpeed : 1;
 }
 
-function hitEnemy(game, e, amount, stats) {
+function hitEnemy(game, e, amount, stats, by) {
   const bonus = isBoss(e.type) ? (stats.bossMult ?? 1) * (stats.bossDamage ?? 1) : 1;
   const before = e.hp;
   damageEnemy(e, amount * bonus, 'direct');
+  credit(game, e, by, before);
   game.events.push({ type: 'hit', enemyId: e.id, amount: before - e.hp, ...positionAt(game.points, e.dist) });
 }
 
@@ -79,7 +81,7 @@ function attack(game, tower, targets, stats) {
     const alive = targets.filter((e) => e.hp > 0);
     if (!alive.length) return false;
     for (const e of alive) {
-      hitEnemy(game, e, stats.damage, stats);
+      hitEnemy(game, e, stats.damage, stats, tower.type);
       applySlow(e, stats.slowFactor, stats.slowDuration);
     }
     game.events.push({ type: 'quake', towerId: tower.id, ...from });
@@ -90,13 +92,13 @@ function attack(game, tower, targets, stats) {
   const first = near[0];
   const at = positionAt(game.points, first.dist);
   if (tower.type === 'phoenix') {
-    hitEnemy(game, first, stats.damage, stats);
+    hitEnemy(game, first, stats.damage, stats, tower.type);
     game.zones.push({ ...at, r: stats.burnRadius, dps: stats.burnDps, left: stats.burnTime, from: 'phoenix' });
     shot(at);
   } else if (tower.type === 'gumiho') {
     for (const e of near.slice(0, stats.shots)) {
       const p = positionAt(game.points, e.dist);
-      hitEnemy(game, e, stats.damage, stats);
+      hitEnemy(game, e, stats.damage, stats, tower.type);
       shot(p);
       if (!isBoss(e.type) && e.hp > 0 && game.rng() < stats.charmChance) {
         e.dist = Math.max(0, e.dist - stats.charmBack);
@@ -112,11 +114,11 @@ function attack(game, tower, targets, stats) {
       const p = positionAt(game.points, e.dist);
       const along = (p.x - from.x) * dir.x + (p.y - from.y) * dir.y;
       const side = Math.abs((p.x - from.x) * dir.y - (p.y - from.y) * dir.x);
-      if (along >= 0 && along <= stats.range && side <= stats.width) hitEnemy(game, e, stats.damage, stats);
+      if (along >= 0 && along <= stats.range && side <= stats.width) hitEnemy(game, e, stats.damage, stats, tower.type);
     }
     shot({ x: from.x + dir.x * stats.range, y: from.y + dir.y * stats.range });
   } else if (tower.type === 'girin') {
-    hitEnemy(game, first, stats.damage, stats);
+    hitEnemy(game, first, stats.damage, stats, tower.type);
     if (first.hp <= 0) first.bonusGold = stats.killGold;
     shot(at);
   }
@@ -139,7 +141,11 @@ export function updateZones(game, dt) {
   for (const z of game.zones) {
     const t = Math.min(dt, z.left);
     for (const e of game.enemies) {
-      if (e.hp > 0 && dist2(z, positionAt(game.points, e.dist)) <= z.r * z.r) damageEnemy(e, z.dps * t, 'burn');
+      if (e.hp > 0 && dist2(z, positionAt(game.points, e.dist)) <= z.r * z.r) {
+        const before = e.hp;
+        damageEnemy(e, z.dps * t, 'burn');
+        credit(game, e, z.from, before);
+      }
     }
     z.left -= dt;
   }
