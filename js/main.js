@@ -14,6 +14,9 @@ import { createHud } from './ui/hud.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
+// 게임 전체 진행 속도. 1x 버튼일 때도 실제 시간보다 30% 빠르게 흐른다(적 이동·공격·웨이브 사이 대기 모두).
+// 규칙(core)은 게임 시간 기준이라 밸런스는 그대로다
+const GAME_SPEED = 1.3;
 
 function openStore() {
   try {
@@ -238,7 +241,7 @@ function frame(ts) {
   lastTs = ts;
   if (game) {
     if (!ui.paused && !ui.mythicOpen && game.status === 'running') {
-      step(game, dt * ui.speed);
+      step(game, dt * ui.speed * GAME_SPEED);
     }
     if (game.events !== handledEvents) {
       handledEvents = game.events;
