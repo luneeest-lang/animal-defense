@@ -20,7 +20,7 @@ export const MYTHICS = {
   cheonma: {
     name: '천마', icon: '🐎', recipe: ['penguin', 'snake', 'elephant'], color: '#9d6bff',
     desc: '날개 바람이 일직선의 적을 꿰뚫고, 주변 동물을 빠르게 해요',
-    base: { damage: 1200, range: 4.5, cooldown: 1.0, width: 0.6, buffRange: 2, buffSpeed: 1.25 },
+    base: { damage: 300, range: 4.5, cooldown: 1.0, width: 0.6, buffRange: 2, buffSpeed: 1.25 },
   },
   haetae: {
     name: '해태', icon: '🐯', recipe: ['elephant', 'snake', 'squirrel'], color: '#dfe8ff',

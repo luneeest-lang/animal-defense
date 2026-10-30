@@ -160,8 +160,8 @@ test('구미호는 가끔 적을 1초 기절시킨다 (밀어내지 않고, 보�
   assert.ok(boss.dist > d + 0.1, '보스는 멈추지 않는다');
 });
 
-test('천마 피해는 1200', () => {
-  assert.equal(MYTHICS.cheonma.base.damage, 1200);
+test('천마 피해는 300 (다른 신화의 초당 피해 평균보다 약 30% 낮게)', () => {
+  assert.equal(MYTHICS.cheonma.base.damage, 300);
 });
 
 test('천마: 일직선의 적을 모두 꿰뚫고, 가까운 동물의 공격 속도를 올린다', () => {
