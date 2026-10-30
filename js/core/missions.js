@@ -1,5 +1,5 @@
 import { buildWaves, isBossWave, spawnSchedule } from './waves.js';
-import { CONFIG, placeFree } from './game.js';
+import { CONFIG, placeFree, addLives } from './game.js';
 
 // 판마다 무작위로 정하는 이벤트: 황금 몬스터 1번(3~25웨이브의 일반 웨이브), 판 중 미션 1번(2~24웨이브에 시작).
 export const GOLDEN_LAST_WAVE = 25;
@@ -87,7 +87,7 @@ function mostCommon(game) {
 function giveReward(game, m) {
   const r = m.reward;
   if (r.gold) game.gold += r.gold;
-  if (r.lives) game.lives += r.lives;
+  if (r.lives) addLives(game, r.lives);
   if (r.summons) for (let i = 0; i < r.summons; i++) placeFree(game, game.rng);
   if (r.upgrade) {
     const { type } = mostCommon(game);

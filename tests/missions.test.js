@@ -164,16 +164,30 @@ test('같은 동물 3마리 미션은 그 동물 강화 1단계를 무료로 준
   assert.equal(g.upgrades.penguin, 1);
 });
 
-test('생명을 잃지 않고 웨이브를 끝내면 생명 +2', () => {
+test('생명을 잃지 않고 웨이브를 끝내면 생명 +2 (최대 20까지만, 넘치는 만큼은 사라진다)', () => {
   const g = createGame(meadow, [
     { number: 1, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
     { number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
   ]);
   g.schedule = { golden: [], missions: [] };
   startMission(g, 'noLeak');
+  g.lives = 17;
   callNextWave(g);
   step(g, 0.1);
   g.enemies[0].hp = 0;
   step(g, 0.05);
-  assert.equal(g.lives, CONFIG.startLives + 2);
+  assert.equal(g.lives, 19);
+
+  // 가득 찬 상태에서 받으면 20 그대로
+  const h = createGame(meadow, [
+    { number: 1, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
+    { number: 2, groups: [{ type: 'soldier', count: 1, interval: 1 }] },
+  ]);
+  h.schedule = { golden: [], missions: [] };
+  startMission(h, 'noLeak');
+  callNextWave(h);
+  step(h, 0.1);
+  h.enemies[0].hp = 0;
+  step(h, 0.05);
+  assert.equal(h.lives, CONFIG.startLives);
 });
