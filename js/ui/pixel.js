@@ -1,11 +1,12 @@
 import { SPRITES, SPRITE_SIZE } from '../data/sprites.js';
 import { TILES } from '../data/tiles.js';
 import { ANIMAL_SPRITES } from '../data/animals.js';
-import { MYTHIC_SPRITES, MYTHIC_NATIVE } from '../data/mythicSprites.js';
+import { MYTHIC_SPRITES } from '../data/mythicSprites.js';
 import { DECOR_SPRITES } from '../data/decor.js';
 import { refine } from './refine.js';
 
-// 원본 도트(16x16, 신화 20x20)는 구울 때 2배 해상도로 정교하게 다듬는다(ui/refine.js)
+// 옛 원본 도트(16x16, 신화 20x20)는 구울 때 2배 해상도로 정교하게 다듬는다(ui/refine.js).
+// 새로 그린 그림은 처음부터 2배 해상도(32x32, 신화 40x40)라 그대로 쓴다
 export const ART_SCALE = 2;
 export const ART_SIZE = SPRITE_SIZE * ART_SCALE;
 
@@ -29,7 +30,11 @@ function bakeGrid(grid) {
   return canvas;
 }
 
-const bake = (palette, rows, opts) => bakeGrid(refine(palette, rows, opts));
+// 처음부터 2배 해상도(32x32, 신화 40x40)로 그린 그림은 키우거나 테두리·명암을 다시 다듬지 않는다
+// (그린 사람이 이미 넣었다). rim·grain·mute 같은 마무리만 한다
+const isNative = (rows) => rows.length >= ART_SIZE;
+const finish = (rows, opts = {}) => (isNative(rows) ? { ...opts, scale: false, outline: false, shade: false } : opts);
+const bake = (palette, rows, opts) => bakeGrid(refine(palette, rows, finish(rows, opts)));
 
 // 적 스프라이트: { 이름: [프레임 캔버스...] }
 function bakeSpritesRaw() {
@@ -45,7 +50,7 @@ function bakeSilhouettesRaw() {
   const baked = {};
   for (const [name, def] of Object.entries(SPRITES)) {
     // 다듬은 그림과 같은 모양이 되도록, 다듬은 뒤 칠해진 곳을 모두 하얗게 한다
-    baked[name] = def.frames.map((rows) => bakeGrid(refine(def.palette, rows).map((row) => row.map((c) => (c ? '#ffffff' : null)))));
+    baked[name] = def.frames.map((rows) => bakeGrid(refine(def.palette, rows, finish(rows)).map((row) => row.map((c) => (c ? '#ffffff' : null)))));
   }
   return baked;
 }
@@ -74,11 +79,7 @@ function bakeAnimalsRaw() {
 
 // 신화 동물: { id: 캔버스 }
 function bakeMythicsRaw() {
-  // 40x40으로 직접 그린 그림(백호)은 다듬지 않고 테두리만 두른다
-  return Object.fromEntries(Object.entries(MYTHIC_SPRITES).map(([id, def]) => {
-    const native = def.rows.length === MYTHIC_NATIVE;
-    return [id, bake(def.palette, def.rows, native ? { rim: RIM_ANIMAL, scale: false, outline: false, shade: false } : { rim: RIM_ANIMAL })];
-  }));
+  return Object.fromEntries(Object.entries(MYTHIC_SPRITES).map(([id, def]) => [id, bake(def.palette, def.rows, { rim: RIM_ANIMAL })]));
 }
 
 // 맵 장식: { 이름: 캔버스 }

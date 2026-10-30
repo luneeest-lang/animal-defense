@@ -12,7 +12,11 @@ test('모든 적 종류에 그림과 크기가 정해져 있다', () => {
   }
 });
 
-test('스프라이트는 16x16 프레임 2개이고 팔레트에 없는 글자를 쓰지 않는다', () => {
+// 옛 그림은 16x16(구울 때 2배로 다듬는다), 새로 그린 그림은 처음부터 32x32
+const HD = SPRITE_SIZE * 2;
+const okSize = (n) => n === SPRITE_SIZE || n === HD;
+
+test('스프라이트는 16x16(또는 새로 그린 32x32) 프레임 2개이고 팔레트에 없는 글자를 쓰지 않는다', () => {
   assert.equal(SPRITE_SIZE, 16);
   for (const [name, def] of Object.entries(SPRITES)) {
     for (const [ch, color] of Object.entries(def.palette)) {
@@ -20,10 +24,12 @@ test('스프라이트는 16x16 프레임 2개이고 팔레트에 없는 글자�
       assert.match(color, /^#[0-9a-f]{6}$/i, `${name} color ${color}`);
     }
     assert.equal(def.frames.length, 2, `${name} frames`);
+    const size = def.frames[0].length;
+    assert.ok(okSize(size), `${name} size ${size}`);
     for (const rows of def.frames) {
-      assert.equal(rows.length, SPRITE_SIZE, `${name} rows`);
+      assert.equal(rows.length, size, `${name} rows`);
       for (const row of rows) {
-        assert.equal(row.length, SPRITE_SIZE, `${name} row width: ${row}`);
+        assert.equal(row.length, size, `${name} row width: ${row}`);
         for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown char ${ch}`);
       }
     }
@@ -44,10 +50,12 @@ test('동물 타워 도트는 아기, 청년, 성체, 각성 네 장이고 점�
   assert.deepEqual(Object.keys(ANIMAL_SPRITES).sort(), Object.keys(TOWERS).sort());
   for (const [name, def] of Object.entries(ANIMAL_SPRITES)) {
     assert.equal(def.levels.length, 4, `${name} levels`);
+    const size = def.levels[0].length;
+    assert.ok(okSize(size), `${name} size ${size}`);
     for (const rows of def.levels) {
-      assert.equal(rows.length, SPRITE_SIZE);
+      assert.equal(rows.length, size, `${name} levels differ in size`);
       for (const row of rows) {
-        assert.equal(row.length, SPRITE_SIZE, `${name} width`);
+        assert.equal(row.length, size, `${name} width`);
         for (const ch of row) assert.ok(ch === '.' || ch in def.palette, `${name} unknown ${ch}`);
       }
     }
