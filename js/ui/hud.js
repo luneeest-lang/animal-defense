@@ -223,7 +223,7 @@ export function createHud(root, handlers) {
       el.result.hidden = true;
       el.menu.hidden = false;
       el.btnContinue.hidden = !run;
-      if (run) el.btnContinue.innerHTML = `<span class="c-title">▶ 이어하기</span><span class="c-sub">${run.name} · ${run.place} · 웨이브 ${run.wave}/${WAVE_COUNT}</span>`;
+      if (run) el.btnContinue.innerHTML = `<span class="c-title">▶ 이어하기</span><span class="c-sub">${run.name} · ${run.place} · ${run.endless ? `♾️ 무한 웨이브 ${run.wave}` : `웨이브 ${run.wave}/${WAVE_COUNT}`}</span>`;
       el.maps.replaceChildren(...MAPS.map((map, i) => {
         const locked = i >= save.unlocked;
         const rec = save.records[map.id];
@@ -235,7 +235,18 @@ export function createHud(root, handlers) {
           + `<div class="sub">${locked ? '이전 맵을 클리어하면 열려요' : rec ? `최고 웨이브 ${rec.bestWave}/${WAVE_COUNT}` : '아직 도전 전'}</div></span>`
           + `<span class="stars">${locked ? '' : stars(rec ? rec.stars : 0)}</span>`;
         b.addEventListener('click', () => handlers.onStartMap(map.id));
-        return b;
+        // 무한 모드: 그 맵을 30웨이브까지 한 번 깨면(별이 있으면) 카드 옆에 버튼이 생긴다
+        if (locked || !rec || !rec.stars) return b;
+        const row = document.createElement('div');
+        row.className = 'map-row';
+        const e = document.createElement('button');
+        e.type = 'button';
+        e.className = 'endless-btn';
+        e.dataset.map = map.id;
+        e.innerHTML = `<span class="e-title">♾️ 무한</span><span class="e-sub">${rec.endlessBest ? `최고 ${rec.endlessBest}` : '도전!'}</span>`;
+        e.addEventListener('click', () => handlers.onStartEndless(map.id));
+        row.append(b, e);
+        return row;
       }));
     },
     showGame() {
@@ -254,7 +265,15 @@ export function createHud(root, handlers) {
       shownTower = tower;
       if (!tower) el.info.hidden = true;
     },
-    showResult({ won, wave, lives, starCount }) {
+    // endless: 무한 모드 결과 { best: 최고 기록, newBest: 이번에 기록을 넘었는지 }
+    showResult({ won, wave, lives, starCount, endless = null }) {
+      if (endless) {
+        setText(el.resultTitle, endless.newBest ? '🏆 새 기록!' : '♾️ 무한 모드 끝');
+        setText(el.resultStars, '');
+        setText(el.resultDetail, `웨이브 ${wave}까지 막았어요 · 최고 ${endless.best}`);
+        el.result.hidden = false;
+        return;
+      }
       setText(el.resultTitle, won ? '🎉 승리!' : '💔 패배');
       setText(el.resultStars, won ? stars(starCount) : '');
       setText(el.resultDetail, won ? `남은 생명 ${lives}` : wave > 0 ? `웨이브 ${wave}/${WAVE_COUNT}까지 막았어요` : '첫 웨이브를 막지 못했어요');
@@ -270,7 +289,7 @@ export function createHud(root, handlers) {
       setText(el.lives, `❤️ ${game.lives}`);
       setText(el.gold, `🪙 ${gold}`);
       // 좁은 휴대폰에서도 잘리지 않게 글자 대신 깃발 아이콘으로 줄인다 (읽는 사람에게는 aria-label로 '웨이브'를 알린다)
-      setText(el.wave, `🚩 ${game.waveNumber}/${WAVE_COUNT}`);
+      setText(el.wave, game.endless ? `♾️ ${game.waveNumber}` : `🚩 ${game.waveNumber}/${WAVE_COUNT}`);
       const running = game.status === 'running';
       if (game.countdown !== null && running && !game.cardChoices) {
         const left = Math.ceil(game.countdown);

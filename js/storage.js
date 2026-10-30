@@ -21,6 +21,8 @@ function cleanRecords(raw) {
     records[map.id] = {
       bestWave: clamp(Math.floor(r.bestWave), 0, WAVE_COUNT),
       stars: clamp(Math.floor(r.stars), 0, 3),
+      // 무한 모드 최고 웨이브 (예전 저장에는 없다)
+      ...(isNum(r.endlessBest) ? { endlessBest: clamp(Math.floor(r.endlessBest), 0, 99999) } : {}),
     };
   }
   return records;
@@ -58,12 +60,18 @@ export function starsFor(lives) {
   return 1;
 }
 
-export function recordResult(save, mapId, { wave, lives, won }) {
+// endless: 무한 모드 결과. 무한 모드 최고 기록만 바꾸고 별·해금·보통 판 기록은 그대로 둔다
+export function recordResult(save, mapId, { wave, lives, won, endless = false }) {
   const index = MAPS.findIndex((m) => m.id === mapId);
   const next = { version: 1, unlocked: save.unlocked, records: { ...save.records } };
   if (index < 0) return next;
   const prev = save.records[mapId] ?? { bestWave: 0, stars: 0 };
+  if (endless) {
+    next.records[mapId] = { ...prev, endlessBest: Math.max(prev.endlessBest ?? 0, wave) };
+    return next;
+  }
   next.records[mapId] = {
+    ...prev,
     bestWave: Math.max(prev.bestWave, wave),
     stars: won ? Math.max(prev.stars, starsFor(lives)) : prev.stars,
   };

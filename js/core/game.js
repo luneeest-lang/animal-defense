@@ -6,7 +6,7 @@ import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js'
 import {
   rollSchedule, onWaveStart, onWaveClear, updateMission, goldenReward,
 } from './missions.js';
-import { buildWaves, spawnSchedule, isBossWave, BOSS_INTRO, WAVE_COUNT } from './waves.js';
+import { buildWaves, waveAt, spawnSchedule, isBossWave, BOSS_INTRO, WAVE_COUNT } from './waves.js';
 import { CARDS, CARD_POWER, drawCards } from '../data/cards.js';
 
 export const CONFIG = {
@@ -23,10 +23,11 @@ export const CONFIG = {
   maxSubstep: 0.05,
 };
 
-export function createGame(map, waves = buildWaves()) {
+export function createGame(map, waves = buildWaves(), { endless = false } = {}) {
   const points = waypointPoints(map);
   return {
     map,
+    endless, // 무한 모드: 30웨이브 뒤로도 끝없이 이어진다(웨이브 목록을 늘 다음 웨이브까지 늘려 둔다)
     points,
     length: pathLength(points),
     waves,
@@ -293,8 +294,15 @@ function updateBossSkills(game, dt) {
   }
 }
 
+// 무한 모드는 웨이브 목록을 늘 '지금 웨이브 + 1'까지 늘려 둔다. 그래서 다음 웨이브가 언제나 있고 '마지막 웨이브'가 없다
+export function extendEndless(game) {
+  if (!game.endless) return;
+  while (game.waves.length <= game.waveNumber) game.waves.push(waveAt(game.waves.length + 1));
+}
+
 function startWave(game) {
   game.waveNumber += 1;
+  extendEndless(game);
   const wave = game.waves[game.waveNumber - 1];
   game.bossWarning = isBossWave(wave) ? BOSS_INTRO : 0;
   game.bossWarningType = isBossWave(wave) ? wave.groups[0].type : null;

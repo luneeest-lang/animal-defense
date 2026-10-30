@@ -4,7 +4,7 @@ import { CARDS } from '../data/cards.js';
 import { TOWERS, MAX_LEVEL } from './towers.js';
 import { canBuild } from './path.js';
 import { WAVE_COUNT } from './waves.js';
-import { createGame, CONFIG } from './game.js';
+import { createGame, extendEndless, CONFIG } from './game.js';
 import { MISSIONS } from './missions.js';
 
 // 이어하기: 웨이브와 웨이브 사이의 상태만 저장한다(움직이는 몬스터는 저장하지 않는다).
@@ -20,6 +20,7 @@ export function snapshotGame(game) {
   return {
     version: RUN_VERSION,
     mapId: game.map.id,
+    endless: !!game.endless,
     gold: game.gold,
     lives: game.lives,
     waveNumber: game.waveNumber,
@@ -79,16 +80,20 @@ export function restoreGame(snap) {
   const map = MAPS.find((m) => m.id === snap.mapId);
   if (!map) return null;
   const { gold, lives, waveNumber, clearedWave, summons, upgrades, mods, cardsTaken, cardChoices } = snap;
-  if (!num(gold) || gold < 0 || !int(lives, 1, 999) || !int(waveNumber, 0, WAVE_COUNT - 1)) return null;
-  if (!int(clearedWave, 0, WAVE_COUNT) || !int(summons, 0, 1e6) || !validTowers(map, snap.towers)) return null;
+  // 무한 모드(예전 저장에는 없는 필드)는 30웨이브를 넘어서도 이어할 수 있다
+  const endless = snap.endless === true;
+  const lastWave = endless ? 9999 : WAVE_COUNT;
+  if (!num(gold) || gold < 0 || !int(lives, 1, 999) || !int(waveNumber, 0, lastWave - 1)) return null;
+  if (!int(clearedWave, 0, lastWave) || !int(summons, 0, 1e6) || !validTowers(map, snap.towers)) return null;
   if (!upgrades || Object.keys(TOWERS).some((id) => !int(upgrades[id], 0, CONFIG.upgradeCosts.length))) return null;
   if (!mods || !mods.damage || Object.keys(TOWERS).some((id) => !num(mods.damage[id]))) return null;
   if (['attackSpeed', 'range', 'bounty', 'enemySpeed', 'bossDamage'].some((k) => !num(mods[k]))) return null;
   if (!Array.isArray(cardsTaken) || cardsTaken.some((id) => !CARDS[id])) return null;
   if (cardChoices !== null && (!Array.isArray(cardChoices) || cardChoices.length !== 3 || cardChoices.some((id) => !CARDS[id]))) return null;
 
-  const game = createGame(map);
+  const game = createGame(map, undefined, { endless });
   Object.assign(game, { gold, lives, waveNumber, clearedWave, summons });
+  extendEndless(game);
   game.upgrades = { ...upgrades };
   game.mods = { ...mods, damage: { ...mods.damage } };
   game.cardsTaken = [...cardsTaken];

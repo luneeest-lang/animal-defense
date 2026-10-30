@@ -46,6 +46,17 @@ button { font: inherit; color: inherit; }
 .hint { opacity: 0.6; font-size: 0.85rem; }
 .warn { color: var(--danger); font-size: 0.85rem; }
 #map-list { display: grid; gap: 12px; }
+/* 깬 맵은 카드 옆에 무한 모드 버튼 */
+.map-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 8px; }
+.endless-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 0; border-radius: 14px; padding: 8px 4px; cursor: pointer; touch-action: manipulation;
+  background: linear-gradient(180deg, #6b4bd6 0%, #43299a 100%); color: #fff;
+  box-shadow: var(--bevel, 0 3px 0 rgba(0, 0, 0, 0.4)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.endless-btn:active { transform: translateY(2px); box-shadow: var(--bevel-pressed, none); }
+.endless-btn .e-title { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+.endless-btn .e-sub { font-size: 0.75rem; opacity: 0.85; white-space: nowrap; }
 .map-card {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 16px; border: 0; border-radius: 14px; background: var(--card);

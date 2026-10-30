@@ -11,9 +11,9 @@ export function hpScale(waveNumber) {
   return HP_BONUS * (1 + 0.3 * (waveNumber - 1)) * late;
 }
 
-// 웨이브가 높을수록 조금씩 빨라진다 (웨이브마다 1%)
+// 웨이브가 높을수록 조금씩 빨라진다 (웨이브마다 1%, 무한 모드에서 너무 빨라지지 않게 최대 1.5배)
 export function speedScale(waveNumber) {
-  return 1 + 0.01 * (waveNumber - 1);
+  return Math.min(1.5, 1 + 0.01 * (waveNumber - 1));
 }
 
 export const isBoss = (type) => !!ENEMIES[type]?.boss;

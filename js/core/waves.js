@@ -37,6 +37,29 @@ export function buildWaves() {
   });
 }
 
+// 무한 모드: 30웨이브 뒤로도 끝없이 이어지는 웨이브. 30까지는 보통 판과 같다.
+// 31부터 일반 웨이브는 마지막 구성 비율(달리기 10%, 분열체 15%, 탱크 40%, 방패병 35%)로 웨이브마다 0.7마리씩 늘어 최대 40마리,
+// 5웨이브마다 보스가 나오고 35부터는 서로 다른 보스 2마리가 함께 나온다
+const ENDLESS_MIX = [0, 0.1, 0.15, 0.4, 0.35];
+const ENDLESS_MAX = 40;
+export function waveAt(n) {
+  if (n <= WAVE_COUNT) return buildWaves()[n - 1];
+  if (n % 5 === 0) {
+    const k = n / 5 - 1;
+    const types = [BOSSES[k % BOSSES.length], ...(n >= 35 ? [BOSSES[(k + 3) % BOSSES.length]] : [])];
+    return { number: n, groups: types.map((type) => ({ type, count: 1, interval: BOSS_INTERVAL })) };
+  }
+  const total = Math.min(ENDLESS_MAX, 20 + Math.ceil((n - WAVE_COUNT) * 0.7));
+  const counts = ENDLESS_MIX.map((r) => Math.round(total * r));
+  counts[3] += total - counts.reduce((a, b) => a + b, 0); // 반올림 차이는 탱크로 맞춘다
+  return {
+    number: n,
+    groups: SPAWN_ORDER
+      .map((type) => ({ type, count: counts[TYPES.indexOf(type)], interval: INTERVALS[type] }))
+      .filter((g) => g.count > 0),
+  };
+}
+
 export function spawnSchedule(wave) {
   const schedule = [];
   let start = isBossWave(wave) ? BOSS_INTRO : 0;

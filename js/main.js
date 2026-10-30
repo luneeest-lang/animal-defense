@@ -85,11 +85,15 @@ const hud = createHud(document.getElementById('app'), {
     selectTower(null);
   },
   onCloseInfo: () => selectTower(null),
-  onRetry: () => startMap(mapId),
+  onRetry: () => startMap(mapId, !!game?.endless),
   onStartMap: (id) => {
     // 이어할 게임이 있으면 지워도 되는지 한 번 묻는다
     if (run && !window.confirm('진행 중인 게임이 있어요. 새로 시작하면 지워져요. 새로 시작할까요?')) return;
     startMap(id);
+  },
+  onStartEndless: (id) => {
+    if (run && !window.confirm('진행 중인 게임이 있어요. 새로 시작하면 지워져요. 새로 시작할까요?')) return;
+    startMap(id, true);
   },
   onContinue: continueRun,
   onSound: () => toggleSound('sfx'),
@@ -119,7 +123,7 @@ function autosave() {
 function menuRunInfo() {
   if (!run) return null;
   const map = MAPS.find((m) => m.id === run.mapId);
-  return map ? { name: map.name, place: map.place, wave: run.waveNumber } : null;
+  return map ? { name: map.name, place: map.place, wave: run.waveNumber, endless: !!run.endless } : null;
 }
 
 function summon() {
@@ -176,12 +180,14 @@ attachInput(document.getElementById('board'), {
   },
 });
 
-function startMap(id) {
+// endless: 무한 모드로 시작 (그 맵을 한 번 깨서 별이 있어야 한다)
+function startMap(id, endless = false) {
   const map = MAPS.find((m) => m.id === id);
   if (!map || MAPS.indexOf(map) >= save.unlocked) return;
+  if (endless && !save.records[id]?.stars) return;
   run = null;
   clearRun(store);
-  enterGame(createGame(map));
+  enterGame(createGame(map, undefined, { endless }));
 }
 
 function continueRun() {
@@ -231,9 +237,13 @@ function finish() {
   sound.play(won ? 'win' : 'lose');
   // 패배한 웨이브는 막지 못한 것이므로 직전 웨이브까지만 기록한다
   const wave = won ? game.waveNumber : Math.max(0, game.waveNumber - 1);
-  save = recordResult(save, mapId, { wave, lives: game.lives, won });
+  const prevBest = save.records[mapId]?.endlessBest ?? 0;
+  save = recordResult(save, mapId, { wave, lives: game.lives, won, endless: game.endless });
   hud.showSaveWarning(!writeSave(store, save));
-  hud.showResult({ won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0 });
+  hud.showResult({
+    won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0,
+    endless: game.endless ? { best: save.records[mapId].endlessBest, newBest: wave > prevBest } : null,
+  });
 }
 
 function frame(ts) {
