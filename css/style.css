@@ -41,7 +41,8 @@ button { font: inherit; color: inherit; }
 
 /* 메뉴 */
 #screen-menu { max-width: 520px; margin: 0 auto; padding: 24px 16px 32px; text-align: center; }
-#screen-menu h1 { margin: 8px 0 4px; font-size: 1.7rem; }
+#screen-menu h1 { margin: 8px 0 2px; font-size: 1.9rem; }
+#screen-menu .subtitle { margin: 0 0 8px; font-size: 0.95rem; font-weight: 700; color: #ffd23f; letter-spacing: 0.02em; }
 .lead { margin: 0 0 20px; opacity: 0.85; }
 .hint { opacity: 0.6; font-size: 0.85rem; }
 .warn { color: var(--danger); font-size: 0.85rem; }
