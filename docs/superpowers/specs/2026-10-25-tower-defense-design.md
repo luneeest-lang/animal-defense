@@ -413,3 +413,9 @@ PC 보조 단축키: 1~5로 동물 선택, 스페이스로 일시정지, ESC로 
 - 영어 이름: 제목 Tiny Mythic Squad(부제 Merge & Defend Animal Defense). 맵 Easy·Rocky Hill / Normal·Forest / Hard·Sea. 신화는 한국 이름을 살려 Phoenix, Gumiho, Cheonma, Haetae, Girin. 보스 Red Demon, Slime King, Lich King, Lava Golem, Shadow Wolf, Black Dragon. 큰 숫자는 영어에서 12.3K·1.2M으로 줄인다.
 - 검사: 두 사전의 문장 목록이 같고 영어 문장에 한글이 없는지, 모든 동물·신화·보스·카드·맵·미션에 영어 이름이 있는지 단위 테스트. 브라우저 검사는 한국어 브라우저(ko-KR)로 돌리고, 영어 브라우저로 메뉴·도감·카드·신화 조합·게임 화면에 한글이 남거나 글자가 넘치는 곳이 없는지 따로 확인했다.
 
+## 41. 웹게임 사이트 제출 자료 (promo/)
+
+- promo/: 커버 3종(가로 1920x1080, 세로 800x1200, 정사각 800x800), 미리보기 영상(1920x1080, 18초, H.264, 소리 없음), 게임 묶음 zip(index.html·css·js), 제출 문장(LISTING.md: 영어 제목·설명·조작법·태그와 한국어 확인 사항).
+- 만드는 도구: tools/promo/capture.cjs(커버 배경용 맵 장면), cover.html + make.cjs(커버 그리기: 흐린 맵 배경 위에 신화 그림, 아기 동물 줄, 굵은 제목), video.cjs(영어 화면 2배속 플레이 녹화), package.py(zip). 이 컨테이너의 Playwright·ffmpeg를 쓴다. 배포(pages.yml)는 index.html·css·js만 올리므로 promo·tools는 사이트에 나가지 않는다.
+- CrazyGames 문서 사이트는 이 환경에서 접속이 막혀 있어 커버 크기는 널리 쓰이는 규격으로 정했다(검색으로 확인한 것: 커버 3종, 영상 15~20초·50MB 이하).
+

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>cover</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+// 커버 그리기: ?w=폭&h=높이&bg=배경 그림&layout=landscape|portrait|square
+// 배경(게임 맵 장면)을 흐리게 깔고, 큰 신화 동물 그림과 제목을 올린다. tools/promo/make.cjs가 찍는다.
+import { bakeMythics, bakeAnimals } from '../../js/ui/pixel.js';
+
+const q = new URLSearchParams(location.search);
+const W = Number(q.get('w')); const H = Number(q.get('h'));
+const layout = q.get('layout');
+const c = document.getElementById('c');
+c.width = W; c.height = H;
+const ctx = c.getContext('2d');
+
+const bg = new Image();
+bg.src = q.get('bg');
+await bg.decode();
+await document.fonts.load('900 100px "Inter Display"');
+
+// 배경: 화면을 꽉 채우게 자르고 살짝 흐리고 어둡게
+const s = Math.max(W / bg.width, H / bg.height);
+ctx.filter = 'blur(3px) saturate(1.15) brightness(0.8)';
+ctx.drawImage(bg, (W - bg.width * s) / 2, (H - bg.height * s) / 2, bg.width * s, bg.height * s);
+ctx.filter = 'none';
+// 가장자리 어둡게 + 아래쪽 은은한 빛
+const vg = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.75);
+vg.addColorStop(0, 'rgba(0,0,0,0)');
+vg.addColorStop(1, 'rgba(0,0,0,0.6)');
+ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+
+const mythics = bakeMythics();
+const animals = bakeAnimals();
+ctx.imageSmoothingEnabled = false;
+// 발밑 무지개빛 원과 그림자, 그리고 은은한 후광
+function hero(img, cx, cy, size, glow) {
+  ctx.save();
+  const g = ctx.createRadialGradient(cx, cy, size * 0.05, cx, cy, size * 0.75);
+  g.addColorStop(0, glow); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(cx, cy + size * 0.44, size * 0.36, size * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.restore();
+}
+// 굵은 테두리 글자
+function title(text, x, y, size, align = 'center', fill = '#ffd23f') {
+  ctx.save();
+  ctx.font = `900 ${size}px "Inter Display", Inter, sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = size * 0.22; ctx.strokeStyle = '#2a1408';
+  ctx.strokeText(text, x, y + size * 0.06);
+  ctx.lineWidth = size * 0.16; ctx.strokeStyle = '#5a2e10';
+  ctx.strokeText(text, x, y);
+  const gr = ctx.createLinearGradient(0, y - size / 2, 0, y + size / 2);
+  gr.addColorStop(0, '#fff6b0'); gr.addColorStop(0.5, fill); gr.addColorStop(1, '#ff9a1f');
+  ctx.fillStyle = gr; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function sub(text, x, y, size, align = 'center') {
+  ctx.save();
+  ctx.font = `800 ${size}px "Inter Display", Inter, sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = size * 0.25; ctx.strokeStyle = 'rgba(20,10,4,0.9)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+// 아기 동물 다섯 마리 한 줄 (쪼꼬미들)
+function babies(cx, y, size, gap = 1.05) {
+  const ids = ['squirrel', 'penguin', 'elephant', 'eagle', 'snake'];
+  ids.forEach((id, i) => {
+    const x = cx + (i - 2) * size * gap;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(x, y + size * 0.42, size * 0.32, size * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(animals[id][0], x - size / 2, y - size / 2, size, size);
+  });
+}
+
+if (layout === 'landscape') {
+  hero(mythics.cheonma, W * 0.60, H * 0.30, H * 0.34, 'rgba(157,107,255,0.45)');
+  hero(mythics.girin, W * 0.76, H * 0.24, H * 0.30, 'rgba(125,255,176,0.4)');
+  hero(mythics.phoenix, W * 0.91, H * 0.30, H * 0.32, 'rgba(255,122,26,0.5)');
+  hero(mythics.haetae, W * 0.66, H * 0.66, H * 0.44, 'rgba(255,255,255,0.45)');
+  hero(mythics.gumiho, W * 0.87, H * 0.68, H * 0.38, 'rgba(111,211,255,0.45)');
+  title('TINY', W * 0.25, H * 0.20, H * 0.16);
+  title('MYTHIC', W * 0.25, H * 0.37, H * 0.16);
+  title('SQUAD', W * 0.25, H * 0.54, H * 0.16);
+  sub('Merge animals. Summon legends.', W * 0.25, H * 0.69, H * 0.05);
+  babies(W * 0.25, H * 0.85, H * 0.13);
+} else if (layout === 'portrait') {
+  title('TINY MYTHIC', W * 0.5, H * 0.09, W * 0.13);
+  title('SQUAD', W * 0.5, H * 0.20, W * 0.18);
+  hero(mythics.phoenix, W * 0.22, H * 0.38, W * 0.36, 'rgba(255,122,26,0.5)');
+  hero(mythics.cheonma, W * 0.78, H * 0.38, W * 0.36, 'rgba(157,107,255,0.45)');
+  hero(mythics.haetae, W * 0.5, H * 0.58, W * 0.56, 'rgba(255,255,255,0.45)');
+  babies(W * 0.5, H * 0.79, W * 0.16);
+  sub('Merge animals. Summon legends.', W * 0.5, H * 0.91, W * 0.055);
+} else {
+  title('TINY MYTHIC', W * 0.5, H * 0.11, W * 0.12);
+  title('SQUAD', W * 0.5, H * 0.25, W * 0.16);
+  hero(mythics.phoenix, W * 0.2, H * 0.52, W * 0.3, 'rgba(255,122,26,0.5)');
+  hero(mythics.gumiho, W * 0.8, H * 0.52, W * 0.3, 'rgba(111,211,255,0.45)');
+  hero(mythics.haetae, W * 0.5, H * 0.57, W * 0.42, 'rgba(255,255,255,0.45)');
+  babies(W * 0.5, H * 0.86, W * 0.13);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>
