@@ -1,20 +1,17 @@
 import { MAPS } from '../data/maps.js';
-import { TOWERS, STAGE_NAMES } from '../data/towers.js';
+import { TOWERS } from '../data/towers.js';
 import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG, summonCost, emptyCells, upgradeCost, effectiveStats } from '../core/game.js';
 import { CARDS } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
 import { bakeAnimals, bakeMythics } from './pixel.js';
-import { MYTHICS, GRADE_NAMES, gradeOf } from '../data/mythics.js';
+import { MYTHICS, gradeOf } from '../data/mythics.js';
 import { findMaterials, canCraft, RECIPE_LEVELS } from '../core/mythics.js';
-import { missionText } from '../core/missions.js';
+import {
+  t, lang, towerName, mythicName, mythicDesc, unitName, enemyName, bossSkill, mapName, mapPlace, cardName, cardDesc,
+  stageName, gradeName, missionLabel,
+} from '../i18n.js';
 import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
-
-// 이름 끝 글자에 받침이 있으면 '이', 없으면 '가'
-const subjectParticle = (word) => {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '이' : '가';
-};
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -54,7 +51,7 @@ export function createHud(root, handlers) {
   summon.type = 'button';
   summon.id = 'btn-summon';
   summon.className = 'summon-btn';
-  summon.innerHTML = '<span class="label">🎲 소환</span><span class="cost"></span>';
+  summon.innerHTML = `<span class="label">${t('hud.summon')}</span><span class="cost"></span>`;
   summon.addEventListener('click', () => handlers.onSummon());
   const summonCostEl = summon.querySelector('.cost');
   // 신화 조합 버튼: 만들 수 있는 신화가 있으면 반짝인다
@@ -62,7 +59,7 @@ export function createHud(root, handlers) {
   mythicBtn.type = 'button';
   mythicBtn.id = 'btn-mythic';
   mythicBtn.className = 'mythic-btn';
-  mythicBtn.textContent = '✨ 신화';
+  mythicBtn.textContent = t('hud.mythic');
   mythicBtn.addEventListener('click', () => handlers.onOpenMythic());
   const leftCol = document.createElement('div');
   leftCol.className = 'panel-left';
@@ -72,21 +69,21 @@ export function createHud(root, handlers) {
   const upgrades = document.createElement('div');
   upgrades.className = 'upgrades';
   const upgradeButtons = {};
-  for (const [id, def] of Object.entries(TOWERS)) {
+  for (const id of Object.keys(TOWERS)) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'upgrade-btn';
     b.dataset.type = id;
-    b.title = `${def.name} 강화`;
+    b.title = t('hud.upgrade', { name: towerName(id) });
     b.innerHTML = `<span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span>`
-      + `<span class="up-text"><span class="up-name">${def.name}</span><span class="up-level"></span><span class="up-cost"></span></span>`;
+      + `<span class="up-text"><span class="up-name">${towerName(id)}</span><span class="up-level"></span><span class="up-cost"></span></span>`;
     b.addEventListener('click', () => handlers.onUpgradeAnimal(id));
     upgrades.appendChild(b);
     upgradeButtons[id] = { button: b, level: b.querySelector('.up-level'), cost: b.querySelector('.up-cost') };
   }
   const hint = document.createElement('p');
   hint.className = 'hint';
-  const HINT = '같은 동물·같은 단계를 끌어다 겹치면 무작위 동물로 성장해요';
+  const HINT = t('hud.hint');
   hint.textContent = HINT;
   el.panel.append(leftCol, upgrades, hint);
   let shownChoices = '';
@@ -105,7 +102,7 @@ export function createHud(root, handlers) {
       b.className = 'card';
       b.dataset.card = id;
       b.innerHTML = `<span class="card-key">${i + 1}</span><span class="card-icon">${card.icon}</span>`
-        + `<span class="card-name">${card.name}</span><span class="card-desc">${card.desc}</span>`;
+        + `<span class="card-name">${cardName(id)}</span><span class="card-desc">${cardDesc(id)}</span>`;
       b.addEventListener('click', () => handlers.onPickCard(id));
       return b;
     }));
@@ -118,8 +115,8 @@ export function createHud(root, handlers) {
     const text = Object.entries(counts).map(([id, n]) => `${CARDS[id].icon}${n > 1 ? `×${n}` : ''}`).join(' ');
     if (text === shownTaken) return;
     shownTaken = text;
-    hint.textContent = text ? `카드: ${text}` : HINT;
-    hint.title = Object.keys(counts).map((id) => CARDS[id].name).join(', ');
+    hint.textContent = text ? t('hud.cardsTaken', { list: text }) : HINT;
+    hint.title = Object.keys(counts).map(cardName).join(', ');
   }
 
   // 신화 조합표: 신화마다 재료 칸(있으면 ✔)과 만들기 버튼
@@ -129,13 +126,13 @@ export function createHud(root, handlers) {
     row.className = 'mythic-row';
     row.dataset.mythic = id;
     const mats = def.recipe.map((type, i) => {
-      const stage = RECIPE_LEVELS[i] === 3 ? '각성' : '성체';
+      const stage = stageName(RECIPE_LEVELS[i]);
       return `<span class="mat" data-slot="${i}"><span class="icon" style="background-image:url(${icons[type][2].toDataURL()})"></span>`
-        + `<span class="mat-name">${stage} ${TOWERS[type].name}</span><span class="mat-ok"></span></span>`;
+        + `<span class="mat-name">${t('mythic.material', { stage, animal: towerName(type) })}</span><span class="mat-ok"></span></span>`;
     }).join('<span class="plus">+</span>');
     row.innerHTML = `<span class="m-icon" style="background-image:url(${mythicIcons[id].toDataURL()})"></span>`
-      + `<span class="m-body"><span class="m-name">${def.icon} ${def.name}</span><span class="m-desc">${def.desc}</span>`
-      + `<span class="mats">${mats}</span></span><button type="button" class="btn primary m-make">만들기</button>`;
+      + `<span class="m-body"><span class="m-name">${def.icon} ${mythicName(id)}</span><span class="m-desc">${mythicDesc(id)}</span>`
+      + `<span class="mats">${mats}</span></span><button type="button" class="btn primary m-make">${t('mythic.make')}</button>`;
     row.querySelector('.m-make').addEventListener('click', () => handlers.onCraft(id));
     el.mythicList.appendChild(row);
     mythicRows[id] = { make: row.querySelector('.m-make'), oks: [...row.querySelectorAll('.mat')] };
@@ -150,9 +147,9 @@ export function createHud(root, handlers) {
       any ||= ok;
       if (!open) continue;
       const { main, subs } = findMaterials(game, id);
-      [main, ...subs].forEach((t, i) => {
-        r.oks[i].classList.toggle('have', !!t);
-        setText(r.oks[i].querySelector('.mat-ok'), t ? '✔' : '✖');
+      [main, ...subs].forEach((tw, i) => {
+        r.oks[i].classList.toggle('have', !!tw);
+        setText(r.oks[i].querySelector('.mat-ok'), tw ? '✔' : '✖');
       });
       r.make.disabled = !ok;
     }
@@ -164,15 +161,15 @@ export function createHud(root, handlers) {
   const missionGoal = el.mission.querySelector('.m-goal');
   const missionMeta = el.mission.querySelector('.m-meta');
   const rewardText = (r) => [
-    r.gold && `🪙${r.gold}`, r.lives && `❤️+${r.lives}`, r.summons && `무료 소환 ${r.summons}`, r.upgrade && '강화 1단계',
+    r.gold && `🪙${r.gold}`, r.lives && `❤️+${r.lives}`, r.summons && t('mission.summons', { n: r.summons }), r.upgrade && t('mission.upgrade'),
   ].filter(Boolean).join(' ');
   function renderMission(game) {
     const m = game.mission;
     el.mission.hidden = !m || game.status !== 'running';
     if (!m) return;
-    setText(missionGoal, `🎯 ${missionText(m)}`);
+    setText(missionGoal, `🎯 ${missionLabel(m)}`);
     const left = Math.max(1, m.deadline - Math.max(1, game.waveNumber) + 1);
-    setText(missionMeta, `보상 ${rewardText(m.reward)} · 남은 웨이브 ${left}`);
+    setText(missionMeta, t('mission.reward', { reward: rewardText(m.reward), left }));
   }
 
   el.btnContinue.addEventListener('click', () => handlers.onContinue());
@@ -190,16 +187,16 @@ export function createHud(root, handlers) {
   function statsLine(game, tower) {
     const s = effectiveStats(game, tower);
     const parts = [
-      `공격력 ${Math.round(s.damage * 10) / 10}`,
-      s.range ? `사거리 ${s.range.toFixed(1)}` : '사거리 맵 전체',
-      `속도 ${(1 / s.cooldown).toFixed(1)}/초`,
+      t('stat.damage', { value: Math.round(s.damage * 10) / 10 }),
+      s.range ? t('stat.range', { value: s.range.toFixed(1) }) : t('stat.rangeAll'),
+      t('stat.speed', { value: (1 / s.cooldown).toFixed(1) }),
     ];
-    if (s.splash) parts.push(`범위 ${s.splash.toFixed(1)}`);
-    if (s.shots) parts.push(`여우불 ${s.shots}개`);
-    if (s.burnDps) parts.push(`불길 ${Math.round(s.burnDps)}/초`);
-    if (s.slowFactor) parts.push(`감속 ${Math.round((1 - s.slowFactor) * 100)}%`);
-    if (s.poisonDps) parts.push(`독 ${Math.round(s.poisonDps * 10) / 10}/초`);
-    if (s.bossMult) parts.push(`보스 x${s.bossMult}`);
+    if (s.splash) parts.push(t('stat.splash', { value: s.splash.toFixed(1) }));
+    if (s.shots) parts.push(t('stat.shots', { value: s.shots }));
+    if (s.burnDps) parts.push(t('stat.burn', { value: Math.round(s.burnDps) }));
+    if (s.slowFactor) parts.push(t('stat.slow', { value: Math.round((1 - s.slowFactor) * 100) }));
+    if (s.poisonDps) parts.push(t('stat.poison', { value: Math.round(s.poisonDps * 10) / 10 }));
+    if (s.bossMult) parts.push(t('stat.boss', { value: s.bossMult }));
     return parts.join(' · ');
   }
 
@@ -210,15 +207,15 @@ export function createHud(root, handlers) {
       return;
     }
     el.info.hidden = false;
-    const t = shownTower;
-    setText(el.infoTitle, t.mythic
-      ? `${MYTHICS[t.type].icon} ${MYTHICS[t.type].name} · 신화`
-      : `${TOWERS[t.type].name} · ${STAGE_NAMES[t.level]} (${GRADE_NAMES[gradeOf(t)]})`);
-    setText(el.infoStats, t.mythic ? `${MYTHICS[t.type].desc}. ${statsLine(game, t)}` : statsLine(game, t));
-    setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
+    const tw = shownTower;
+    setText(el.infoTitle, tw.mythic
+      ? t('info.mythic', { icon: MYTHICS[tw.type].icon, name: mythicName(tw.type) })
+      : t('info.animal', { name: towerName(tw.type), stage: stageName(tw.level), grade: gradeName(gradeOf(tw)) }));
+    setText(el.infoStats, tw.mythic ? `${mythicDesc(tw.type)}. ${statsLine(game, tw)}` : statsLine(game, tw));
+    setText(el.btnSell, t('info.sell', { gold: Math.floor(tw.invested * CONFIG.sellRate + 1e-9) }));
   }
 
-  const nameOf = (id) => (MYTHICS[id] ?? TOWERS[id]).name;
+  const nameOf = unitName;
   const iconOf = (id) => MYTHICS[id]?.icon ?? TOWERS[id].emoji;
   // 도감 그림: 동물은 성체, 신화는 신화 그림
   function dexArt(id, size) {
@@ -244,9 +241,9 @@ export function createHud(root, handlers) {
       const info = document.createElement('div');
       info.className = 'dex-info';
       const max = level >= DEX_MAX;
-      info.innerHTML = `<div class="dex-name">${nameOf(id)}${MYTHICS[id] ? ' <small>신화</small>' : ''}<b class="dex-lv">${max ? 'MAX' : `Lv.${level}`}</b></div>`
+      info.innerHTML = `<div class="dex-name">${nameOf(id)}${MYTHICS[id] ? ` <small>${t('dex.mythicTag')}</small>` : ''}<b class="dex-lv">${max ? 'MAX' : `Lv.${level}`}</b></div>`
         + `<div class="dex-bar"><span style="width:${max ? 100 : (have / need) * 100}%"></span></div>`
-        + `<div class="dex-sub">${max ? '최고 레벨' : `다음 레벨까지 ${have}/${need}장`} · 피해 +${Math.round(level * DEX_BONUS * 100)}% · 모은 카드 ${count}장</div>`;
+        + `<div class="dex-sub">${max ? t('dex.maxLevel') : t('dex.next', { have, need })} · ${t('dex.bonus', { pct: Math.round(level * DEX_BONUS * 100) })} · ${t('dex.count', { count })}</div>`;
       row.append(art, info);
       return row;
     }));
@@ -262,7 +259,7 @@ export function createHud(root, handlers) {
     if (!rewards) return;
     const title = document.createElement('div');
     title.className = 'rs-title';
-    title.textContent = '🎁 클리어 보상';
+    title.textContent = t('result.rewards');
     const cards = document.createElement('div');
     cards.className = 'rw-cards';
     const order = Object.keys(rewards.cards).sort((a, b) => (MYTHICS[b] ? 1 : 0) - (MYTHICS[a] ? 1 : 0) || rewards.cards[b] - rewards.cards[a]);
@@ -278,11 +275,11 @@ export function createHud(root, handlers) {
     if (rewards.levelUps.length) {
       const ups = document.createElement('div');
       ups.className = 'rw-ups';
-      ups.innerHTML = '<span class="rw-label">📖 도감 레벨 업</span>';
+      ups.innerHTML = `<span class="rw-label">${t('result.levelUp')}</span>`;
       for (const up of rewards.levelUps) {
         const chip = document.createElement('span');
         chip.className = 'rw-up';
-        chip.title = `${nameOf(up.id)} 피해 +${Math.round(up.to * DEX_BONUS * 100)}%`;
+        chip.title = `${nameOf(up.id)} ${t('dex.bonus', { pct: Math.round(up.to * DEX_BONUS * 100) })}`;
         chip.textContent = `${iconOf(up.id)} ${up.from}→${up.to}`;
         ups.append(chip);
       }
@@ -290,8 +287,10 @@ export function createHud(root, handlers) {
     }
   }
 
-  // 큰 숫자는 '1.2만'처럼 줄인다
-  const short = (n) => (n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : String(Math.round(n)));
+  // 큰 숫자는 '1.2만'(영어는 '12.3K')처럼 줄인다
+  const short = (n) => (lang() === 'ko'
+    ? (n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : String(Math.round(n)))
+    : (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e4 ? `${(n / 1e3).toFixed(1)}K` : String(Math.round(n))));
   // 결과 화면 통계: 요약 한 줄과 피해량 순위(많은 순서 5종, 막대는 1등 대비 길이)
   function renderStats(stats) {
     el.resultStats.replaceChildren();
@@ -299,7 +298,7 @@ export function createHud(root, handlers) {
     if (!stats) return;
     const summary = document.createElement('div');
     summary.className = 'rs-summary';
-    for (const [icon, label, value] of [['⚔️', '처치', stats.kills], ['💔', '놓침', stats.leaked], ['⏱️', '시간', stats.time]]) {
+    for (const [icon, label, value] of [['⚔️', t('result.kills'), stats.kills], ['💔', t('result.leaked'), stats.leaked], ['⏱️', t('result.time'), stats.time]]) {
       const chip = document.createElement('span');
       chip.className = 'rs-chip';
       chip.innerHTML = `<span class="rs-label">${icon} ${label}</span><b>${value}</b>`;
@@ -309,7 +308,7 @@ export function createHud(root, handlers) {
     if (!stats.ranking.length) return;
     const title = document.createElement('div');
     title.className = 'rs-title';
-    title.textContent = '🏅 피해량 순위';
+    title.textContent = t('result.ranking');
     el.resultStats.append(title);
     const top = stats.ranking[0].damage;
     const rows = document.createElement('div');
@@ -319,7 +318,7 @@ export function createHud(root, handlers) {
       const row = document.createElement('div');
       row.className = `rs-row${r.mythic ? ' mythic' : ''}`;
       row.innerHTML = `<span class="rs-rank">${i + 1}</span><span class="rs-icon">${r.icon}</span>`
-        + `<span class="rs-main"><span class="rs-name">${r.name}${r.mythic ? ' ✨' : ''}<small>처치 ${r.kills}</small></span>`
+        + `<span class="rs-main"><span class="rs-name">${nameOf(r.id)}${r.mythic ? ' ✨' : ''}<small>${t('result.killCount', { kills: r.kills })}</small></span>`
         + `<span class="rs-bar"><span style="width:${Math.max(3, (r.damage / top) * 100)}%"></span></span></span>`
         + `<span class="rs-val">${short(r.damage)}<small>${Math.round(r.share * 100)}%</small></span>`;
       rows.append(row);
@@ -331,13 +330,16 @@ export function createHud(root, handlers) {
     showMenu(save, run = null) {
       dexCollection = save.collection ?? {};
       const total = DEX_IDS.reduce((s, id) => s + dexProgress(id, dexCollection[id] ?? 0).level, 0);
-      el.btnDex.innerHTML = `<span>📖 도감</span><small>레벨 합계 ${total}/${DEX_IDS.length * DEX_MAX}</small>`;
+      el.btnDex.innerHTML = `<span>${t('dex.button')}</span><small>${t('dex.total', { total, max: DEX_IDS.length * DEX_MAX })}</small>`;
       el.dex.hidden = true;
       el.game.hidden = true;
       el.result.hidden = true;
       el.menu.hidden = false;
       el.btnContinue.hidden = !run;
-      if (run) el.btnContinue.innerHTML = `<span class="c-title">▶ 이어하기</span><span class="c-sub">${run.name} · ${run.place} · ${run.endless ? `♾️ 무한 웨이브 ${run.wave}` : `웨이브 ${run.wave}/${WAVE_COUNT}`}</span>`;
+      if (run) {
+        const vars = { name: mapName(run.mapId), place: mapPlace(run.mapId), wave: run.wave, max: WAVE_COUNT };
+        el.btnContinue.innerHTML = `<span class="c-title">${t('menu.continue')}</span><span class="c-sub">${t(run.endless ? 'menu.runEndless' : 'menu.runNormal', vars)}</span>`;
+      }
       el.maps.replaceChildren(...MAPS.map((map, i) => {
         const locked = i >= save.unlocked;
         const rec = save.records[map.id];
@@ -345,8 +347,8 @@ export function createHud(root, handlers) {
         b.type = 'button';
         b.className = 'map-card';
         b.disabled = locked;
-        b.innerHTML = `<span><div class="name">${locked ? '🔒 ' : ''}${map.name} · ${map.place}</div>`
-          + `<div class="sub">${locked ? '이전 맵을 클리어하면 열려요' : rec ? `최고 웨이브 ${rec.bestWave}/${WAVE_COUNT}` : '아직 도전 전'}</div></span>`
+        b.innerHTML = `<span><div class="name">${locked ? '🔒 ' : ''}${mapName(map.id)} · ${mapPlace(map.id)}</div>`
+          + `<div class="sub">${locked ? t('menu.locked') : rec ? t('menu.best', { wave: rec.bestWave, max: WAVE_COUNT }) : t('menu.new')}</div></span>`
           + `<span class="stars">${locked ? '' : stars(rec ? rec.stars : 0)}</span>`;
         b.addEventListener('click', () => handlers.onStartMap(map.id));
         // 무한 모드: 그 맵을 30웨이브까지 한 번 깨면(별이 있으면) 카드 옆에 버튼이 생긴다
@@ -357,7 +359,7 @@ export function createHud(root, handlers) {
         e.type = 'button';
         e.className = 'endless-btn';
         e.dataset.map = map.id;
-        e.innerHTML = `<span class="e-title">♾️ 무한</span><span class="e-sub">${rec.endlessBest ? `최고 ${rec.endlessBest}` : '도전!'}</span>`;
+        e.innerHTML = `<span class="e-title">${t('menu.endless')}</span><span class="e-sub">${rec.endlessBest ? t('menu.endlessBest', { best: rec.endlessBest }) : t('menu.endlessNew')}</span>`;
         e.addEventListener('click', () => handlers.onStartEndless(map.id));
         row.append(b, e);
         return row;
@@ -386,15 +388,15 @@ export function createHud(root, handlers) {
       renderStats(stats);
       renderRewards(rewards);
       if (endless) {
-        setText(el.resultTitle, endless.newBest ? '🏆 새 기록!' : '♾️ 무한 모드 끝');
+        setText(el.resultTitle, t(endless.newBest ? 'result.newBest' : 'result.endlessOver'));
         setText(el.resultStars, '');
-        setText(el.resultDetail, `웨이브 ${wave}까지 막았어요 · 최고 ${endless.best}`);
+        setText(el.resultDetail, t('result.endlessDetail', { wave, best: endless.best }));
         el.result.hidden = false;
         return;
       }
-      setText(el.resultTitle, won ? '🎉 승리!' : '💔 패배');
+      setText(el.resultTitle, t(won ? 'result.win' : 'result.lose'));
       setText(el.resultStars, won ? stars(starCount) : '');
-      setText(el.resultDetail, won ? `남은 생명 ${lives}` : wave > 0 ? `웨이브 ${wave}/${WAVE_COUNT}까지 막았어요` : '첫 웨이브를 막지 못했어요');
+      setText(el.resultDetail, won ? t('result.livesLeft', { lives }) : wave > 0 ? t('result.reached', { wave, max: WAVE_COUNT }) : t('result.firstWave'));
       el.result.hidden = false;
     },
     hideResult() { el.result.hidden = true; },
@@ -411,11 +413,11 @@ export function createHud(root, handlers) {
       const running = game.status === 'running';
       if (game.countdown !== null && running && !game.cardChoices) {
         const left = Math.ceil(game.countdown);
-        setText(el.btnWave, `⏭ 바로 시작 ${left}초 +${left}🪙`);
+        setText(el.btnWave, t('hud.skip', { left }));
         el.btnWave.disabled = false;
       } else {
-        const label = game.cardChoices ? '카드를 골라 주세요'
-          : game.waveNumber >= game.waves.length ? '마지막 웨이브' : `웨이브 ${game.waveNumber} 진행 중`;
+        const label = game.cardChoices ? t('hud.pickCard')
+          : game.waveNumber >= game.waves.length ? t('hud.lastWave') : t('hud.waveRunning', { wave: game.waveNumber });
         setText(el.btnWave, label);
         el.btnWave.disabled = true;
       }
@@ -423,9 +425,9 @@ export function createHud(root, handlers) {
       // 꺼진 소리 버튼은 흐려지고 빨간 사선이 그어진다
       setText(el.btnSound, ui.sfx ? '🔊' : '🔇');
       el.btnSound.classList.toggle('off', !ui.sfx);
-      el.btnSound.title = ui.sfx ? '효과음 끄기' : '효과음 켜기';
+      el.btnSound.title = t(ui.sfx ? 'hud.sfxOff' : 'hud.sfxOn');
       el.btnMusic.classList.toggle('off', !ui.music);
-      el.btnMusic.title = ui.music ? '배경음 끄기' : '배경음 켜기';
+      el.btnMusic.title = t(ui.music ? 'hud.musicOff' : 'hud.musicOn');
       setText(el.btnPause, ui.paused ? '▶' : '⏸');
       el.pauseLabel.hidden = !ui.paused || !!game.cardChoices;
       renderCards(game);
@@ -435,10 +437,10 @@ export function createHud(root, handlers) {
       // 보스 경고는 남은 시간 동안 보이고, 끝나기 직전에 서서히 사라진다
       el.bossBanner.hidden = !(running && game.bossWarning > 0);
       if (game.bossWarningType) {
-        const boss = ENEMIES[game.bossWarningType];
-        setText(el.bossSub, `${boss.name}${subjectParticle(boss.name)} 다가온다…`);
+        const type = game.bossWarningType;
+        setText(el.bossSub, t('boss.coming', { name: enemyName(type) }));
         el.bossSkill.hidden = !game.map.bossAbilities;
-        setText(el.bossSkill, `능력: ${boss.skill}`);
+        if (ENEMIES[type].skill) setText(el.bossSkill, t('boss.skill', { skill: bossSkill(type) }));
       }
       el.bossBanner.classList.toggle('leaving', game.bossWarning > 0 && game.bossWarning < 0.4);
       const cost = summonCost(game);

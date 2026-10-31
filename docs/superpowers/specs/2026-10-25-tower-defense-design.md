@@ -405,3 +405,11 @@ PC 보조 단축키: 1~5로 동물 선택, 스페이스로 일시정지, ESC로 
 
 - 제목을 '동물 타워 디펜스'에서 '쪼꼬미 신수단'으로 바꿨다. 부제는 '합쳐서 지키는 동물 디펜스'. 메뉴 제목(🐯)·부제·소개 문구, 브라우저 탭 제목, 검색용 설명, README를 함께 바꿨다. 저장 키(td-save-v1 등)와 저장소·주소 이름은 그대로라 기존 기록이 이어진다.
 
+## 40. 영어 번역 (해외 웹게임 사이트 준비)
+
+- js/i18n.js에 한국어(KO)·영어(EN) 화면 문장 사전과 이름 함수(towerName, mythicName, cardName, missionLabel 등)를 모았다. 한국어 이름·설명은 data 파일의 것을 그대로 쓰고, 영어만 이 파일에 둔다.
+- 언어 고르기(pickLang): 저장한 선택(td-lang)이 먼저, 없으면 브라우저 언어 목록에 한국어가 있을 때만 한국어, 그 밖에는 영어. 메뉴 아래 '🌐 English / 🌐 한국어' 버튼을 누르면 선택을 저장하고 새로 불러온다.
+- index.html의 고정 글자는 data-i18n(글자)·data-i18n-label(aria-label·title)로 표시해 시작할 때 바꾼다. 탭 제목·검색 설명·html lang도 바꾼다.
+- 영어 이름: 제목 Tiny Mythic Squad(부제 Merge & Defend Animal Defense). 맵 Easy·Rocky Hill / Normal·Forest / Hard·Sea. 신화는 한국 이름을 살려 Phoenix, Gumiho, Cheonma, Haetae, Girin. 보스 Red Demon, Slime King, Lich King, Lava Golem, Shadow Wolf, Black Dragon. 큰 숫자는 영어에서 12.3K·1.2M으로 줄인다.
+- 검사: 두 사전의 문장 목록이 같고 영어 문장에 한글이 없는지, 모든 동물·신화·보스·카드·맵·미션에 영어 이름이 있는지 단위 테스트. 브라우저 검사는 한국어 브라우저(ko-KR)로 돌리고, 영어 브라우저로 메뉴·도감·카드·신화 조합·게임 화면에 한글이 남거나 글자가 넘치는 곳이 없는지 따로 확인했다.
+

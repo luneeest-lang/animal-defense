@@ -13,6 +13,7 @@ import { createSound, loadSoundSettings, saveSoundSettings } from './ui/sound.js
 import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
 import { createHud } from './ui/hud.js';
+import { LANG_KEY, pickLang, setLang, lang, t, applyStatic } from './i18n.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -32,6 +33,24 @@ function openStore() {
 }
 
 const store = openStore();
+
+// 언어: 저장한 선택이 먼저, 없으면 휴대폰(브라우저) 언어가 한국어일 때만 한국어. 화면을 만들기 전에 정한다
+function readLang() {
+  try { return store.getItem(LANG_KEY); } catch { return null; }
+}
+setLang(pickLang(readLang(), navigator.languages ?? [navigator.language]));
+document.documentElement.lang = lang();
+document.title = t('title');
+document.querySelector('meta[name="description"]')?.setAttribute('content', t('meta.desc'));
+applyStatic(document);
+// 언어 버튼: 선택을 저장하고 새로 불러온다(패널·조합표 같은 글자를 처음부터 다시 만든다)
+document.getElementById('btn-lang').addEventListener('click', () => {
+  try {
+    store.setItem(LANG_KEY, lang() === 'ko' ? 'en' : 'ko');
+    window.location.reload();
+  } catch { /* 저장이 안 되는 브라우저에서는 언어를 바꿀 수 없다 */ }
+});
+
 let save = loadSave(store);
 // 이어할 게임(웨이브 사이에 자동 저장). 되살릴 수 없는 저장은 버린다
 const savedRun = loadRun(store);
@@ -90,11 +109,11 @@ const hud = createHud(document.getElementById('app'), {
   onRetry: () => startMap(mapId, !!game?.endless),
   onStartMap: (id) => {
     // 이어할 게임이 있으면 지워도 되는지 한 번 묻는다
-    if (run && !window.confirm('진행 중인 게임이 있어요. 새로 시작하면 지워져요. 새로 시작할까요?')) return;
+    if (run && !window.confirm(t('menu.confirmNew'))) return;
     startMap(id);
   },
   onStartEndless: (id) => {
-    if (run && !window.confirm('진행 중인 게임이 있어요. 새로 시작하면 지워져요. 새로 시작할까요?')) return;
+    if (run && !window.confirm(t('menu.confirmNew'))) return;
     startMap(id, true);
   },
   onContinue: continueRun,
@@ -125,7 +144,7 @@ function autosave() {
 function menuRunInfo() {
   if (!run) return null;
   const map = MAPS.find((m) => m.id === run.mapId);
-  return map ? { name: map.name, place: map.place, wave: run.waveNumber, endless: !!run.endless } : null;
+  return map ? { mapId: map.id, wave: run.waveNumber, endless: !!run.endless } : null;
 }
 
 function summon() {

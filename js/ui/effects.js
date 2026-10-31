@@ -9,6 +9,7 @@ export const SHAKE_MS = 450;
 
 import { ENEMIES } from '../data/enemies.js';
 import { MYTHICS } from '../data/mythics.js';
+import { t, mythicName } from '../i18n.js';
 
 // 처치 파편 색 (몬스터 도트의 주색)
 export const ENEMY_COLORS = {
@@ -19,7 +20,7 @@ export const ENEMY_COLORS = {
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
 const RAINBOW = ['#ff5e5e', '#ffb03b', '#ffe94d', '#6bff8a', '#4fc3ff', '#b77dff'];
 // 보스 능력 문구
-const SKILL_TEXT = { rage: '분노!', split: '분열!', summon: '소환!', dash: '질주!', roar: '포효!' };
+const SKILLS = ['rage', 'split', 'summon', 'dash', 'roar'];
 
 // 화면 효과 전용 난수. 소환 같은 게임 규칙의 무작위(Math.random)와 섞이지 않게 따로 쓴다.
 export function effectRng(seed) {
@@ -88,17 +89,17 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'text', x: ev.x, y: ev.y, text: `+${ev.reward}🪙`, big: true, t: now, life: LIFE.text });
         shake(0.35, now);
       } else if (ev.type === 'goldenSpawn') {
-        add({ kind: 'text', x: center.x, y: center.y, text: '✨ 황금 몬스터 출현!', big: true, t: now, life: LIFE.text * 1.4 });
+        add({ kind: 'text', x: center.x, y: center.y, text: t('fx.golden'), big: true, t: now, life: LIFE.text * 1.4 });
         burst(ev.x, ev.y, 14, GOLD, 2, 0.08, now);
       } else if (ev.type === 'goldenEscape') {
-        add({ kind: 'text', x: ev.x, y: ev.y, text: '도망갔다…', big: false, t: now, life: LIFE.text });
+        add({ kind: 'text', x: ev.x, y: ev.y, text: t('fx.escaped'), big: false, t: now, life: LIFE.text });
       } else if (ev.type === 'missionStart') {
-        add({ kind: 'text', x: center.x, y: center.y, text: '🎯 새 미션!', big: false, t: now, life: LIFE.text });
+        add({ kind: 'text', x: center.x, y: center.y, text: t('fx.newMission'), big: false, t: now, life: LIFE.text });
       } else if (ev.type === 'missionDone') {
-        add({ kind: 'text', x: center.x, y: center.y, text: '🎯 미션 성공!', big: true, t: now, life: LIFE.text * 1.4 });
+        add({ kind: 'text', x: center.x, y: center.y, text: t('fx.missionDone'), big: true, t: now, life: LIFE.text * 1.4 });
         burst(center.x, center.y, 24, GOLD, 2.6, 0.1, now);
       } else if (ev.type === 'missionFail') {
-        add({ kind: 'text', x: center.x, y: center.y, text: '미션 실패…', big: false, warn: true, t: now, life: LIFE.text });
+        add({ kind: 'text', x: center.x, y: center.y, text: t('fx.missionFail'), big: false, warn: true, t: now, life: LIFE.text });
       } else if (ev.type === 'death') {
         const boss = !!ENEMIES[ev.enemy]?.boss;
         burst(ev.x, ev.y, boss ? 28 : 8, [ENEMY_COLORS[ev.enemy] ?? '#ffffff', '#ffffff'], boss ? 3.2 : 2.2, boss ? 0.12 : 0.08, now);
@@ -109,13 +110,13 @@ export function createEffects(rng = effectRng(Date.now())) {
         }
       } else if (ev.type === 'bossSkill') {
         const roar = ev.skill === 'roar';
-        add({ kind: 'text', x: ev.x, y: ev.y, text: SKILL_TEXT[ev.skill] ?? '!', big: roar, warn: true, t: now, life: LIFE.text });
+        add({ kind: 'text', x: ev.x, y: ev.y, text: SKILLS.includes(ev.skill) ? t(`fx.${ev.skill}`) : '!', big: roar, warn: true, t: now, life: LIFE.text });
         add({ kind: 'ring', x: ev.x, y: ev.y, color: roar ? '#ff3b30' : '#ff9f43', big: roar, reach: roar ? 2.5 : 0.8, t: now, life: LIFE.ring });
         if (roar) shake(0.6, now);
       } else if (ev.type === 'mythic') {
         add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ff5ec4', big: true, reach: 2.2, t: now, life: LIFE.ring * 2 });
         burst(ev.x, ev.y, 30, RAINBOW, 3, 0.11, now);
-        add({ kind: 'text', x: ev.x, y: ev.y, text: `신화 탄생! ${MYTHICS[ev.mythic]?.name ?? ''}`, big: true, t: now, life: LIFE.text * 1.6 });
+        add({ kind: 'text', x: ev.x, y: ev.y, text: t('fx.mythic', { name: MYTHICS[ev.mythic] ? mythicName(ev.mythic) : '' }), big: true, t: now, life: LIFE.text * 1.6 });
         shake(0.7, now);
       } else if (ev.type === 'mythicShot') {
         if (ev.mythic === 'cheonma') add({ kind: 'beam', from: ev.from, to: ev.to, t: now, life: LIFE.beam });
@@ -125,7 +126,7 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ffd23f', big: true, reach: 6, t: now, life: LIFE.ring * 2 });
         shake(0.25, now);
       } else if (ev.type === 'stun') {
-        add({ kind: 'text', x: ev.x, y: ev.y, text: '기절!', big: false, stun: true, t: now, life: LIFE.text });
+        add({ kind: 'text', x: ev.x, y: ev.y, text: t('fx.stun'), big: false, stun: true, t: now, life: LIFE.text });
       } else if (ev.type === 'leak') {
         flashAt = now;
         // 블랙홀에 빨려 들어간다: 그 자리에서 돌며 작아지고, 블랙홀이 꿀렁인다
@@ -141,12 +142,12 @@ export function createEffects(rng = effectRng(Date.now())) {
       const awakened = level >= 3;
       add({ kind: 'ring', x, y, color: '#ffd23f', big: awakened, t: now, life: LIFE.ring });
       burst(x, y, awakened ? 22 : 10, GOLD, awakened ? 2.6 : 1.6, awakened ? 0.1 : 0.08, now);
-      const word = awakened ? '각성!' : '성장!';
+      const word = t(awakened ? 'fx.awaken' : 'fx.grow');
       add({ kind: 'text', x, y, text: name ? `${word} ${name}` : word, big: awakened, t: now, life: LIFE.text });
       if (awakened) shake(0.4, now);
     },
     waveClear(x, y, bonus, now) {
-      add({ kind: 'text', x, y, text: `웨이브 클리어 +${bonus}`, big: false, t: now, life: LIFE.text });
+      add({ kind: 'text', x, y, text: t('fx.waveClear', { bonus }), big: false, t: now, life: LIFE.text });
       burst(x, y, 12, GOLD, 1.8, 0.08, now);
     },
     hitTime(enemyId) {

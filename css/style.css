@@ -513,3 +513,9 @@ button { font: inherit; color: inherit; }
 .rw-ups .rw-label { font-weight: 700; color: #ffd23f; }
 .rw-up { padding: 2px 7px; border-radius: 8px; background: rgba(255, 210, 63, 0.18); color: #ffe48a; font-weight: 700; white-space: nowrap; }
 
+/* 언어 버튼 (메뉴 아래) */
+.lang-btn {
+  display: inline-block; margin: 4px auto 0; padding: 6px 14px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 0.85rem; box-shadow: var(--bevel-flat);
+}
+

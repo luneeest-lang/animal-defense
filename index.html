@@ -13,22 +13,23 @@
 <body>
   <div id="app">
     <section id="screen-menu" class="screen">
-      <h1>🐯 쪼꼬미 신수단</h1>
-      <p class="subtitle">합쳐서 지키는 동물 디펜스</p>
-      <p class="lead">아기 동물을 합쳐 신수로 키우고, 블랙홀로 가는 몬스터를 막아 보세요.</p>
+      <h1 data-i18n="menu.title">🐯 쪼꼬미 신수단</h1>
+      <p class="subtitle" data-i18n="menu.subtitle">합쳐서 지키는 동물 디펜스</p>
+      <p class="lead" data-i18n="menu.lead">아기 동물을 합쳐 신수로 키우고, 블랙홀로 가는 몬스터를 막아 보세요.</p>
       <button id="btn-continue" class="continue-btn" type="button" hidden></button>
       <div id="map-list"></div>
       <button id="btn-dex" class="dex-btn" type="button"></button>
-      <p class="hint">가로 화면에서 하면 더 편해요.</p>
-      <p id="save-warning" class="warn" hidden>이 브라우저에서는 기록을 저장할 수 없어요. 게임은 그대로 할 수 있어요.</p>
+      <p class="hint" data-i18n="menu.hint">가로 화면에서 하면 더 편해요.</p>
+      <button id="btn-lang" class="lang-btn" type="button" data-i18n="menu.lang">🌐 English</button>
+      <p id="save-warning" class="warn" hidden data-i18n="menu.saveWarning">이 브라우저에서는 기록을 저장할 수 없어요. 게임은 그대로 할 수 있어요.</p>
       <div class="ad-slot" aria-hidden="true"></div>
       <div id="dex" hidden>
         <div class="dex-inner">
           <div class="dex-head">
-            <h2>📖 도감</h2>
-            <button id="btn-close-dex" class="btn" type="button" aria-label="닫기">✕</button>
+            <h2 data-i18n="dex.title">📖 도감</h2>
+            <button id="btn-close-dex" class="btn" type="button" aria-label="닫기" data-i18n-label="common.close">✕</button>
           </div>
-          <p class="dex-help">보통 판 30웨이브를 깨면 카드를 받아요. 어려운 맵일수록, 별이 많을수록 많이 받고 신화 카드는 중급·고급에서만 나와요. 같은 카드를 모으면 도감 레벨이 오르고, 레벨마다 그 동물의 피해가 3%씩 영구히 올라요(최대 10레벨).</p>
+          <p class="dex-help" data-i18n="dex.help">보통 판 30웨이브를 깨면 카드를 받아요. 어려운 맵일수록, 별이 많을수록 많이 받고 신화 카드는 중급·고급에서만 나와요. 같은 카드를 모으면 도감 레벨이 오르고, 레벨마다 그 동물의 피해가 3%씩 영구히 올라요(최대 10레벨).</p>
           <div id="dex-list"></div>
         </div>
       </div>
@@ -39,24 +40,24 @@
         <div id="stats">
           <span id="stat-lives" class="stat">❤️ 20</span>
           <span id="stat-gold" class="stat">🪙 150</span>
-          <span id="stat-wave" class="stat" aria-label="웨이브" title="웨이브">🚩 0/30</span>
-          <button id="btn-music" class="sound-btn" type="button" aria-label="배경음">🎵</button>
-          <button id="btn-sound" class="sound-btn" type="button" aria-label="효과음">🔊</button>
+          <span id="stat-wave" class="stat" aria-label="웨이브" title="웨이브" data-i18n-label="hud.wave">🚩 0/30</span>
+          <button id="btn-music" class="sound-btn" type="button" aria-label="배경음" data-i18n-label="hud.music">🎵</button>
+          <button id="btn-sound" class="sound-btn" type="button" aria-label="효과음" data-i18n-label="hud.sfx">🔊</button>
         </div>
-        <button id="btn-wave" class="btn primary" type="button">▶ 다음 웨이브</button>
-        <button id="btn-speed" class="btn" type="button" aria-label="배속">1x</button>
-        <button id="btn-pause" class="btn" type="button" aria-label="일시정지">⏸</button>
-        <button id="btn-menu" class="btn" type="button" aria-label="맵 선택">☰</button>
+        <button id="btn-wave" class="btn primary" type="button" data-i18n="hud.nextWave">▶ 다음 웨이브</button>
+        <button id="btn-speed" class="btn" type="button" aria-label="배속" data-i18n-label="hud.speed">1x</button>
+        <button id="btn-pause" class="btn" type="button" aria-label="일시정지" data-i18n-label="hud.pause">⏸</button>
+        <button id="btn-menu" class="btn" type="button" aria-label="맵 선택" data-i18n-label="hud.menu">☰</button>
       </header>
 
       <main id="stage">
-        <canvas id="board" aria-label="게임 화면"></canvas>
-        <div id="pause-label" hidden>일시정지</div>
+        <canvas id="board" aria-label="게임 화면" data-i18n-label="hud.board"></canvas>
+        <div id="pause-label" hidden data-i18n="pause.label">일시정지</div>
         <div id="mission" hidden><span class="m-goal"></span><span class="m-meta"></span></div>
         <div id="boss-banner" hidden aria-live="assertive">
           <div class="boss-inner">
             <div class="boss-text">BOSS</div>
-            <div class="boss-sub">무언가 다가온다…</div>
+            <div class="boss-sub" data-i18n="boss.default">무언가 다가온다…</div>
             <div class="boss-skill" hidden></div>
           </div>
         </div>
@@ -64,17 +65,17 @@
         <div id="mythic-pick" hidden>
           <div class="mythic-inner">
             <div class="mythic-head">
-              <h2>✨ 신화 조합</h2>
-              <button id="btn-close-mythic" class="btn" type="button" aria-label="닫기">✕</button>
+              <h2 data-i18n="mythic.title">✨ 신화 조합</h2>
+              <button id="btn-close-mythic" class="btn" type="button" aria-label="닫기" data-i18n-label="common.close">✕</button>
             </div>
-            <p class="mythic-help">정해진 각성 동물 2마리와 성체 1마리를 모으면 신화 동물로 바뀌어요.</p>
+            <p class="mythic-help" data-i18n="mythic.help">정해진 각성 동물 2마리와 성체 1마리를 모으면 신화 동물로 바뀌어요.</p>
             <div id="mythic-list"></div>
           </div>
         </div>
 
         <div id="card-pick" hidden>
           <div class="card-inner">
-            <h2>카드를 한 장 골라 주세요</h2>
+            <h2 data-i18n="cards.title">카드를 한 장 골라 주세요</h2>
             <div id="card-list"></div>
           </div>
         </div>
@@ -84,7 +85,7 @@
           <div id="ti-stats"></div>
           <div class="ti-buttons">
             <button id="btn-sell" class="btn" type="button">판매</button>
-            <button id="btn-close-info" class="btn" type="button" aria-label="닫기">✕</button>
+            <button id="btn-close-info" class="btn" type="button" aria-label="닫기" data-i18n-label="common.close">✕</button>
           </div>
         </div>
 
@@ -98,15 +99,15 @@
               <div id="result-stats"></div>
             </div>
             <div class="result-buttons">
-              <button id="btn-retry" class="btn primary" type="button">다시 하기</button>
-              <button id="btn-result-menu" class="btn" type="button">맵 선택</button>
+              <button id="btn-retry" class="btn primary" type="button" data-i18n="result.retry">다시 하기</button>
+              <button id="btn-result-menu" class="btn" type="button" data-i18n="result.menu">맵 선택</button>
             </div>
             <div class="ad-slot" aria-hidden="true"></div>
           </div>
         </div>
       </main>
 
-      <nav id="panel" aria-label="동물 선택"></nav>
+      <nav id="panel" aria-label="동물 선택" data-i18n-label="hud.panel"></nav>
     </section>
   </div>
   <script type="module" src="js/main.js"></script>

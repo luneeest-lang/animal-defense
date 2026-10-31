@@ -12,6 +12,7 @@ import { decorFor, marginDecor } from './decor.js';
 import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
 import { createEffects } from './effects.js';
+import { towerName } from '../i18n.js';
 
 const HIT_FLASH_MS = 90;
 const WATER_FRAME_MS = 700;
@@ -1129,7 +1130,7 @@ export function createRenderer(canvas) {
     const y = tower.row + 0.5;
     if (kind === 'summon') effects.summon(x, y, now);
     else if (kind === 'mythic') effects.fromEvent({ type: 'mythic', mythic: tower.type, x, y }, now);
-    else effects.merge(x, y, tower.level, now, TOWERS[tower.type].name);
+    else effects.merge(x, y, tower.level, now, towerName(tower.type));
   }
 
   function draw(game, view) {
