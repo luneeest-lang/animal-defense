@@ -8,6 +8,7 @@ import { bakeAnimals, bakeMythics } from './pixel.js';
 import { MYTHICS, GRADE_NAMES, gradeOf } from '../data/mythics.js';
 import { findMaterials, canCraft, RECIPE_LEVELS } from '../core/mythics.js';
 import { missionText } from '../core/missions.js';
+import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
 
 // 이름 끝 글자에 받침이 있으면 '이', 없으면 '가'
 const subjectParticle = (word) => {
@@ -31,7 +32,8 @@ export function createHud(root, handlers) {
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
-    resultDetail: $('result-detail'), resultStats: $('result-stats'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
+    resultDetail: $('result-detail'), resultStats: $('result-stats'), resultRewards: $('result-rewards'),
+    btnDex: $('btn-dex'), dex: $('dex'), dexList: $('dex-list'), btnCloseDex: $('btn-close-dex'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
   };
   let shownTower = null;
   let lastLives = null;
@@ -216,6 +218,78 @@ export function createHud(root, handlers) {
     setText(el.btnSell, `판매 +${Math.floor(shownTower.invested * CONFIG.sellRate + 1e-9)}`);
   }
 
+  const nameOf = (id) => (MYTHICS[id] ?? TOWERS[id]).name;
+  const iconOf = (id) => MYTHICS[id]?.icon ?? TOWERS[id].emoji;
+  // 도감 그림: 동물은 성체, 신화는 신화 그림
+  function dexArt(id, size) {
+    const src = MYTHICS[id] ? bakeMythics()[id] : bakeAnimals()[id][2];
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, 0, 0, size, size);
+    return c;
+  }
+
+  // 메뉴의 도감 창: 동물 5종과 신화 5종의 레벨, 다음 레벨까지 모은 장수, 지금 피해 보너스
+  let dexCollection = {};
+  function renderDex() {
+    el.dexList.replaceChildren(...DEX_IDS.map((id) => {
+      const count = dexCollection[id] ?? 0;
+      const { level, have, need } = dexProgress(id, count);
+      const row = document.createElement('div');
+      row.className = `dex-row${MYTHICS[id] ? ' mythic' : ''}${count ? '' : ' unseen'}`;
+      const art = dexArt(id, 44);
+      art.className = 'dex-art';
+      const info = document.createElement('div');
+      info.className = 'dex-info';
+      const max = level >= DEX_MAX;
+      info.innerHTML = `<div class="dex-name">${nameOf(id)}${MYTHICS[id] ? ' <small>신화</small>' : ''}<b class="dex-lv">${max ? 'MAX' : `Lv.${level}`}</b></div>`
+        + `<div class="dex-bar"><span style="width:${max ? 100 : (have / need) * 100}%"></span></div>`
+        + `<div class="dex-sub">${max ? '최고 레벨' : `다음 레벨까지 ${have}/${need}장`} · 피해 +${Math.round(level * DEX_BONUS * 100)}% · 모은 카드 ${count}장</div>`;
+      row.append(art, info);
+      return row;
+    }));
+  }
+  el.btnDex.addEventListener('click', () => { renderDex(); el.dex.hidden = false; });
+  el.btnCloseDex.addEventListener('click', () => { el.dex.hidden = true; });
+  el.dex.addEventListener('click', (e) => { if (e.target === el.dex) el.dex.hidden = true; });
+
+  // 결과 화면의 클리어 보상: 받은 카드와 오른 도감 레벨
+  function renderRewards(rewards) {
+    el.resultRewards.replaceChildren();
+    el.resultRewards.hidden = !rewards;
+    if (!rewards) return;
+    const title = document.createElement('div');
+    title.className = 'rs-title';
+    title.textContent = '🎁 클리어 보상';
+    const cards = document.createElement('div');
+    cards.className = 'rw-cards';
+    const order = Object.keys(rewards.cards).sort((a, b) => (MYTHICS[b] ? 1 : 0) - (MYTHICS[a] ? 1 : 0) || rewards.cards[b] - rewards.cards[a]);
+    for (const id of order) {
+      const chip = document.createElement('span');
+      chip.className = `rw-card${MYTHICS[id] ? ' mythic' : ''}`;
+      chip.title = nameOf(id);
+      chip.innerHTML = `${iconOf(id)}<b>×${rewards.cards[id]}</b>`;
+      cards.append(chip);
+    }
+    el.resultRewards.append(title, cards);
+    // 오른 도감 레벨: '📖 레벨 업  🦅 2→4  🐧 0→3' 처럼 한 줄로
+    if (rewards.levelUps.length) {
+      const ups = document.createElement('div');
+      ups.className = 'rw-ups';
+      ups.innerHTML = '<span class="rw-label">📖 도감 레벨 업</span>';
+      for (const up of rewards.levelUps) {
+        const chip = document.createElement('span');
+        chip.className = 'rw-up';
+        chip.title = `${nameOf(up.id)} 피해 +${Math.round(up.to * DEX_BONUS * 100)}%`;
+        chip.textContent = `${iconOf(up.id)} ${up.from}→${up.to}`;
+        ups.append(chip);
+      }
+      el.resultRewards.append(ups);
+    }
+  }
+
   // 큰 숫자는 '1.2만'처럼 줄인다
   const short = (n) => (n >= 1e8 ? `${(n / 1e8).toFixed(1)}억` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}만` : String(Math.round(n)));
   // 결과 화면 통계: 요약 한 줄과 피해량 순위(많은 순서 5종, 막대는 1등 대비 길이)
@@ -255,6 +329,10 @@ export function createHud(root, handlers) {
   return {
     // run: 이어할 게임 { name, place, wave } (없으면 null)
     showMenu(save, run = null) {
+      dexCollection = save.collection ?? {};
+      const total = DEX_IDS.reduce((s, id) => s + dexProgress(id, dexCollection[id] ?? 0).level, 0);
+      el.btnDex.innerHTML = `<span>📖 도감</span><small>레벨 합계 ${total}/${DEX_IDS.length * DEX_MAX}</small>`;
+      el.dex.hidden = true;
       el.game.hidden = true;
       el.result.hidden = true;
       el.menu.hidden = false;
@@ -303,8 +381,10 @@ export function createHud(root, handlers) {
     },
     // endless: 무한 모드 결과 { best: 최고 기록, newBest: 이번에 기록을 넘었는지 }
     // stats: core/stats.js의 resultStats (처치·놓침·시간 요약과 동물별 피해량 순위)
-    showResult({ won, wave, lives, starCount, endless = null, stats = null }) {
+    // rewards: 보통 판을 깼을 때 받은 카드 { cards: { id: 장수 }, levelUps: [{ id, from, to }] }
+    showResult({ won, wave, lives, starCount, endless = null, stats = null, rewards = null }) {
       renderStats(stats);
+      renderRewards(rewards);
       if (endless) {
         setText(el.resultTitle, endless.newBest ? '🏆 새 기록!' : '♾️ 무한 모드 끝');
         setText(el.resultStars, '');

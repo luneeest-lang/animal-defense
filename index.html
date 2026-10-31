@@ -17,9 +17,20 @@
       <p class="lead">동물 타워를 세워 길을 따라 오는 적을 막아 보세요.</p>
       <button id="btn-continue" class="continue-btn" type="button" hidden></button>
       <div id="map-list"></div>
+      <button id="btn-dex" class="dex-btn" type="button"></button>
       <p class="hint">가로 화면에서 하면 더 편해요.</p>
       <p id="save-warning" class="warn" hidden>이 브라우저에서는 기록을 저장할 수 없어요. 게임은 그대로 할 수 있어요.</p>
       <div class="ad-slot" aria-hidden="true"></div>
+      <div id="dex" hidden>
+        <div class="dex-inner">
+          <div class="dex-head">
+            <h2>📖 도감</h2>
+            <button id="btn-close-dex" class="btn" type="button" aria-label="닫기">✕</button>
+          </div>
+          <p class="dex-help">보통 판 30웨이브를 깨면 카드를 받아요. 어려운 맵일수록, 별이 많을수록 많이 받고 신화 카드는 중급·고급에서만 나와요. 같은 카드를 모으면 도감 레벨이 오르고, 레벨마다 그 동물의 피해가 3%씩 영구히 올라요(최대 10레벨).</p>
+          <div id="dex-list"></div>
+        </div>
+      </div>
     </section>
 
     <section id="screen-game" class="screen" hidden>
@@ -81,7 +92,10 @@
             <h2 id="result-title"></h2>
             <div id="result-stars"></div>
             <p id="result-detail"></p>
-            <div id="result-stats"></div>
+            <div class="result-scroll">
+              <div id="result-rewards" hidden></div>
+              <div id="result-stats"></div>
+            </div>
             <div class="result-buttons">
               <button id="btn-retry" class="btn primary" type="button">다시 하기</button>
               <button id="btn-result-menu" class="btn" type="button">맵 선택</button>

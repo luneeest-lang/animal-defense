@@ -5,6 +5,7 @@ import {
 import { craftMythic } from './core/mythics.js';
 import { snapshotGame, restoreGame, isBetweenWaves } from './core/snapshot.js';
 import { resultStats } from './core/stats.js';
+import { clearRewards, addCards, dexLevels, mapIndexOf } from './core/dex.js';
 import {
   loadSave, writeSave, recordResult, starsFor, loadRun, writeRun, clearRun,
 } from './storage.js';
@@ -34,7 +35,7 @@ const store = openStore();
 let save = loadSave(store);
 // 이어할 게임(웨이브 사이에 자동 저장). 되살릴 수 없는 저장은 버린다
 const savedRun = loadRun(store);
-let run = savedRun && restoreGame(savedRun) ? savedRun : null;
+let run = savedRun && restoreGame(savedRun, { dex: dexLevels(save.collection) }) ? savedRun : null;
 if (!run) clearRun(store);
 
 let game = null;
@@ -188,11 +189,11 @@ function startMap(id, endless = false) {
   if (endless && !save.records[id]?.stars) return;
   run = null;
   clearRun(store);
-  enterGame(createGame(map, undefined, { endless }));
+  enterGame(createGame(map, undefined, { endless, dex: dexLevels(save.collection) }));
 }
 
 function continueRun() {
-  const restored = run && restoreGame(run);
+  const restored = run && restoreGame(run, { dex: dexLevels(save.collection) });
   if (!restored) {
     run = null;
     clearRun(store);
@@ -240,11 +241,20 @@ function finish() {
   const wave = won ? game.waveNumber : Math.max(0, game.waveNumber - 1);
   const prevBest = save.records[mapId]?.endlessBest ?? 0;
   save = recordResult(save, mapId, { wave, lives: game.lives, won, endless: game.endless });
+  // 보통 판 30웨이브를 깨면 도감 카드를 받는다 (core/dex.js)
+  let rewards = null;
+  if (won && !game.endless) {
+    const cards = clearRewards(mapIndexOf(mapId), starsFor(game.lives));
+    const added = addCards(save, cards);
+    save = added.save;
+    rewards = { cards, levelUps: added.levelUps };
+  }
   hud.showSaveWarning(!writeSave(store, save));
   hud.showResult({
     won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0,
     endless: game.endless ? { best: save.records[mapId].endlessBest, newBest: wave > prevBest } : null,
     stats: resultStats(game),
+    rewards,
   });
 }
 

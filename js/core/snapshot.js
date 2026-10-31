@@ -77,7 +77,8 @@ function restoreMissions(game, snap) {
 }
 
 // 저장을 게임으로 되살린다. 이상한 값이 하나라도 있으면 null
-export function restoreGame(snap) {
+// dex: 지금 도감 레벨 (저장 당시가 아니라 지금 것을 쓴다)
+export function restoreGame(snap, { dex = {} } = {}) {
   if (!snap || typeof snap !== 'object' || snap.version !== RUN_VERSION) return null;
   const map = MAPS.find((m) => m.id === snap.mapId);
   if (!map) return null;
@@ -93,7 +94,7 @@ export function restoreGame(snap) {
   if (!Array.isArray(cardsTaken) || cardsTaken.some((id) => !CARDS[id])) return null;
   if (cardChoices !== null && (!Array.isArray(cardChoices) || cardChoices.length !== 3 || cardChoices.some((id) => !CARDS[id]))) return null;
 
-  const game = createGame(map, undefined, { endless });
+  const game = createGame(map, undefined, { endless, dex });
   Object.assign(game, { gold, lives, waveNumber, clearedWave, summons });
   extendEndless(game);
   game.upgrades = { ...upgrades };

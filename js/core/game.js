@@ -4,6 +4,7 @@ import { createEnemy, stepEnemy } from './enemies.js';
 import { TOWERS, MAX_LEVEL, towerStats, findTarget, fire } from './towers.js';
 import { mythicStats, fireMythic, updateZones, cheonmaBuff } from './mythics.js';
 import { emptyStats, credit, creditKill } from './stats.js';
+import { dexDamage } from './dex.js';
 import {
   rollSchedule, onWaveStart, onWaveClear, updateMission, goldenReward,
 } from './missions.js';
@@ -24,10 +25,12 @@ export const CONFIG = {
   maxSubstep: 0.05,
 };
 
-export function createGame(map, waves = buildWaves(), { endless = false } = {}) {
+// dex: 도감 레벨 { 동물·신화 id: 레벨 } (core/dex.js). 레벨당 그 동물의 피해 +3%
+export function createGame(map, waves = buildWaves(), { endless = false, dex = {} } = {}) {
   const points = waypointPoints(map);
   return {
     map,
+    dex: { ...dex },
     endless, // 무한 모드: 30웨이브 뒤로도 끝없이 이어진다(웨이브 목록을 늘 다음 웨이브까지 늘려 둔다)
     points,
     length: pathLength(points),
@@ -114,8 +117,9 @@ export function effectiveStats(game, tower) {
   if (tower.mythic) return mythicStats(game, tower);
   const stats = towerStats(tower.type, tower.level, game.upgrades[tower.type]);
   const { mods } = game;
-  stats.damage *= mods.damage[tower.type];
-  if (stats.poisonDps !== undefined) stats.poisonDps *= mods.damage[tower.type];
+  const dex = dexDamage(game, tower.type);
+  stats.damage *= mods.damage[tower.type] * dex;
+  if (stats.poisonDps !== undefined) stats.poisonDps *= mods.damage[tower.type] * dex;
   stats.cooldown /= mods.attackSpeed * cheonmaBuff(game, tower);
   stats.range += mods.range;
   stats.bossDamage = mods.bossDamage;

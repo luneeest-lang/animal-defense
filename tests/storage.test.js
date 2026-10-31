@@ -6,7 +6,7 @@ const fakeStore = (raw) => ({ getItem: () => raw, setItem() {} });
 
 test('저장 키와 기본값', () => {
   assert.equal(SAVE_KEY, 'td-save-v1');
-  assert.deepEqual(defaultSave(), { version: 1, unlocked: 1, records: {} });
+  assert.deepEqual(defaultSave(), { version: 1, unlocked: 1, records: {}, collection: {} });
   assert.deepEqual(loadSave(fakeStore(null)), defaultSave());
 });
 

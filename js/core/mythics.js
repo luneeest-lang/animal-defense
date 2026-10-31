@@ -3,6 +3,7 @@ import { MAX_LEVEL } from './towers.js';
 import { positionAt } from './path.js';
 import { damageEnemy, applySlow, isBoss } from './enemies.js';
 import { credit } from './stats.js';
+import { dexDamage } from './dex.js';
 
 const UPGRADE_DAMAGE = 0.2;
 const center = (t) => ({ x: t.col + 0.5, y: t.row + 0.5 });
@@ -42,8 +43,10 @@ export function mythicStats(game, tower) {
   const owner = def.recipe[0];
   const { mods } = game;
   const stats = { ...def.base };
-  stats.damage *= (1 + UPGRADE_DAMAGE * game.upgrades[owner]) * mods.damage[owner];
-  if (stats.burnDps !== undefined) stats.burnDps *= (1 + UPGRADE_DAMAGE * game.upgrades[owner]) * mods.damage[owner];
+  // 도감 레벨은 신화 자신의 것 (주재료 동물의 도감과 따로)
+  const mult = (1 + UPGRADE_DAMAGE * game.upgrades[owner]) * mods.damage[owner] * dexDamage(game, tower.type);
+  stats.damage *= mult;
+  if (stats.burnDps !== undefined) stats.burnDps *= mult;
   stats.cooldown /= mods.attackSpeed;
   if (stats.range) stats.range += mods.range;
   stats.bossDamage = mods.bossDamage;

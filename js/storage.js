@@ -1,12 +1,13 @@
 import { MAPS } from './data/maps.js';
 import { WAVE_COUNT } from './core/waves.js';
+import { DEX_IDS } from './core/dex.js';
 
 export const SAVE_KEY = 'td-save-v1';
 // 진행 중인 한 판(이어하기). 내용 검사는 core/snapshot.js의 restoreGame이 한다
 export const RUN_KEY = 'td-run-v1';
 
 export function defaultSave() {
-  return { version: 1, unlocked: 1, records: {} };
+  return { version: 1, unlocked: 1, records: {}, collection: {} };
 }
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -28,6 +29,14 @@ function cleanRecords(raw) {
   return records;
 }
 
+// 도감 카드 모은 장수 { 동물·신화 id: 장수 }. 모르는 이름이나 이상한 값은 버린다
+function cleanCollection(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const id of DEX_IDS) if (isNum(raw[id]) && raw[id] > 0) out[id] = Math.floor(raw[id]);
+  return out;
+}
+
 export function loadSave(store) {
   try {
     const raw = store.getItem(SAVE_KEY);
@@ -39,6 +48,7 @@ export function loadSave(store) {
       version: 1,
       unlocked: clamp(Math.floor(data.unlocked), 1, MAPS.length),
       records: cleanRecords(data.records),
+      collection: cleanCollection(data.collection),
     };
   } catch {
     return defaultSave();
@@ -63,7 +73,7 @@ export function starsFor(lives) {
 // endless: 무한 모드 결과. 무한 모드 최고 기록만 바꾸고 별·해금·보통 판 기록은 그대로 둔다
 export function recordResult(save, mapId, { wave, lives, won, endless = false }) {
   const index = MAPS.findIndex((m) => m.id === mapId);
-  const next = { version: 1, unlocked: save.unlocked, records: { ...save.records } };
+  const next = { ...save, version: 1, unlocked: save.unlocked, records: { ...save.records } };
   if (index < 0) return next;
   const prev = save.records[mapId] ?? { bestWave: 0, stars: 0 };
   if (endless) {
