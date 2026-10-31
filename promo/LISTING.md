@@ -10,7 +10,7 @@
 | `cover-portrait-800x1200.png` | 세로 커버 (2:3) |
 | `cover-square-800x800.png` | 정사각 커버 (1:1) |
 | `preview-1920x1080.mp4` | 미리보기 영상 18초, H.264, 약 11MB, 소리 없음 |
-| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 35개, 약 110KB) |
+| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 37개, 약 140KB) |
 
 다시 만들기: 저장소에서 `python3 -m http.server 8123`을 켠 뒤
 `node tools/promo/capture.cjs promo && node tools/promo/make.cjs promo` (커버),
@@ -59,6 +59,6 @@ Features:
 ## 제출 전에 확인할 것 (한국어)
 
 1. **사이트 규격 확인**: 이 환경에서는 CrazyGames 개발자 문서(docs.crazygames.com)에 접속이 막혀 있어서, 커버 크기(1920x1080, 800x1200, 800x800)는 널리 쓰이는 규격으로 만들었어요. 제출 화면에 다른 크기가 적혀 있으면 알려 주세요. 다시 만들어 드릴게요. 검색으로 확인된 규칙은 커버 3종(가로·세로·정사각)과 영상 15~20초·50MB 이하예요.
-2. **외부 글꼴**: 보스 경고 글자에 Google Fonts(Creepster)를 불러와요. 사이트가 외부 요청을 막으면 그 글자만 기본 글꼴로 보이고 게임은 정상이에요. 걱정되면 글꼴 파일을 게임 안에 넣을 수 있어요.
+2. **외부 요청 없음**: 보스 경고 글꼴(Creepster)도 게임 안(`css/fonts/`)에 넣었어요. 게임은 외부 주소를 전혀 불러오지 않아요. 글꼴 사용 허가서(SIL Open Font License)는 `css/fonts/OFL.txt`에 함께 있어요.
 3. **광고 SDK**: 아직 넣지 않았어요. CrazyGames는 광고 없는 기본 공개로 먼저 올리고, 지표가 좋으면 정식 공개 때 SDK를 붙이는 방식이에요.
 4. **저장**: 기록과 도감은 브라우저 저장소(localStorage)에 저장돼요.

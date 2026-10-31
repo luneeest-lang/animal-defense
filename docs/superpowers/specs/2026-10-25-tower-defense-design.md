@@ -418,4 +418,4 @@ PC 보조 단축키: 1~5로 동물 선택, 스페이스로 일시정지, ESC로 
 - promo/: 커버 3종(가로 1920x1080, 세로 800x1200, 정사각 800x800), 미리보기 영상(1920x1080, 18초, H.264, 소리 없음), 게임 묶음 zip(index.html·css·js), 제출 문장(LISTING.md: 영어 제목·설명·조작법·태그와 한국어 확인 사항).
 - 만드는 도구: tools/promo/capture.cjs(커버 배경용 맵 장면), cover.html + make.cjs(커버 그리기: 흐린 맵 배경 위에 신화 그림, 아기 동물 줄, 굵은 제목), video.cjs(영어 화면 2배속 플레이 녹화), package.py(zip). 이 컨테이너의 Playwright·ffmpeg를 쓴다. 배포(pages.yml)는 index.html·css·js만 올리므로 promo·tools는 사이트에 나가지 않는다.
 - CrazyGames 문서 사이트는 이 환경에서 접속이 막혀 있어 커버 크기는 널리 쓰이는 규격으로 정했다(검색으로 확인한 것: 커버 3종, 영상 15~20초·50MB 이하).
-
+- 보스 경고 글꼴 Creepster(woff2, 라틴 글자, 28KB)를 css/fonts/에 넣고 @font-face로 불러온다. Google Fonts 연결은 없앴다. 사용 허가서 OFL.txt를 함께 둔다. 테스트로 index.html·style.css가 외부 주소를 부르지 않는지 확인하고, 외부 요청을 모두 막은 브라우저에서 글꼴이 불러와지는 것을 확인했다.
