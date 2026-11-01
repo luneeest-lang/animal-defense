@@ -382,6 +382,24 @@ export function createHud(root, handlers) {
       el.info.hidden = true;
     },
     showSaveWarning(on) { el.warning.hidden = !on; },
+    // 신화 탄생 장면: 빛줄기 위로 큰 신화 그림과 이름·능력이 나타난다. 누르면 바로 닫힌다
+    showMythicIntro(id) {
+      const box = root.querySelector('#mythic-intro');
+      const art = box.querySelector('.mi-art');
+      const ctx = art.getContext('2d');
+      ctx.clearRect(0, 0, art.width, art.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(mythicIcons[id], 0, 0, art.width, art.height);
+      box.style.setProperty('--mi-color', MYTHICS[id].color);
+      setText(box.querySelector('.mi-name'), `${MYTHICS[id].icon} ${mythicName(id)}`);
+      setText(box.querySelector('.mi-desc'), mythicDesc(id));
+      box.hidden = false;
+      box.classList.remove('play');
+      void box.offsetWidth;
+      box.classList.add('play');
+    },
+    hideMythicIntro() { root.querySelector('#mythic-intro').hidden = true; },
+    mythicIntroOpen() { return !root.querySelector('#mythic-intro').hidden; },
     showTowerInfo(tower) {
       shownTower = tower;
       if (!tower) el.info.hidden = true;

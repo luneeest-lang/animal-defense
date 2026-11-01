@@ -538,3 +538,34 @@ button { font: inherit; color: inherit; }
 .card-icon .px-icon { width: 1em; height: 1em; vertical-align: 0; }
 .stars .px-icon { width: 1.05em; height: 1.05em; }
 
+/* 신화 탄생 장면: 돌아가는 빛줄기, 튀어나오는 큰 신화 그림, 이름과 능력 */
+#mythic-intro {
+  position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at center, rgba(40, 10, 60, 0.55), rgba(5, 0, 15, 0.88));
+  --mi-color: #ff5ec4;
+}
+#mythic-intro.play { animation: mi-fade 2.4s ease-out both; }
+.mi-rays {
+  position: absolute; width: 220vmax; height: 220vmax; left: 50%; top: 50%; translate: -50% -50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--mi-color) 55%, transparent) 0deg 8deg, transparent 8deg 22deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+}
+#mythic-intro.play .mi-rays { animation: mi-spin 6s linear infinite; }
+.mi-body { position: relative; text-align: center; }
+.mi-tag { font-weight: 900; letter-spacing: 0.15em; color: #fff6c0; font-size: clamp(14px, 3.6vw, 22px); text-shadow: 0 0 10px var(--mi-color), 0 2px 0 #000; }
+.mi-art {
+  display: block; margin: 6px auto; width: min(52vmin, 300px); height: min(52vmin, 300px); image-rendering: pixelated;
+  filter: drop-shadow(0 0 18px var(--mi-color)) drop-shadow(0 6px 0 rgba(0,0,0,0.5));
+}
+#mythic-intro.play .mi-art { animation: mi-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both, mi-float 1.6s ease-in-out 0.7s infinite; }
+.mi-name { font-weight: 900; font-size: clamp(26px, 7vw, 46px); color: #fff; text-shadow: 0 0 14px var(--mi-color), 0 3px 0 #000; }
+#mythic-intro.play .mi-name { animation: mi-rise 0.5s ease-out 0.35s both; }
+.mi-desc { margin-top: 4px; max-width: 80vw; font-size: clamp(12px, 3vw, 16px); color: #e8dcff; text-shadow: 0 2px 0 #000; }
+#mythic-intro.play .mi-desc { animation: mi-rise 0.5s ease-out 0.55s both; }
+@keyframes mi-fade { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes mi-spin { to { rotate: 360deg; } }
+@keyframes mi-pop { 0% { transform: scale(0.1) rotate(-20deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes mi-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes mi-rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #mythic-intro.play, #mythic-intro.play * { animation: none !important; } }
+

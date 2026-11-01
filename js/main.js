@@ -72,6 +72,10 @@ let lastBossWarning = 0;
 // 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
 // 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
 let handledEvents = null;
+// 신화 탄생 장면이 끝나는 시각
+const MYTHIC_INTRO_MS = 2400;
+let introUntil = 0;
+document.getElementById('mythic-intro').addEventListener('pointerdown', () => { introUntil = 0; });
 let autoPaused = false;
 let finished = false;
 let lastTs = 0;
@@ -96,6 +100,9 @@ const hud = createHud(document.getElementById('app'), {
     if (tower) {
       ui.mythicOpen = false;
       renderer.celebrate('mythic', tower);
+      // 신화 탄생 장면 (그동안 게임은 멈춘다). 2.4초 뒤 또는 누르면 닫힌다
+      hud.showMythicIntro(id);
+      introUntil = performance.now() + MYTHIC_INTRO_MS;
       afterAction('mythic');
     }
   },
@@ -284,7 +291,8 @@ function frame(ts) {
   const dt = Math.min(Math.max((ts - lastTs) / 1000, 0), MAX_FRAME_DT);
   lastTs = ts;
   if (game) {
-    if (!ui.paused && !ui.mythicOpen && game.status === 'running') {
+    if (hud.mythicIntroOpen() && ts >= introUntil) hud.hideMythicIntro();
+    if (!ui.paused && !ui.mythicOpen && !hud.mythicIntroOpen() && game.status === 'running') {
       // 결과 화면의 플레이 시간: 멈추거나 카드를 고르는 동안은 세지 않는 실제 시간
       if (!game.cardChoices) game.stats.playTime += dt;
       step(game, dt * ui.speed * GAME_SPEED);
