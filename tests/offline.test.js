@@ -18,3 +18,13 @@ test('보스 경고 글꼴(Creepster)은 게임 안의 파일을 쓰고, 사용 
   assert.ok(fs.existsSync(`css/${m[1]}`), `글꼴 파일 없음: css/${m[1]}`);
   assert.ok(fs.readFileSync('css/fonts/OFL.txt', 'utf8').includes('SIL Open Font License'));
 });
+
+// 보스 경고의 'BOSS' 글자가 거의 사라졌다 다시 나타나면 경고가 두 번 뜨는 것처럼 보인다(2026-11-01 신고)
+test('BOSS 글자 깜빡임은 은은하다 (글자가 70% 아래로 흐려지지 않는다)', () => {
+  const css = fs.readFileSync('css/style.css', 'utf8');
+  const block = css.match(/@keyframes boss-flicker\s*{([^}]*(?:}[^}]*)*?)}\s*\n/);
+  assert.ok(block, 'boss-flicker 없음');
+  const values = [...block[1].matchAll(/opacity:\s*([\d.]+)/g)].map((m) => Number(m[1]));
+  assert.ok(values.length > 0);
+  assert.ok(Math.min(...values) >= 0.7, `가장 흐릴 때 ${Math.min(...values)}`);
+});

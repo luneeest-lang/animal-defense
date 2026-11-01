@@ -170,7 +170,8 @@ button { font: inherit; color: inherit; }
 .boss-sub { margin-top: 0.4em; color: #e3b0b0; font-size: clamp(13px, 3.4vw, 20px); letter-spacing: 0.35em; opacity: 0.85; }
 @keyframes boss-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes boss-heartbeat { 0%, 100% { filter: brightness(0.85); } 12% { filter: brightness(1.15); } 24% { filter: brightness(0.9); } 36% { filter: brightness(1.1); } }
-@keyframes boss-flicker { 0% { opacity: 1; } 7% { opacity: 0.25; } 9% { opacity: 1; } 52% { opacity: 0.85; } 54% { opacity: 0.15; } 56% { opacity: 1; } }
+/* 은은한 깜빡임: 글자가 거의 사라졌다 나타나면 경고가 두 번 뜨는 것처럼 보여서 70% 아래로는 흐려지지 않게 한다 */
+@keyframes boss-flicker { 0% { opacity: 1; } 46% { opacity: 1; } 48% { opacity: 0.72; } 50% { opacity: 1; } 78% { opacity: 0.85; } 80% { opacity: 1; } }
 @keyframes boss-shake { 0% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(1px, -2px); } 75% { transform: translate(2px, 1px); } }
 @media (prefers-reduced-motion: reduce) {
   #boss-banner, .boss-inner, .boss-text { animation: none; }
