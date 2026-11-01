@@ -6,12 +6,13 @@ import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
 import { ENEMY_LOOK } from '../data/sprites.js';
 import {
-  bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, bakeProjectiles, ART_SIZE, ART_SCALE,
+  bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, bakeProjectiles, bakeCastle, ART_SIZE, ART_SCALE,
 } from './pixel.js';
 import { decorFor, marginDecor } from './decor.js';
 import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
 import { PROJECTILES, PROJECTILE_SIZE } from '../data/projectiles.js';
+import { CASTLE_SIZE, CASTLE_GATE } from '../data/castle.js';
 import { createEffects } from './effects.js';
 import { towerName } from '../i18n.js';
 import { towerMotion } from './motion.js';
@@ -58,6 +59,7 @@ export function createRenderer(canvas) {
   const animals = bakeAnimals();
   const mythics = bakeMythics();
   const projectiles = bakeProjectiles();
+  const castle = bakeCastle();
   const decor = bakeDecor();
   const decorCache = new Map(); // 맵 id → 장식 목록
   const towerFacing = new Map();
@@ -572,6 +574,54 @@ export function createRenderer(canvas) {
     else if (map.theme === 'sea') drawSea(map, path, cell, now);
     else drawMountain(map, path, cell);
     drawPortal(game.points[game.points.length - 1], cell, now);
+    drawCastle(map, path, game.points[0], cell, now);
+  }
+
+  // 길이 시작되는 맵 바깥 여백에 마왕성을 세운다. 성문에서 길이 이어져 몬스터가 성에서 걸어 나오는 것처럼 보인다.
+  // 길 첫 칸 바깥(맵 왼쪽) 두 칸에 길을 더 깔고, 그 끝에 성문이 오게 그린다 (세로 화면이면 화면 위쪽 여백)
+  function drawCastle(map, path, start, cell, now) {
+    const row = Math.floor(start.y);
+    for (const c of [-1, -2]) {
+      if (map.theme === 'forest') drawTile(pickVariant(tiles.forestPath, c, row)[0], c, row, cell);
+      else if (map.theme === 'sea') drawTile(tiles.seaPlank[0][0], c, row, cell, false);
+      else drawTile(pickVariant(tiles.mountainPath, c, row)[0], c, row, cell);
+    }
+    const dpr = window.devicePixelRatio || 1;
+    // 가로 화면: 맵 왼쪽 여백에 큰 성(2.5칸), 성문은 길 아래 가장자리.
+    // 세로 화면: 맵 위쪽에 여백이 없어 길 첫 칸 위에 작은 성(1.15칸)을 세우고 성문을 그 칸 아래쪽에 둔다
+    const unit = artUnit((rotated ? 1.15 : 2.5) * cell, CASTLE_SIZE, dpr);
+    const s = unit * CASTLE_SIZE;
+    const gateX = rotated ? 1.0 : -1.0;
+    const gateY = rotated ? start.y : row + 0.95;
+    upright(gateX * cell, gateY * cell, (px, py) => {
+      const left = Math.round((px - CASTLE_GATE.x * unit) * dpr) / dpr;
+      const top = Math.round((py - CASTLE_GATE.y * unit) * dpr) / dpr;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.beginPath();
+      ctx.ellipse(px, py - unit * 2, s * 0.5, s * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(castle, left, top, s, s);
+      // 성문과 창문의 붉은 빛이 맥동한다
+      const pulse = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now / 380);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const gx = left + 24 * unit;
+      const gy = top + 39 * unit;
+      const glow = ctx.createRadialGradient(gx, gy, unit, gx, gy, s * 0.32);
+      glow.addColorStop(0, `rgba(255, 60, 30, ${0.35 + 0.25 * pulse})`);
+      glow.addColorStop(1, 'rgba(255, 30, 10, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(gx - s * 0.4, gy - s * 0.4, s * 0.8, s * 0.8);
+      for (const [wx, wy] of [[23, 17], [27, 17], [7, 23], [41, 23], [11, 33], [37, 33]]) {
+        const g2 = ctx.createRadialGradient(left + wx * unit, top + wy * unit, 0, left + wx * unit, top + wy * unit, unit * 4);
+        g2.addColorStop(0, `rgba(255, 80, 40, ${0.25 + 0.3 * pulse})`);
+        g2.addColorStop(1, 'rgba(255, 40, 20, 0)');
+        ctx.fillStyle = g2;
+        ctx.fillRect(left + (wx - 4) * unit, top + (wy - 4) * unit, unit * 8, unit * 8);
+      }
+      ctx.restore();
+    });
   }
 
   // 길 끝(몬스터가 도착하는 곳)의 빨간 블랙홀: 붉은 빛무리, 도는 나선 팔, 빨려 드는 불티, 검은 핵.
@@ -931,7 +981,10 @@ export function createRenderer(canvas) {
     const side = screenSide(p.x - prev.x, p.y - prev.y);
     const face = side || (facing.get(e) ?? 1);
     facing.set(e, face);
+    // 성문에서 막 나온 몬스터는 어둠 속에서 서서히 드러난다
+    ctx.globalAlpha = Math.min(1, 0.15 + (e.dist / 0.7) * 0.85);
     upright(p.x * cell, p.y * cell, (px, py) => drawEnemyAt(e, look, face, px, py, cell));
+    ctx.globalAlpha = 1;
   }
 
   function drawEnemyAt(e, look, face, px, py, cell) {
