@@ -14,6 +14,7 @@ import { createRenderer } from './ui/render.js';
 import { attachInput } from './ui/input.js';
 import { createHud } from './ui/hud.js';
 import { LANG_KEY, pickLang, setLang, lang, t, applyStatic } from './i18n.js';
+import { setRich } from './ui/icons.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -42,7 +43,7 @@ setLang(pickLang(readLang(), navigator.languages ?? [navigator.language]));
 document.documentElement.lang = lang();
 document.title = t('title');
 document.querySelector('meta[name="description"]')?.setAttribute('content', t('meta.desc'));
-applyStatic(document);
+applyStatic(document, setRich);
 // 언어 버튼: 선택을 저장하고 새로 불러온다(패널·조합표 같은 글자를 처음부터 다시 만든다)
 document.getElementById('btn-lang').addEventListener('click', () => {
   try {

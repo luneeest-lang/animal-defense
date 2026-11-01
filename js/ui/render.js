@@ -13,6 +13,8 @@ import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
 import { createEffects } from './effects.js';
 import { towerName } from '../i18n.js';
+import { towerMotion } from './motion.js';
+import { fillRichText, iconCanvas } from './icons.js';
 
 const HIT_FLASH_MS = 90;
 const WATER_FRAME_MS = 700;
@@ -56,6 +58,8 @@ export function createRenderer(canvas) {
   const decor = bakeDecor();
   const decorCache = new Map(); // 맵 id → 장식 목록
   const towerFacing = new Map();
+  // 타워 id → 마지막으로 쏜 시각 (공격 반동용, ui/motion.js)
+  const towerShotAt = new Map();
   const facing = new WeakMap();
   // 세로 화면에서는 맵을 90도 돌려 그린다(길이 위에서 아래로). boardH는 돌리기 전 맵의 세로 길이(px)
   let rotated = false;
@@ -674,9 +678,12 @@ export function createRenderer(canvas) {
     rainbowRing(cx, feet, s, hue, pulse, Math.PI, Math.PI * 2);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
+    // 신화도 쏠 때 바라보는 쪽으로 툭 나간다 (둥실거림이 있어 숨쉬기는 없다)
+    const face = towerFacing.get(tower.id) === -1 ? -1 : 1;
+    const lunge = towerMotion(now, tower.id, towerShotAt.get(tower.id) ?? null, reduceMotion || stunned).dx;
     ctx.save();
-    ctx.translate(cx, cy - s * 0.06 + bob);
-    if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+    ctx.translate(Math.round((cx + face * lunge * cell * 0.6) * dpr) / dpr, cy - s * 0.06 + bob);
+    if (face === -1) ctx.scale(-1, 1);
     if (stunned) ctx.globalAlpha *= 0.55;
     ctx.drawImage(mythics[tower.type], -s / 2, -s / 2, s, s);
     ctx.restore();
@@ -806,22 +813,25 @@ export function createRenderer(canvas) {
       drawGradeRing(gradeOf(tower), cx, cy + s * 0.38, s);
       if (awakened) drawAuraGlow(tower, cx, cy, s, now);
       ctx.imageSmoothingEnabled = false;
+      // 숨쉬기와 공격 반동: 발밑을 기준으로 늘였다 줄이고, 쏠 때 바라보는 쪽으로 툭 나간다 (기절하면 멈춘다)
+      const face = towerFacing.get(tower.id) === -1 ? -1 : 1;
+      const m = towerMotion(now, tower.id, towerShotAt.get(tower.id) ?? null, reduceMotion || stunned);
       ctx.save();
-      ctx.translate(cx, cy);
-      if (towerFacing.get(tower.id) === -1) ctx.scale(-1, 1);
+      ctx.translate(Math.round((cx + face * m.dx * cell) * dpr) / dpr, cy + s / 2);
+      ctx.scale(face * m.sx, m.sy);
       if (stunned) ctx.globalAlpha *= 0.55;
-      ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s / 2, s, s);
+      ctx.drawImage(animals[tower.type][tower.level], -s / 2, -s, s, s);
       ctx.restore();
       if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
       // 기절: 머리 위에서 별이 돈다
       if (stunned) {
-        ctx.font = `${Math.round(cell * 0.32)}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#000';
+        // 도트 별 아이콘 세 개 (이모지는 기기마다 달라 쓰지 않는다)
+        const star = iconCanvas('star');
+        const size = Math.round(cell * 0.28);
+        ctx.imageSmoothingEnabled = false;
         for (let i = 0; i < 3; i++) {
           const a = now / 250 + (i * Math.PI * 2) / 3;
-          ctx.fillText('💫', cx + Math.cos(a) * s * 0.3, cy - s * 0.55 + Math.sin(a) * s * 0.08);
+          ctx.drawImage(star, Math.round(cx + Math.cos(a) * s * 0.3 - size / 2), Math.round(cy - s * 0.55 + Math.sin(a) * s * 0.08 - size / 2), size, size);
         }
       }
     });
@@ -942,6 +952,7 @@ export function createRenderer(canvas) {
       if (ev.type === 'shot' || ev.type === 'mythicShot') {
         const side = screenSide(ev.to.x - ev.from.x, ev.to.y - ev.from.y);
         if (side) towerFacing.set(ev.towerId, side);
+        towerShotAt.set(ev.towerId, now);
       }
     }
   }
@@ -1058,10 +1069,9 @@ export function createRenderer(canvas) {
       ctx.textBaseline = 'middle';
       ctx.lineWidth = Math.max(3, size * 0.16);
       ctx.strokeStyle = f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
-      ctx.strokeText(f.text, sx, sy - cell * 0.35 - rise);
-      // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색
+      // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색. 이모지는 도트 아이콘으로 그린다
       ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.stun ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
-      ctx.fillText(f.text, sx, sy - cell * 0.35 - rise);
+      fillRichText(ctx, f.text, sx, sy - cell * 0.35 - rise, Math.round(size * pop));
     });
   }
 

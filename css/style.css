@@ -529,3 +529,12 @@ button { font: inherit; color: inherit; }
   background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 0.85rem; box-shadow: var(--bevel-flat);
 }
 
+/* 도트 아이콘 (이모지 대신, ui/icons.js) */
+.px-icon {
+  display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em;
+  image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; -webkit-user-drag: none;
+}
+.sound-btn .px-icon, #btn-pause .px-icon, #btn-menu .px-icon { width: 18px; height: 18px; vertical-align: middle; }
+.card-icon .px-icon { width: 1em; height: 1em; vertical-align: 0; }
+.stars .px-icon { width: 1.05em; height: 1.05em; }
+

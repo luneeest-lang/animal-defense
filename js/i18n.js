@@ -335,8 +335,9 @@ export function missionLabel(m) {
 }
 
 // index.html의 고정 글자: data-i18n(글자), data-i18n-label(aria-label과 title)
-export function applyStatic(root) {
-  for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+// setText: 글자를 넣는 방법(이모지를 도트 아이콘으로 바꾸는 ui/icons.js의 setRich를 넘긴다)
+export function applyStatic(root, setText = (node, text) => { node.textContent = text; }) {
+  for (const node of root.querySelectorAll('[data-i18n]')) setText(node, t(node.dataset.i18n));
   for (const node of root.querySelectorAll('[data-i18n-label]')) {
     const text = t(node.dataset.i18nLabel);
     node.setAttribute('aria-label', text);

@@ -12,6 +12,7 @@ import {
   stageName, gradeName, missionLabel,
 } from '../i18n.js';
 import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
+import { setRich, iconize } from './icons.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -44,14 +45,18 @@ export function createHud(root, handlers) {
   };
   const icons = bakeAnimals();
 
-  const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+  // 글자 바꾸기: 이모지는 도트 아이콘으로 바꿔 넣는다(ui/icons.js)
+  const setText = setRich;
+  // 처음부터 있는 이모지 버튼들도 도트 아이콘으로
+  setText(el.btnMusic, '🎵');
+  setText(el.btnMenu, '☰');
 
   // 패널: 소환 버튼과, 무엇이 나올 수 있는지 보여주는 동물 안내
   const summon = document.createElement('button');
   summon.type = 'button';
   summon.id = 'btn-summon';
   summon.className = 'summon-btn';
-  summon.innerHTML = `<span class="label">${t('hud.summon')}</span><span class="cost"></span>`;
+  summon.innerHTML = iconize(`<span class="label">${t('hud.summon')}</span><span class="cost"></span>`);
   summon.addEventListener('click', () => handlers.onSummon());
   const summonCostEl = summon.querySelector('.cost');
   // 신화 조합 버튼: 만들 수 있는 신화가 있으면 반짝인다
@@ -59,7 +64,7 @@ export function createHud(root, handlers) {
   mythicBtn.type = 'button';
   mythicBtn.id = 'btn-mythic';
   mythicBtn.className = 'mythic-btn';
-  mythicBtn.textContent = t('hud.mythic');
+  setText(mythicBtn, t('hud.mythic'));
   mythicBtn.addEventListener('click', () => handlers.onOpenMythic());
   const leftCol = document.createElement('div');
   leftCol.className = 'panel-left';
@@ -84,7 +89,7 @@ export function createHud(root, handlers) {
   const hint = document.createElement('p');
   hint.className = 'hint';
   const HINT = t('hud.hint');
-  hint.textContent = HINT;
+  setText(hint, HINT);
   el.panel.append(leftCol, upgrades, hint);
   let shownChoices = '';
   let shownTaken = '';
@@ -101,7 +106,7 @@ export function createHud(root, handlers) {
       b.type = 'button';
       b.className = 'card';
       b.dataset.card = id;
-      b.innerHTML = `<span class="card-key">${i + 1}</span><span class="card-icon">${card.icon}</span>`
+      b.innerHTML = `<span class="card-key">${i + 1}</span><span class="card-icon">${iconize(card.icon)}</span>`
         + `<span class="card-name">${cardName(id)}</span><span class="card-desc">${cardDesc(id)}</span>`;
       b.addEventListener('click', () => handlers.onPickCard(id));
       return b;
@@ -115,7 +120,7 @@ export function createHud(root, handlers) {
     const text = Object.entries(counts).map(([id, n]) => `${CARDS[id].icon}${n > 1 ? `×${n}` : ''}`).join(' ');
     if (text === shownTaken) return;
     shownTaken = text;
-    hint.textContent = text ? t('hud.cardsTaken', { list: text }) : HINT;
+    setText(hint, text ? t('hud.cardsTaken', { list: text }) : HINT);
     hint.title = Object.keys(counts).map(cardName).join(', ');
   }
 
@@ -131,7 +136,7 @@ export function createHud(root, handlers) {
         + `<span class="mat-name">${t('mythic.material', { stage, animal: towerName(type) })}</span><span class="mat-ok"></span></span>`;
     }).join('<span class="plus">+</span>');
     row.innerHTML = `<span class="m-icon" style="background-image:url(${mythicIcons[id].toDataURL()})"></span>`
-      + `<span class="m-body"><span class="m-name">${def.icon} ${mythicName(id)}</span><span class="m-desc">${mythicDesc(id)}</span>`
+      + `<span class="m-body"><span class="m-name">${iconize(def.icon)} ${mythicName(id)}</span><span class="m-desc">${mythicDesc(id)}</span>`
       + `<span class="mats">${mats}</span></span><button type="button" class="btn primary m-make">${t('mythic.make')}</button>`;
     row.querySelector('.m-make').addEventListener('click', () => handlers.onCraft(id));
     el.mythicList.appendChild(row);
@@ -259,7 +264,7 @@ export function createHud(root, handlers) {
     if (!rewards) return;
     const title = document.createElement('div');
     title.className = 'rs-title';
-    title.textContent = t('result.rewards');
+    setText(title, t('result.rewards'));
     const cards = document.createElement('div');
     cards.className = 'rw-cards';
     const order = Object.keys(rewards.cards).sort((a, b) => (MYTHICS[b] ? 1 : 0) - (MYTHICS[a] ? 1 : 0) || rewards.cards[b] - rewards.cards[a]);
@@ -267,7 +272,7 @@ export function createHud(root, handlers) {
       const chip = document.createElement('span');
       chip.className = `rw-card${MYTHICS[id] ? ' mythic' : ''}`;
       chip.title = nameOf(id);
-      chip.innerHTML = `${iconOf(id)}<b>×${rewards.cards[id]}</b>`;
+      chip.innerHTML = `${iconize(iconOf(id))}<b>×${rewards.cards[id]}</b>`;
       cards.append(chip);
     }
     el.resultRewards.append(title, cards);
@@ -275,12 +280,12 @@ export function createHud(root, handlers) {
     if (rewards.levelUps.length) {
       const ups = document.createElement('div');
       ups.className = 'rw-ups';
-      ups.innerHTML = `<span class="rw-label">${t('result.levelUp')}</span>`;
+      ups.innerHTML = iconize(`<span class="rw-label">${t('result.levelUp')}</span>`);
       for (const up of rewards.levelUps) {
         const chip = document.createElement('span');
         chip.className = 'rw-up';
         chip.title = `${nameOf(up.id)} ${t('dex.bonus', { pct: Math.round(up.to * DEX_BONUS * 100) })}`;
-        chip.textContent = `${iconOf(up.id)} ${up.from}→${up.to}`;
+        setText(chip, `${iconOf(up.id)} ${up.from}→${up.to}`);
         ups.append(chip);
       }
       el.resultRewards.append(ups);
@@ -301,14 +306,14 @@ export function createHud(root, handlers) {
     for (const [icon, label, value] of [['⚔️', t('result.kills'), stats.kills], ['💔', t('result.leaked'), stats.leaked], ['⏱️', t('result.time'), stats.time]]) {
       const chip = document.createElement('span');
       chip.className = 'rs-chip';
-      chip.innerHTML = `<span class="rs-label">${icon} ${label}</span><b>${value}</b>`;
+      chip.innerHTML = iconize(`<span class="rs-label">${icon} ${label}</span><b>${value}</b>`);
       summary.append(chip);
     }
     el.resultStats.append(summary);
     if (!stats.ranking.length) return;
     const title = document.createElement('div');
     title.className = 'rs-title';
-    title.textContent = t('result.ranking');
+    setText(title, t('result.ranking'));
     el.resultStats.append(title);
     const top = stats.ranking[0].damage;
     const rows = document.createElement('div');
@@ -317,7 +322,7 @@ export function createHud(root, handlers) {
     stats.ranking.slice(0, 5).forEach((r, i) => {
       const row = document.createElement('div');
       row.className = `rs-row${r.mythic ? ' mythic' : ''}`;
-      row.innerHTML = `<span class="rs-rank">${i + 1}</span><span class="rs-icon">${r.icon}</span>`
+      row.innerHTML = `<span class="rs-rank">${i + 1}</span><span class="rs-icon">${iconize(r.icon)}</span>`
         + `<span class="rs-main"><span class="rs-name">${nameOf(r.id)}${r.mythic ? ' ✨' : ''}<small>${t('result.killCount', { kills: r.kills })}</small></span>`
         + `<span class="rs-bar"><span style="width:${Math.max(3, (r.damage / top) * 100)}%"></span></span></span>`
         + `<span class="rs-val">${short(r.damage)}<small>${Math.round(r.share * 100)}%</small></span>`;
@@ -330,7 +335,7 @@ export function createHud(root, handlers) {
     showMenu(save, run = null) {
       dexCollection = save.collection ?? {};
       const total = DEX_IDS.reduce((s, id) => s + dexProgress(id, dexCollection[id] ?? 0).level, 0);
-      el.btnDex.innerHTML = `<span>${t('dex.button')}</span><small>${t('dex.total', { total, max: DEX_IDS.length * DEX_MAX })}</small>`;
+      el.btnDex.innerHTML = iconize(`<span>${t('dex.button')}</span><small>${t('dex.total', { total, max: DEX_IDS.length * DEX_MAX })}</small>`);
       el.dex.hidden = true;
       el.game.hidden = true;
       el.result.hidden = true;
@@ -338,7 +343,7 @@ export function createHud(root, handlers) {
       el.btnContinue.hidden = !run;
       if (run) {
         const vars = { name: mapName(run.mapId), place: mapPlace(run.mapId), wave: run.wave, max: WAVE_COUNT };
-        el.btnContinue.innerHTML = `<span class="c-title">${t('menu.continue')}</span><span class="c-sub">${t(run.endless ? 'menu.runEndless' : 'menu.runNormal', vars)}</span>`;
+        el.btnContinue.innerHTML = iconize(`<span class="c-title">${t('menu.continue')}</span><span class="c-sub">${t(run.endless ? 'menu.runEndless' : 'menu.runNormal', vars)}</span>`);
       }
       el.maps.replaceChildren(...MAPS.map((map, i) => {
         const locked = i >= save.unlocked;
@@ -347,9 +352,9 @@ export function createHud(root, handlers) {
         b.type = 'button';
         b.className = 'map-card';
         b.disabled = locked;
-        b.innerHTML = `<span><div class="name">${locked ? '🔒 ' : ''}${mapName(map.id)} · ${mapPlace(map.id)}</div>`
+        b.innerHTML = iconize(`<span><div class="name">${locked ? '🔒 ' : ''}${mapName(map.id)} · ${mapPlace(map.id)}</div>`
           + `<div class="sub">${locked ? t('menu.locked') : rec ? t('menu.best', { wave: rec.bestWave, max: WAVE_COUNT }) : t('menu.new')}</div></span>`
-          + `<span class="stars">${locked ? '' : stars(rec ? rec.stars : 0)}</span>`;
+          + `<span class="stars">${locked ? '' : stars(rec ? rec.stars : 0)}</span>`);
         b.addEventListener('click', () => handlers.onStartMap(map.id));
         // 무한 모드: 그 맵을 30웨이브까지 한 번 깨면(별이 있으면) 카드 옆에 버튼이 생긴다
         if (locked || !rec || !rec.stars) return b;
@@ -359,7 +364,7 @@ export function createHud(root, handlers) {
         e.type = 'button';
         e.className = 'endless-btn';
         e.dataset.map = map.id;
-        e.innerHTML = `<span class="e-title">${t('menu.endless')}</span><span class="e-sub">${rec.endlessBest ? t('menu.endlessBest', { best: rec.endlessBest }) : t('menu.endlessNew')}</span>`;
+        e.innerHTML = iconize(`<span class="e-title">${t('menu.endless')}</span><span class="e-sub">${rec.endlessBest ? t('menu.endlessBest', { best: rec.endlessBest }) : t('menu.endlessNew')}</span>`);
         e.addEventListener('click', () => handlers.onStartEndless(map.id));
         row.append(b, e);
         return row;
