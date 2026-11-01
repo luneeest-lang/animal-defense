@@ -15,6 +15,7 @@ import { PROJECTILES, PROJECTILE_SIZE } from '../data/projectiles.js';
 import { createEffects } from './effects.js';
 import { towerName } from '../i18n.js';
 import { towerMotion } from './motion.js';
+import { skyTint } from './atmosphere.js';
 import { fillRichText, iconCanvas } from './icons.js';
 
 const HIT_FLASH_MS = 90;
@@ -400,12 +401,33 @@ export function createRenderer(canvas) {
         ctx.fillRect(x - len, y - u / 2, len * 2, u);
         ctx.fillRect(x - u / 2, y - len, u, len * 2);
       }
+      // 물결 거품: 하얀 물마루가 생겼다 부서지며 사라진다
+      for (let k = 0; k < 10; k++) {
+        const period = 3.2 + (k % 4) * 0.7;
+        const life = ((t + k * 0.83) % period) / period;
+        const round = Math.floor((t + k * 0.83) / period);
+        const h = cellHash(k * 31 + round, 57);
+        const x = Math.round(x0 + ((h % 997) / 997) * W);
+        const y = Math.round(y0 + (((h >>> 11) % 991) / 991) * H);
+        if (onRoad(x, y)) continue;
+        const grow = Math.sin(life * Math.PI);
+        const half = Math.round(cell * (0.12 + 0.18 * life));
+        ctx.globalAlpha = 0.75 * grow;
+        ctx.fillRect(x - half, y, half * 2, u);
+        ctx.fillRect(x - half + u, y - u, u * 2, u);
+        ctx.fillRect(x + half - u * 3, y - u, u * 2, u);
+        // 부서질 때 흩어지는 물방울
+        if (life > 0.55) {
+          ctx.fillRect(x - half - u * 2, y + u * 2, u, u);
+          ctx.fillRect(x + half + u, y + u, u, u);
+        }
+      }
       ctx.globalAlpha = 1;
     });
   }
 
   // 높은 층(모든 것 위): 천천히 지나가는 구름 그림자, 숲의 나비, 돌산의 새와 바다의 갈매기
-  function drawAmbientHigh(map, cell, now) {
+  function drawAmbientHigh(map, cell, now, sky) {
     if (reduceMotion) return;
     const t = now / 1000;
     const { x0, y0, W, H } = screenBox();
@@ -424,6 +446,8 @@ export function createRenderer(canvas) {
         }
         ctx.fill();
       }
+      if (map.theme === 'forest') drawLeavesAndFireflies(t, x0, y0, W, H, u, cell, sky);
+      else if (map.theme === 'mountain') drawDust(t, x0, y0, W, H, u, cell);
       if (map.theme === 'forest') {
         const colors = ['#ffffff', '#ffd23f', '#ff9fd0', '#9fe0ff'];
         for (let k = 0; k < 4; k++) {
@@ -463,8 +487,61 @@ export function createRenderer(canvas) {
     });
   }
 
-  // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게 (캔버스 전체)
-  function drawLighting() {
+  // 숲: 바람에 흔들리며 떨어지는 나뭇잎, 해가 질수록 늘어나는 반딧불
+  function drawLeavesAndFireflies(t, x0, y0, W, H, u, cell, sky) {
+    const leaf = ['#6cc055', '#e0b347', '#d9843a', '#9ad04a'];
+    for (let k = 0; k < 6; k++) {
+      const period = 7 + (k % 3) * 2;
+      const life = ((t + k * 1.9) % period) / period;
+      const round = Math.floor((t + k * 1.9) / period);
+      const h = cellHash(k * 17 + round, 23);
+      const x = Math.round(x0 + ((h % 997) / 997) * W + life * cell * 1.5 + Math.sin(life * 12 + k) * cell * 0.3);
+      const y = Math.round(y0 - cell * 0.5 + life * (H + cell));
+      const flip = Math.sin(life * 18 + k) > 0;
+      ctx.globalAlpha = life > 0.85 ? (1 - life) / 0.15 : 1;
+      ctx.fillStyle = leaf[k % leaf.length];
+      ctx.fillRect(x, y, u * (flip ? 3 : 2), u * (flip ? 2 : 3));
+      ctx.fillStyle = 'rgba(40, 30, 10, 0.5)';
+      ctx.fillRect(x + u * (flip ? 2 : 1), y + u * (flip ? 1 : 2), u, u);
+    }
+    // 반딧불: 오후부터 보이기 시작해 노을·밤에 늘어난다
+    const count = Math.round(Math.max(0, (sky.alpha - 0.05) / 0.15) * 7 + sky.night * 6);
+    for (let k = 0; k < count; k++) {
+      const x = Math.round(x0 + W * (0.5 + 0.45 * Math.sin(t * 0.11 + k * 2.1)));
+      const y = Math.round(y0 + H * (0.5 + 0.45 * Math.sin(t * 0.15 + k * 1.3)));
+      const glow = 0.5 + 0.5 * Math.sin(t * 2.4 + k * 1.7);
+      ctx.globalAlpha = 0.35 * glow;
+      ctx.fillStyle = '#e8ff7a';
+      ctx.beginPath();
+      ctx.arc(x, y, cell * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.6 + 0.4 * glow;
+      ctx.fillStyle = '#f6ffb0';
+      ctx.fillRect(x - u, y - u, u * 2, u * 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // 돌산: 이따금 부는 바람에 흙먼지가 옆으로 쓸려 간다
+  function drawDust(t, x0, y0, W, H, u, cell) {
+    const gust = Math.max(0, Math.sin(t * 0.45)) ** 2;
+    if (gust < 0.05) return;
+    for (let k = 0; k < 14; k++) {
+      const speed = cell * (2.2 + (k % 4) * 0.5);
+      const span = W + cell * 3;
+      const x = Math.round(x0 - cell * 1.5 + ((t * speed + k * 97) % span));
+      const y = Math.round(y0 + H * ((k * 0.61 + 0.07) % 1) + Math.sin(t * 2 + k) * cell * 0.2);
+      ctx.globalAlpha = gust * (0.35 + 0.25 * ((k * 7) % 3) / 2);
+      ctx.fillStyle = k % 3 ? '#d8cdb4' : '#bfb197';
+      ctx.fillRect(x, y, u * (3 + (k % 3) * 2), u);
+      if (k % 2) ctx.fillRect(x + u * 6, y + u, u * 2, u);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // 전체 조명: 왼쪽 위는 밝고 오른쪽 아래로 갈수록 살짝 어둡게 (캔버스 전체).
+  // 웨이브가 진행될수록 바닥이 오후·노을·밤빛으로 물든다(ui/atmosphere.js). 동물·몬스터는 이 위에 그려서 또렷하다
+  function drawLighting(sky) {
     const dpr = window.devicePixelRatio || 1;
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -474,6 +551,16 @@ export function createRenderer(canvas) {
     g.addColorStop(1, 'rgba(0,0,30,0.16)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, width, height);
+    if (sky.alpha > 0) {
+      ctx.fillStyle = `rgba(${sky.color}, ${sky.alpha})`;
+      ctx.fillRect(0, 0, width, height);
+      // 해가 질수록 가장자리가 어둑해진다
+      const v = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.35, width / 2, height / 2, Math.max(width, height) * 0.75);
+      v.addColorStop(0, 'rgba(0,0,0,0)');
+      v.addColorStop(1, `rgba(10, 5, 30, ${sky.alpha * 1.1})`);
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, width, height);
+    }
     ctx.restore();
   }
 
@@ -1231,8 +1318,9 @@ export function createRenderer(canvas) {
       ctx.rotate(Math.PI / 2);
     }
     drawBoard(game, cell, now);
+    const sky = skyTint(game.waveNumber);
     drawAmbientLow(game.map, cell, now);
-    drawLighting();
+    drawLighting(sky);
     drawZones(game, cell, now);
     for (const t of game.towers) {
       if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now, t.id === view.snapTargetId);
@@ -1242,7 +1330,7 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
     }
     for (const e of game.enemies) drawEnemy(game, e, cell);
-    drawAmbientHigh(game.map, cell, now);
+    drawAmbientHigh(game.map, cell, now, sky);
     for (const e of game.enemies) drawEnemyHp(game, e, cell);
     collectEvents(game, now);
     drawEffects(cell, now);
