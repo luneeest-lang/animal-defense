@@ -16,6 +16,9 @@ import { createHud } from './ui/hud.js';
 import { LANG_KEY, pickLang, setLang, lang, t, applyStatic } from './i18n.js';
 import { setRich } from './ui/icons.js';
 import { exportCode, importCode, mergeSaves } from './savecode.js';
+import { createTutorial, advance as advanceTutorial, next as nextTutorial, blocking as tutorialBlocks, shouldStart as tutorialStarts, TUTORIAL_KEY } from './ui/tutorial.js';
+import { createTutorialView } from './ui/tutorialView.js';
+import { mapToScreen } from './ui/input.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -73,11 +76,41 @@ let lastBossWarning = 0;
 // 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
 // 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
 let handledEvents = null;
+// 첫 판 튜토리얼 (끝나거나 건너뛰면 null)
+let tutorial = null;
+// 튜토리얼이 짚을 곳: 버튼은 화면 사각형, 합성은 두 동물 사이를 오가는 손가락
+function drawTutorial() {
+  if (!tutorial || !game) { tutorialView.show(null); return; }
+  const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
+  const target = { summon: '#btn-summon', wave: '#btn-wave', upgrade: '.upgrades', mythic: '#btn-mythic' }[tutorial.step];
+  let drag = null;
+  if (tutorial.step === 'merge') {
+    const [a, b] = game.towers.filter((t) => game.towers.some((u) => u !== t && u.type === t.type && u.level === t.level));
+    if (a && b) {
+      const canvas = document.getElementById('board').getBoundingClientRect();
+      const br = renderer.boardRect();
+      const at = (t) => {
+        const p = mapToScreen(t.col + 0.5, t.row + 0.5, br.width, br.height, game.map.cols, game.map.rows);
+        return { x: canvas.left + br.x + p.x, y: canvas.top + br.y + p.y };
+      };
+      drag = { from: at(a), to: at(b) };
+    }
+  }
+  tutorialView.show(tutorial, target ? rect(target) : null, drag);
+}
+function endTutorial() {
+  tutorial = null;
+  try { store.setItem(TUTORIAL_KEY, 'done'); } catch { /* 저장이 안 되면 이번 판만 끝낸다 */ }
+}
 let autoPaused = false;
 let finished = false;
 let lastTs = 0;
 
 const renderer = createRenderer(document.getElementById('board'));
+const tutorialView = createTutorialView(document, {
+  onSkip: () => { endTutorial(); tutorialView.show(null); },
+  onNext: () => { if (tutorial) { nextTutorial(tutorial); if (tutorial.step === 'done') endTutorial(); } },
+});
 
 const hud = createHud(document.getElementById('app'), {
   onSummon: summon,
@@ -152,6 +185,7 @@ function menuRunInfo() {
 
 function summon() {
   const tower = game && summonTower(game);
+  if (tower && tutorial) advanceTutorial(tutorial, game, tower);
   if (tower) {
     renderer.celebrate('summon', tower);
     afterAction('summon');
@@ -213,6 +247,7 @@ function startMap(id, endless = false) {
   run = null;
   clearRun(store);
   enterGame(createGame(map, undefined, { endless, dex: dexLevels(save.collection) }));
+  tutorial = tutorialStarts(store, id, endless) ? createTutorial() : null;
 }
 
 function continueRun() {
@@ -244,6 +279,7 @@ function enterGame(g) {
 }
 
 function goMenu() {
+  tutorial = null;
   autosave();
   game = null;
   mapId = null;
@@ -285,7 +321,11 @@ function frame(ts) {
   const dt = Math.min(Math.max((ts - lastTs) / 1000, 0), MAX_FRAME_DT);
   lastTs = ts;
   if (game) {
-    if (!ui.paused && !ui.mythicOpen && game.status === 'running') {
+    if (tutorial) {
+      advanceTutorial(tutorial, game);
+      if (tutorial.step === 'done') endTutorial();
+    }
+    if (!ui.paused && !ui.mythicOpen && !(tutorial && tutorialBlocks(tutorial, game)) && game.status === 'running') {
       // 결과 화면의 플레이 시간: 멈추거나 카드를 고르는 동안은 세지 않는 실제 시간
       if (!game.cardChoices) game.stats.playTime += dt;
       step(game, dt * ui.speed * GAME_SPEED);
@@ -312,6 +352,7 @@ function frame(ts) {
       snapTargetId: drag ? snapMergeTarget(game, drag.towerId, drag.map)?.id ?? null : null,
     });
     hud.update(game, ui, ui.mythicOpen);
+    drawTutorial();
     if (game.status !== 'running') ui.mythicOpen = false;
     if (game.status !== 'running' && !finished) finish();
   }

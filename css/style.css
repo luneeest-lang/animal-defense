@@ -555,3 +555,35 @@ button { font: inherit; color: inherit; }
 .sheet-inner .btn.primary { margin-top: 6px; width: 100%; }
 .transfer-msg { min-height: 1.3em; margin: 8px 0 0; font-size: 0.85rem; font-weight: 700; color: #ffd23f; }
 
+/* 튜토리얼: 화면 위에 겹치되 게임 조작은 그대로 되게 한다(말풍선 버튼만 누를 수 있다) */
+#tutorial { position: fixed; inset: 0; z-index: 15; pointer-events: none; }
+#tutorial[hidden], #tutorial [hidden] { display: none; }
+.tut-ring {
+  position: fixed; border-radius: 14px; border: 3px solid #ffd23f;
+  box-shadow: 0 0 0 4px rgba(255, 210, 63, 0.35), 0 0 22px rgba(255, 210, 63, 0.8);
+  animation: tut-pulse 1s ease-in-out infinite;
+}
+.tut-finger {
+  position: fixed; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 35%, rgba(255, 210, 63, 0.9) 36% 55%, rgba(255, 210, 63, 0) 70%);
+  animation: tut-drag 1.6s ease-in-out infinite;
+}
+.tut-bubble {
+  position: fixed; left: 50%; bottom: 22%; translate: -50% 0; width: min(88vw, 420px); pointer-events: none;
+  padding: 12px 14px; border-radius: 16px; background: linear-gradient(180deg, #fffbe8 0%, #f3e6c0 100%); color: #3a2a10;
+  box-shadow: var(--raised-panel), 0 0 0 3px #a8703c; animation: tut-in 0.3s ease-out;
+}
+.tut-bubble.low { bottom: auto; top: 58%; }
+.tut-text { margin: 0 0 10px; font-weight: 700; line-height: 1.45; }
+.tut-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.tut-buttons .btn { pointer-events: auto; }
+.tut-buttons .btn { min-height: 34px; padding: 4px 14px; font-size: 0.9rem; }
+@keyframes tut-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.75; } }
+@keyframes tut-drag {
+  0% { transform: translate(var(--fx), var(--fy)) scale(1.2); opacity: 0; }
+  15% { transform: translate(var(--fx), var(--fy)) scale(1); opacity: 1; }
+  75% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.8); opacity: 0; }
+}
+@keyframes tut-in { from { opacity: 0; translate: -50% 10px; } to { opacity: 1; translate: -50% 0; } }
+

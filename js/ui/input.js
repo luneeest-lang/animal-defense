@@ -15,6 +15,12 @@ export function screenToMap(x, y, w, h, cols, rows) {
   return { x: (x / w) * cols, y: (y / h) * rows };
 }
 
+// screenToMap의 반대: 맵 좌표(칸 단위) → 캔버스 위 점
+export function mapToScreen(mx, my, w, h, cols, rows) {
+  if (h > w) return { x: w - (my / rows) * w, y: (mx / cols) * h };
+  return { x: (mx / cols) * w, y: (my / rows) * h };
+}
+
 // 마우스와 터치를 같은 포인터 이벤트로 처리한다.
 // 짧게 누르면 탭(onTap), 일정 거리 이상 끌면 드래그(onDragStart → onDragMove → onDrop)로 본다.
 // onDragMove·onDrop은 맵 좌표(screenToMap)도 함께 받는다.

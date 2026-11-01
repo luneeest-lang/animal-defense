@@ -26,3 +26,12 @@ test('화면 점을 맵 좌표(칸 단위 소수)로 바꾼다. 맵 밖이어도
   const p = screenToMap(390 - 39 * 4.5, 39 * 7.5, 390, 624, 16, 10);
   assert.ok(Math.abs(p.x - 7.5) < 1e-9 && Math.abs(p.y - 4.5) < 1e-9, JSON.stringify(p));
 });
+
+test('맵 좌표를 화면 점으로 바꾸면 화면 점 → 맵 좌표의 반대가 된다 (튜토리얼 손가락 위치)', async () => {
+  const { screenToMap, mapToScreen } = await import('../js/ui/input.js');
+  for (const [w, h] of [[320, 200], [390, 624]]) {
+    const p = mapToScreen(7.5, 4.5, w, h, 16, 10);
+    const back = screenToMap(p.x, p.y, w, h, 16, 10);
+    assert.ok(Math.abs(back.x - 7.5) < 1e-9 && Math.abs(back.y - 4.5) < 1e-9, JSON.stringify([w, h, p, back]));
+  }
+});
