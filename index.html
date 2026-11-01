@@ -17,9 +17,28 @@
       <div id="map-list"></div>
       <button id="btn-dex" class="dex-btn" type="button"></button>
       <p class="hint" data-i18n="menu.hint">가로 화면에서 하면 더 편해요.</p>
-      <button id="btn-lang" class="lang-btn" type="button" data-i18n="menu.lang">🌐 English</button>
+      <div class="menu-small">
+        <button id="btn-lang" class="lang-btn" type="button" data-i18n="menu.lang">🌐 English</button>
+        <button id="btn-transfer" class="lang-btn" type="button" data-i18n="transfer.button">💾 기록 옮기기</button>
+      </div>
       <p id="save-warning" class="warn" hidden data-i18n="menu.saveWarning">이 브라우저에서는 기록을 저장할 수 없어요. 게임은 그대로 할 수 있어요.</p>
       <div class="ad-slot" aria-hidden="true"></div>
+      <div id="transfer" class="sheet" hidden>
+        <div class="sheet-inner">
+          <div class="dex-head">
+            <h2 data-i18n="transfer.title">💾 기록 옮기기</h2>
+            <button id="btn-close-transfer" class="btn" type="button" aria-label="닫기" data-i18n-label="common.close">✕</button>
+          </div>
+          <p class="dex-help" data-i18n="transfer.help">폰과 컴퓨터의 기록을 합칠 수 있어요. 한쪽에서 코드를 복사해 다른 쪽에 붙여 넣으세요. 도감 카드·최고 기록·별은 더 좋은 쪽이 남아요.</p>
+          <h3 data-i18n="transfer.exportTitle">1. 이 기기의 기록 코드</h3>
+          <textarea id="transfer-out" readonly rows="3"></textarea>
+          <button id="btn-copy-code" class="btn primary" type="button" data-i18n="transfer.copy">코드 복사</button>
+          <h3 data-i18n="transfer.importTitle">2. 다른 기기의 코드 붙여 넣기</h3>
+          <textarea id="transfer-in" rows="3" spellcheck="false" autocomplete="off"></textarea>
+          <button id="btn-import-code" class="btn primary" type="button" data-i18n="transfer.import">불러와서 합치기</button>
+          <p id="transfer-msg" class="transfer-msg" aria-live="polite"></p>
+        </div>
+      </div>
       <div id="dex" hidden>
         <div class="dex-inner">
           <div class="dex-head">

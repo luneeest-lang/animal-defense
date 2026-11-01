@@ -6,7 +6,7 @@ export const EMOJI_ICONS = {
   '🎉': 'party', '🏆': 'trophy', '🎁': 'gift', '🏅': 'medal', '🎵': 'music', '🔊': 'speaker', '🔇': 'mute',
   '⏸️': 'pause', '⏸': 'pause', '▶️': 'play', '▶': 'play', '☰': 'menu', '⭐': 'star', '☆': 'starEmpty',
   '⚔️': 'swords', '⚔': 'swords', '⏱️': 'clock', '⏱': 'clock', '🔒': 'lock', '⚡': 'bolt', '🔭': 'scope',
-  '💰': 'bag', '🧊': 'ice', '👑': 'crown', '✔': 'check', '✖': 'cross',
+  '💰': 'bag', '🧊': 'ice', '👑': 'crown', '✔': 'check', '✖': 'cross', '💾': 'disk',
   '🐿️': 'animal:squirrel', '🐿': 'animal:squirrel', '🐘': 'animal:elephant', '🐧': 'animal:penguin', '🦅': 'animal:eagle', '🐍': 'animal:snake',
   '🔥': 'mythic:phoenix', '🦊': 'mythic:gumiho', '🐎': 'mythic:cheonma', '🐯': 'mythic:haetae', '🦒': 'mythic:girin',
 };

@@ -15,6 +15,7 @@ import { attachInput } from './ui/input.js';
 import { createHud } from './ui/hud.js';
 import { LANG_KEY, pickLang, setLang, lang, t, applyStatic } from './i18n.js';
 import { setRich } from './ui/icons.js';
+import { exportCode, importCode, mergeSaves } from './savecode.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -360,4 +361,39 @@ for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () 
 
 hud.showSaveWarning(!writeSave(store, save));
 hud.showMenu(save, menuRunInfo());
+
+// 기록 옮기기 창: 이 기기의 코드를 보여 주고, 다른 기기 코드를 합친다(savecode.js)
+{
+  const $ = (id) => document.getElementById(id);
+  const box = $('transfer');
+  const say = (key) => { $('transfer-msg').textContent = key ? t(key) : ''; };
+  $('btn-transfer').addEventListener('click', () => {
+    $('transfer-out').value = exportCode(save);
+    $('transfer-in').value = '';
+    say(null);
+    box.hidden = false;
+  });
+  $('btn-close-transfer').addEventListener('click', () => { box.hidden = true; });
+  box.addEventListener('click', (e) => { if (e.target === box) box.hidden = true; });
+  $('btn-copy-code').addEventListener('click', async () => {
+    const out = $('transfer-out');
+    try {
+      await navigator.clipboard.writeText(out.value);
+    } catch {
+      out.select();
+      document.execCommand?.('copy');
+    }
+    say('transfer.copied');
+  });
+  $('btn-import-code').addEventListener('click', () => {
+    const other = importCode($('transfer-in').value);
+    if (!other) { say('transfer.bad'); return; }
+    save = mergeSaves(save, other);
+    const ok = writeSave(store, save);
+    hud.showSaveWarning(!ok);
+    say(ok ? 'transfer.done' : 'transfer.saveFail');
+    $('transfer-out').value = exportCode(save);
+    hud.showMenu(save, menuRunInfo());
+  });
+}
 requestAnimationFrame((ts) => { lastTs = ts; requestAnimationFrame(frame); });
