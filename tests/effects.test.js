@@ -15,10 +15,27 @@ test('발사 이벤트는 발사체를 만들고 맞은 적의 피격 시각을 
   assert.equal(fx.hitTime(99), -Infinity);
 });
 
-test('코끼리 공격은 발사체와 함께 충격파를 남긴다', () => {
+test('코끼리 공격은 물방울이 닿는 순간 충격파를 남긴다', () => {
   const fx = createEffects(fixed);
   fx.fromEvent(shot('elephant'), 0);
-  assert.deepEqual(fx.active(0).map((f) => f.kind).sort(), ['projectile', 'shock']);
+  assert.deepEqual(fx.active(0).map((f) => f.kind), ['projectile'], '날아가는 동안은 발사체만');
+  assert.ok(fx.active(LIFE.projectile + 1).some((f) => f.kind === 'shock'), '닿으면 충격파');
+});
+
+test('발사체가 닿는 순간 동물마다 다른 색 파편이 튄다', () => {
+  const colorsOf = (tower) => {
+    const fx = createEffects(fixed);
+    fx.fromEvent(shot(tower), 0);
+    assert.equal(fx.active(0).filter((f) => f.kind === 'particle').length, 0, `${tower}: 닿기 전에는 파편이 없다`);
+    const parts = fx.active(LIFE.projectile + 1).filter((f) => f.kind === 'particle');
+    assert.ok(parts.length >= 3, `${tower}: 파편 ${parts.length}`);
+    assert.ok(parts.every((f) => Math.abs(f.x - 3) < 1e-9 && Math.abs(f.y - 1) < 1e-9), '맞은 자리에서');
+    return new Set(parts.map((f) => f.color));
+  };
+  const sets = ['squirrel', 'elephant', 'penguin', 'eagle', 'snake'].map(colorsOf);
+  for (let i = 0; i < sets.length; i++) for (let j = i + 1; j < sets.length; j++) {
+    assert.notDeepEqual([...sets[i]].sort(), [...sets[j]].sort(), '동물마다 색이 다르다');
+  }
 });
 
 test('처치하면 파편과 보상 숫자가 생기고, 보스는 더 많은 파편과 화면 흔들림이 생긴다', () => {
@@ -126,7 +143,7 @@ test('신화 탄생은 큰 문구와 무지개 파편, 흔들림을 만든다', 
   assert.ok(fx.shake(0) > 0);
 });
 
-test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람 줄기, 해태는 넓은 고리, 기절은 문구', () => {
+test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람 줄기, 해태는 넓은 고리, 기절은 글자 없이 (별은 몬스터 머리 위에 그린다)', () => {
   const fx = createEffects(fixed);
   const from = { x: 1, y: 1 };
   const to = { x: 3, y: 1 };
@@ -137,7 +154,7 @@ test('신화 공격: 불사조·구미호·기린은 발사체, 천마는 바람
   assert.deepEqual(all.filter((f) => f.kind === 'projectile').map((f) => f.tower), ['phoenix', 'gumiho', 'girin']);
   assert.equal(all.filter((f) => f.kind === 'beam').length, 1);
   assert.ok(all.some((f) => f.kind === 'ring' && f.reach >= 3));
-  assert.ok(all.some((f) => f.kind === 'text' && f.text === '기절!'));
+  assert.ok(!all.some((f) => f.kind === 'text'), '기절 글자는 띄우지 않는다');
 });
 
 test('몬스터가 블랙홀에 닿으면 빨려 들어가는 효과가 생기고, 블랙홀이 크게 꿀렁인다', () => {

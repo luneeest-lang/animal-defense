@@ -3,6 +3,7 @@ import { TILES } from '../data/tiles.js';
 import { ANIMAL_SPRITES } from '../data/animals.js';
 import { MYTHIC_SPRITES } from '../data/mythicSprites.js';
 import { DECOR_SPRITES } from '../data/decor.js';
+import { PROJECTILES } from '../data/projectiles.js';
 import { refine } from './refine.js';
 
 // 옛 원본 도트(16x16, 신화 20x20)는 구울 때 2배 해상도로 정교하게 다듬는다(ui/refine.js).
@@ -99,3 +100,6 @@ export const bakeTiles = once(bakeTilesRaw);
 export const bakeAnimals = once(bakeAnimalsRaw);
 export const bakeMythics = once(bakeMythicsRaw);
 export const bakeDecor = once(bakeDecorRaw);
+// 동물 발사체: { 동물 id: 캔버스 } (작은 그림이라 다듬지 않는다)
+export const bakeProjectiles = once(() => Object.fromEntries(Object.entries(PROJECTILES)
+  .map(([id, d]) => [id, bakeGrid(refine(d.palette, d.rows, { scale: false, outline: false, shade: false }))])));

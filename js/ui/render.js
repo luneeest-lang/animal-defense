@@ -6,11 +6,12 @@ import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
 import { ENEMY_LOOK } from '../data/sprites.js';
 import {
-  bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, ART_SIZE, ART_SCALE,
+  bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, bakeProjectiles, ART_SIZE, ART_SCALE,
 } from './pixel.js';
 import { decorFor, marginDecor } from './decor.js';
 import { MYTHICS, GRADE_COLORS, gradeOf } from '../data/mythics.js';
 import { MYTHIC_SIZE } from '../data/mythicSprites.js';
+import { PROJECTILES, PROJECTILE_SIZE } from '../data/projectiles.js';
 import { createEffects } from './effects.js';
 import { towerName } from '../i18n.js';
 import { towerMotion } from './motion.js';
@@ -55,6 +56,7 @@ export function createRenderer(canvas) {
   const tiles = bakeTiles();
   const animals = bakeAnimals();
   const mythics = bakeMythics();
+  const projectiles = bakeProjectiles();
   const decor = bakeDecor();
   const decorCache = new Map(); // 맵 id → 장식 목록
   const towerFacing = new Map();
@@ -825,14 +827,7 @@ export function createRenderer(canvas) {
       if (awakened) drawAuraSparkles(tower, cx, cy, s, unit, now);
       // 기절: 머리 위에서 별이 돈다
       if (stunned) {
-        // 도트 별 아이콘 세 개 (이모지는 기기마다 달라 쓰지 않는다)
-        const star = iconCanvas('star');
-        const size = Math.round(cell * 0.28);
-        ctx.imageSmoothingEnabled = false;
-        for (let i = 0; i < 3; i++) {
-          const a = now / 250 + (i * Math.PI * 2) / 3;
-          ctx.drawImage(star, Math.round(cx + Math.cos(a) * s * 0.3 - size / 2), Math.round(cy - s * 0.55 + Math.sin(a) * s * 0.08 - size / 2), size, size);
-        }
+        drawStunStars(cx, cy - s * 0.55, s, cell, now);
       }
     });
     if (selected) {
@@ -914,6 +909,21 @@ export function createRenderer(canvas) {
 
   }
 
+  // 기절: 머리 위(cx, headY)에서 도트 별 세 개가 납작한 원을 그리며 돈다. 앞쪽 별은 크고 진하게
+  function drawStunStars(cx, headY, s, cell, now) {
+    const star = iconCanvas('star');
+    const base = Math.max(7, Math.round(cell * 0.32));
+    ctx.imageSmoothingEnabled = false;
+    for (let i = 0; i < 3; i++) {
+      const a = now / 260 + (i * Math.PI * 2) / 3;
+      const front = (Math.sin(a) + 1) / 2;
+      const size = Math.round(base * (0.75 + 0.35 * front));
+      ctx.globalAlpha = 0.65 + 0.35 * front;
+      ctx.drawImage(star, Math.round(cx + Math.cos(a) * s * 0.32 - size / 2), Math.round(headY + Math.sin(a) * s * 0.09 - size / 2), size, size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // 체력바는 몬스터 그림을 모두 그린 뒤에 그려서 다른 몬스터 그림에 가려지지 않게 한다
   function drawEnemyHp(game, e, cell) {
     const p = positionAt(game.points, e.dist);
@@ -940,6 +950,8 @@ export function createRenderer(canvas) {
     ctx.fillRect(barX, barY, Math.round(w * ratio), h);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
     ctx.fillRect(barX, barY, Math.round(w * ratio), Math.max(1, Math.round(h * 0.3)));
+    // 구미호에게 기절한 몬스터: 체력바 바로 위에서 별이 돈다 (체력바·숫자에 가리지 않게 맨 위에 그린다)
+    if (e.stun > 0) drawStunStars(cx, barY - Math.max(8, cell * 0.26), s, cell, performance.now());
   }
 
   function collectEvents(game, now) {
@@ -958,38 +970,51 @@ export function createRenderer(canvas) {
   }
 
   // 동물마다 다른 발사체 (맵 좌표에서 그린다)
+  // 동물 발사체 도트 그림 (도토리·물방울·얼음 조각·깃털·독 방울). aim은 날아가는 쪽으로 돌리고 spin은 빙글빙글
+  function drawProjectileSprite(tower, p, angle, cell) {
+    const img = projectiles[tower];
+    const dpr = window.devicePixelRatio || 1;
+    const unit = Math.max(1, Math.round((cell * 0.36 * dpr) / PROJECTILE_SIZE)) / dpr;
+    const size = unit * PROJECTILE_SIZE;
+    ctx.save();
+    ctx.translate(Math.round(p.x * dpr) / dpr, Math.round(p.y * dpr) / dpr);
+    ctx.rotate(angle);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, -size / 2, -size / 2, size, size);
+    ctx.restore();
+  }
+
+  // 동물마다 다른 발사체 (맵 좌표에서 그린다)
   function drawProjectile(f, k, cell) {
     const at = (t) => ({ x: (f.from.x + (f.to.x - f.from.x) * t) * cell, y: (f.from.y + (f.to.y - f.from.y) * t) * cell });
     const p = at(k);
     const u = cell * 0.08;
-    if (f.tower === 'eagle') {
-      const tail = at(Math.max(0, k - 0.45));
-      ctx.strokeStyle = '#ffd23f';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(tail.x, tail.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(p.x - u, p.y - u, u * 2, u * 2);
-    } else if (f.tower === 'penguin') {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#bff0ff';
-      ctx.fillRect(-u * 1.2, -u * 1.2, u * 2.4, u * 2.4);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-u * 0.5, -u * 0.5, u, u);
-      ctx.restore();
-    } else if (f.tower === 'snake') {
-      for (let i = 2; i >= 0; i--) {
-        const q = at(Math.max(0, k - i * 0.12));
-        ctx.fillStyle = i ? 'rgba(125, 255, 106, 0.45)' : '#7dff6a';
+    const def = PROJECTILES[f.tower];
+    if (def) {
+      const aim = Math.atan2(f.to.y - f.from.y, f.to.x - f.from.x);
+      // 꼬리: 독수리는 금빛 줄, 코끼리는 물방울, 뱀은 독 방울, 펭귄은 서리 가루
+      const trail = { eagle: '#ffd23f', elephant: 'rgba(159, 220, 255, 0.7)', snake: 'rgba(125, 255, 106, 0.55)', penguin: 'rgba(223, 246, 255, 0.7)' }[f.tower];
+      if (f.tower === 'eagle') {
+        const tail = at(Math.max(0, k - 0.45));
+        ctx.strokeStyle = trail;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(q.x, q.y, u * (1.3 - i * 0.3), 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(tail.x, tail.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      } else if (trail) {
+        for (let i = 1; i <= 2; i++) {
+          const q = at(Math.max(0, k - i * 0.14));
+          ctx.fillStyle = trail;
+          const r = Math.max(1, u * (0.9 - i * 0.25));
+          ctx.fillRect(Math.round(q.x - r), Math.round(q.y - r), r * 2, r * 2);
+        }
       }
-    } else if (f.tower === 'phoenix') {
+      const angle = def.turn === 'aim' ? aim : def.turn === 'spin' ? k * Math.PI * 4 : 0;
+      drawProjectileSprite(f.tower, p, angle, cell);
+      return;
+    }
+    if (f.tower === 'phoenix') {
       // 불꽃 깃털: 꼬리가 긴 불덩이
       for (let i = 4; i >= 0; i--) {
         const q = at(Math.max(0, k - i * 0.08));
@@ -1021,15 +1046,6 @@ export function createRenderer(canvas) {
       ctx.stroke();
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(p.x - u, p.y - u, u * 2, u * 2);
-    } else if (f.tower === 'elephant') {
-      ctx.fillStyle = '#e8d2a6';
-      ctx.fillRect(p.x - u * 1.2, p.y - u * 1.2, u * 2.4, u * 2.4);
-    } else {
-      // 다람쥐: 도토리
-      ctx.fillStyle = '#8a5a2b';
-      ctx.fillRect(p.x - u, p.y - u * 0.6, u * 2, u * 1.6);
-      ctx.fillStyle = '#5a3a18';
-      ctx.fillRect(p.x - u * 1.2, p.y - u * 1.2, u * 2.4, u * 0.7);
     }
   }
 
@@ -1099,7 +1115,7 @@ export function createRenderer(canvas) {
         ctx.lineCap = 'butt';
       } else if (f.kind === 'shock') {
         ctx.globalAlpha = 1 - k;
-        ctx.strokeStyle = '#f3e3bf';
+        ctx.strokeStyle = f.color ?? '#f3e3bf';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(f.x * cell, f.y * cell, cell * (0.2 + 0.9 * k), 0, Math.PI * 2);

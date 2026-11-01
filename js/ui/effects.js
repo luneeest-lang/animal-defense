@@ -18,6 +18,14 @@ export const ENEMY_COLORS = {
   slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
+// 발사체가 닿는 순간 튀는 파편: 다람쥐 도토리 껍질, 코끼리 물보라, 펭귄 얼음 조각, 독수리 금빛 섬광, 뱀 독 거품
+const IMPACT = {
+  squirrel: { colors: ['#8a5a2b', '#c9945a', '#5a3a18'], count: 5, speed: 1.4, size: 0.06 },
+  elephant: { colors: ['#7fd0ff', '#bff0ff', '#ffffff'], count: 8, speed: 1.9, size: 0.06 },
+  penguin: { colors: ['#bff0ff', '#ffffff', '#5fb0e0'], count: 6, speed: 1.6, size: 0.05 },
+  eagle: { colors: ['#ffd23f', '#fff6c0'], count: 4, speed: 2.4, size: 0.05 },
+  snake: { colors: ['#7dff6a', '#2f9a3c', '#c8ff9a'], count: 5, speed: 0.9, size: 0.07 },
+};
 const RAINBOW = ['#ff5e5e', '#ffb03b', '#ffe94d', '#6bff8a', '#4fc3ff', '#b77dff'];
 // 보스 능력 문구
 const SKILLS = ['rage', 'split', 'summon', 'dash', 'roar'];
@@ -74,7 +82,11 @@ export function createEffects(rng = effectRng(Date.now())) {
     fromEvent(ev, now, center = { x: 8, y: 5 }) {
       if (ev.type === 'shot') {
         add({ kind: 'projectile', tower: ev.tower, from: ev.from, to: ev.to, t: now, life: LIFE.projectile });
-        if (ev.tower === 'elephant') add({ kind: 'shock', x: ev.to.x, y: ev.to.y, t: now, life: LIFE.shock });
+        // 닿는 순간(발사체가 날아가는 시간 뒤)에 파편과 코끼리 충격파
+        const hitAt = now + LIFE.projectile;
+        const im = IMPACT[ev.tower];
+        if (im) burst(ev.to.x, ev.to.y, im.count, im.colors, im.speed, im.size, hitAt);
+        if (ev.tower === 'elephant') add({ kind: 'shock', x: ev.to.x, y: ev.to.y, color: '#bff0ff', t: hitAt, life: LIFE.shock });
         if (ev.targetId !== undefined) hits.set(ev.targetId, now);
       } else if (ev.type === 'hit') {
         // 같은 자리에 숫자가 겹치지 않게 좌우로 조금 흩뿌린다
@@ -126,7 +138,8 @@ export function createEffects(rng = effectRng(Date.now())) {
         add({ kind: 'ring', x: ev.x, y: ev.y, color: '#ffd23f', big: true, reach: 6, t: now, life: LIFE.ring * 2 });
         shake(0.25, now);
       } else if (ev.type === 'stun') {
-        add({ kind: 'text', x: ev.x, y: ev.y, text: t('fx.stun'), big: false, stun: true, t: now, life: LIFE.text });
+        // 기절은 글자 대신 몬스터 머리 위에서 도는 별로 보여 준다(render.js). 맞는 순간 작은 별빛만
+        burst(ev.x, ev.y, 4, ['#ffd23f', '#fff6c0'], 1.2, 0.05, now);
       } else if (ev.type === 'leak') {
         flashAt = now;
         // 블랙홀에 빨려 들어간다: 그 자리에서 돌며 작아지고, 블랙홀이 꿀렁인다
@@ -156,7 +169,8 @@ export function createEffects(rng = effectRng(Date.now())) {
     active(now) {
       list = list.filter((f) => now - f.t < f.life);
       for (const [id, t] of hits) if (now - t > 1000) hits.delete(id);
-      return list;
+      // 아직 시작하지 않은 효과(발사체가 닿을 때 튈 파편 등)는 남겨 두고 그리지 않는다
+      return list.filter((f) => now >= f.t);
     },
     // 화면 흔들림 세기 0~1
     shake(now) {
