@@ -17,3 +17,12 @@ test('세로 화면에서는 맵이 90도 돌아가 있다 (맵 왼쪽 = 화면 
   assert.equal(screenToCell(-1, 10, 390, 624, 16, 10), null);
   assert.equal(screenToCell(10, 625, 390, 624, 16, 10), null);
 });
+
+test('화면 점을 맵 좌표(칸 단위 소수)로 바꾼다. 맵 밖이어도 값을 준다', async () => {
+  const { screenToMap } = await import('../js/ui/input.js');
+  assert.deepEqual(screenToMap(160, 100, 320, 200, 16, 10), { x: 8, y: 5 });
+  assert.deepEqual(screenToMap(-20, 100, 320, 200, 16, 10), { x: -1, y: 5 });
+  // 세로: 화면 오른쪽 위 = 맵 왼쪽 위
+  const p = screenToMap(390 - 39 * 4.5, 39 * 7.5, 390, 624, 16, 10);
+  assert.ok(Math.abs(p.x - 7.5) < 1e-9 && Math.abs(p.y - 4.5) < 1e-9, JSON.stringify(p));
+});

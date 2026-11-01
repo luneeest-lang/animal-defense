@@ -9,8 +9,15 @@ export function screenToCell(x, y, w, h, cols, rows) {
   return pointToCell(x, y, w, h, cols, rows);
 }
 
+// 캔버스 위 점을 맵 좌표(칸 단위 소수, 왼쪽 위가 0,0)로 바꾼다. 맵 밖이어도 값을 준다(자석 합성용)
+export function screenToMap(x, y, w, h, cols, rows) {
+  if (h > w) return { x: (y / h) * cols, y: ((w - x) / w) * rows };
+  return { x: (x / w) * cols, y: (y / h) * rows };
+}
+
 // 마우스와 터치를 같은 포인터 이벤트로 처리한다.
 // 짧게 누르면 탭(onTap), 일정 거리 이상 끌면 드래그(onDragStart → onDragMove → onDrop)로 본다.
+// onDragMove·onDrop은 맵 좌표(screenToMap)도 함께 받는다.
 // boardRect()는 캔버스 안에서 맵이 놓인 자리를 돌려준다(맵 바깥 여백은 칸이 없다). 없으면 캔버스 전체가 맵이다.
 export function attachInput(canvas, { cols, rows, boardRect, onTap, onCancel, onDragStart, onDragMove, onDrop }) {
   let press = null;
@@ -19,9 +26,14 @@ export function attachInput(canvas, { cols, rows, boardRect, onTap, onCancel, on
     const rect = canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height };
   };
+  const board = (p) => (boardRect ? boardRect() : { x: 0, y: 0, width: p.w, height: p.h });
   const toCell = (p) => {
-    const b = boardRect ? boardRect() : { x: 0, y: 0, width: p.w, height: p.h };
+    const b = board(p);
     return screenToCell(p.x - b.x, p.y - b.y, b.width, b.height, cols, rows);
+  };
+  const toMap = (p) => {
+    const b = board(p);
+    return screenToMap(p.x - b.x, p.y - b.y, b.width, b.height, cols, rows);
   };
 
   const down = (e) => {
@@ -38,14 +50,14 @@ export function attachInput(canvas, { cols, rows, boardRect, onTap, onCancel, on
       press.dragging = !!press.cell && onDragStart(press.cell.col, press.cell.row);
       if (!press.dragging) press.cell = null;
     }
-    if (press.dragging) onDragMove(p.x, p.y);
+    if (press.dragging) onDragMove(p.x, p.y, toMap(p));
   };
 
   const up = (e) => {
     if (!press || !e.isPrimary) return;
     const p = local(e);
     const cell = toCell(p);
-    if (press.dragging) onDrop(cell);
+    if (press.dragging) onDrop(cell, toMap(p));
     else if (press.cell && cell && cell.col === press.cell.col && cell.row === press.cell.row) onTap(cell.col, cell.row);
     else if (!press.cell && !cell) onCancel();
     press = null;

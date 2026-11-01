@@ -1,6 +1,6 @@
 import { MAPS } from './data/maps.js';
 import {
-  createGame, summonTower, canMerge, mergeTowers, sellTower, callNextWave, step, upgradeAnimal, chooseCard,
+  createGame, summonTower, canMerge, mergeTowers, snapMergeTarget, sellTower, callNextWave, step, upgradeAnimal, chooseCard,
 } from './core/game.js';
 import { craftMythic } from './core/mythics.js';
 import { snapshotGame, restoreGame, isBetweenWaves } from './core/snapshot.js';
@@ -60,7 +60,8 @@ if (!run) clearRun(store);
 let game = null;
 let mapId = null;
 let selectedTower = null;
-let drag = null; // { towerId, x, y } 끌고 있는 타워와 포인터 위치(캔버스 CSS 픽셀)
+// { towerId, x, y, map } 끌고 있는 타워, 포인터 위치(캔버스 CSS 픽셀), 맵 좌표(칸 단위)
+let drag = null;
 // mythicOpen: 신화 조합표가 열려 있는지 (열려 있는 동안 게임이 멈춘다)
 // music, sfx: 배경음·효과음을 켰는지 (따로 켜고 끈다)
 const ui = { paused: false, speed: 1, mythicOpen: false, ...loadSoundSettings(store) };
@@ -186,12 +187,13 @@ attachInput(document.getElementById('board'), {
     drag = { towerId: tower.id, x: 0, y: 0 };
     return true;
   },
-  onDragMove(x, y) {
-    if (drag) Object.assign(drag, { x, y });
+  onDragMove(x, y, map) {
+    if (drag) Object.assign(drag, { x, y, map });
   },
-  onDrop(cell) {
-    if (drag && game && cell) {
-      const target = towerAt(cell.col, cell.row);
+  // 자석 합성: 놓은 칸이 조금 빗나가도 가까운 짝에 붙어 합쳐진다 (core/game.js의 snapMergeTarget)
+  onDrop(cell, map) {
+    if (drag && game) {
+      const target = snapMergeTarget(game, drag.towerId, map);
       if (target && mergeTowers(game, drag.towerId, target.id)) {
         renderer.celebrate('merge', target);
         afterAction(target.level >= 3 ? 'awaken' : 'merge');
@@ -304,6 +306,8 @@ function frame(ts) {
       selectedTowerId: selectedTower ? selectedTower.id : null,
       drag,
       mergeTargets,
+      // 지금 놓으면 붙을 짝 (더 밝게 표시한다)
+      snapTargetId: drag ? snapMergeTarget(game, drag.towerId, drag.map)?.id ?? null : null,
     });
     hud.update(game, ui, ui.mythicOpen);
     if (game.status !== 'running') ui.mythicOpen = false;

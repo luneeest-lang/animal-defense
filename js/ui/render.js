@@ -598,10 +598,20 @@ export function createRenderer(canvas) {
   }
 
   // 합칠 수 있는 타워: 칸 테두리가 맥동한다
-  function drawMergeHint(tower, cell, now) {
+  // 합칠 수 있는 짝 표시. snapped: 지금 놓으면 붙을 짝 (금빛으로 크고 밝게)
+  function drawMergeHint(tower, cell, now, snapped = false) {
     const pulse = 0.5 + 0.5 * Math.sin(now / 150);
     const x = tower.col * cell;
     const y = tower.row * cell;
+    if (snapped) {
+      const pad = -cell * 0.08 * (0.5 + 0.5 * pulse);
+      ctx.fillStyle = `rgba(255, 210, 63, ${0.35 + 0.2 * pulse})`;
+      ctx.fillRect(x + pad, y + pad, cell - pad * 2, cell - pad * 2);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#fff4b0';
+      ctx.strokeRect(x + pad + 2, y + pad + 2, cell - pad * 2 - 4, cell - pad * 2 - 4);
+      return;
+    }
     ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + 0.15 * pulse})`;
     ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
     ctx.lineWidth = 3;
@@ -1157,7 +1167,7 @@ export function createRenderer(canvas) {
     drawLighting();
     drawZones(game, cell, now);
     for (const t of game.towers) {
-      if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now);
+      if (view.mergeTargets?.has(t.id)) drawMergeHint(t, cell, now, t.id === view.snapTargetId);
       // 끌고 있는 타워는 원래 자리에 흐리게 남긴다
       ctx.globalAlpha = view.drag?.towerId === t.id ? 0.35 : 1;
       drawTower(t, cell, t.id === view.selectedTowerId, game.map.theme, t.stunUntil > game.time);

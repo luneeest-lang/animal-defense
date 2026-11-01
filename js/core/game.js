@@ -181,6 +181,21 @@ export function canMerge(game, fromId, toId) {
     && !from.mythic && !to.mythic && from.type === to.type && from.level === to.level && to.level < MAX_LEVEL;
 }
 
+// 자석 합성: 끌던 동물을 놓은 자리(맵 좌표, 칸 단위)에서 SNAP_RADIUS칸 안에 있는 합칠 수 있는 짝 중 가장 가까운 것.
+// 놓은 칸이 한 칸쯤 빗나가도 합쳐지게 한다. 없으면 null
+export const SNAP_RADIUS = 1.5;
+export function snapMergeTarget(game, fromId, point, radius = SNAP_RADIUS) {
+  if (!point) return null;
+  let best = null;
+  let bestD = radius * radius;
+  for (const t of game.towers) {
+    if (!canMerge(game, fromId, t.id)) continue;
+    const d = (t.col + 0.5 - point.x) ** 2 + (t.row + 0.5 - point.y) ** 2;
+    if (d <= bestD) { best = t; bestD = d; }
+  }
+  return best;
+}
+
 // from을 to 위에 합친다. to 자리에 5종 중 무작위 동물이 한 단계 성장해 나오고 from은 사라진다.
 export function mergeTowers(game, fromId, toId, rng = Math.random) {
   if (!canMerge(game, fromId, toId)) return false;
