@@ -90,3 +90,32 @@ test('처치는 그 적에게 피해를 가장 많이 준 동물 몫이다 (마�
   assert.equal(g.stats.kills.eagle, 1);
   assert.equal(g.stats.kills.phoenix, undefined);
 });
+
+test('독이 든 적은 0.5초마다 독 피해 이벤트(초록 숫자용)를 낸다', async () => {
+  const { applyPoison } = await import('../js/core/enemies.js');
+  const g = createGame(meadow);
+  g.countdown = null;
+  const e = createEnemy(g.nextId++, 'tank', 1);
+  e.dist = 0.5;
+  e.hp = e.maxHp = 1e6;
+  g.enemies.push(e);
+  applyPoison(e, 10, 3, 'snake');
+  let ticks = [];
+  for (let i = 0; i < 12; i++) { step(g, 0.1); ticks = ticks.concat(g.events.filter((x) => x.type === 'poisonTick')); }
+  assert.ok(ticks.length >= 2 && ticks.length <= 3, `${ticks.length}번`);
+  for (const tk of ticks) {
+    assert.equal(tk.enemyId, e.id);
+    assert.ok(Math.abs(tk.amount - 5) < 0.6, `0.5초에 약 5: ${tk.amount}`);
+    assert.ok(Number.isFinite(tk.x) && Number.isFinite(tk.y));
+  }
+});
+
+test('독이 없으면 독 피해 이벤트도 없다', () => {
+  const g = createGame(meadow);
+  g.countdown = null;
+  const e = createEnemy(g.nextId++, 'tank', 1);
+  e.dist = 0.5;
+  g.enemies.push(e);
+  step(g, 1);
+  assert.equal(g.events.filter((x) => x.type === 'poisonTick').length, 0);
+});

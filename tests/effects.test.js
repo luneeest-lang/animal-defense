@@ -187,3 +187,11 @@ test('미션: 시작·성공·실패 문구', () => {
   const texts = fx.active(0).filter((f) => f.kind === 'text').map((f) => f.text);
   assert.deepEqual(texts, ['🎯 새 미션!', '🎯 미션 성공!', '미션 실패…']);
 });
+
+test('독 피해는 초록 숫자로 뜬다', () => {
+  const fx = createEffects(fixed);
+  fx.fromEvent({ type: 'poisonTick', enemyId: 3, amount: 4.6, x: 2, y: 2 }, 0);
+  const d = fx.active(0).find((f) => f.kind === 'damage');
+  assert.ok(d && d.poison, '독 숫자');
+  assert.equal(d.text, '5');
+});

@@ -415,6 +415,9 @@ function resolveEnemies(game) {
   game.enemies = alive.concat(born);
 }
 
+// 독 피해 숫자를 띄우는 간격(초)
+const POISON_TICK = 0.5;
+
 function substep(game, dt) {
   game.time += dt;
   game.bossWarning = Math.max(0, game.bossWarning - dt);
@@ -431,8 +434,22 @@ function substep(game, dt) {
     // 독 피해는 독을 건 동물(뱀) 몫
     const before = e.hp;
     const by = e.poison?.by;
+    const poisoned = !!e.poison;
     stepEnemy(e, dt, game.mods.enemySpeed);
     credit(game, e, by, before);
+    // 독 피해를 모아 0.5초마다 한 번 알린다 (화면에 초록 숫자)
+    if (poisoned) {
+      e.poisonShown = (e.poisonShown ?? 0) + Math.max(0, before - Math.max(0, e.hp));
+      e.poisonClock = (e.poisonClock ?? 0) + dt;
+      if (e.poisonClock >= POISON_TICK) {
+        if (e.poisonShown > 0) game.events.push({ type: 'poisonTick', enemyId: e.id, amount: e.poisonShown, ...positionAt(game.points, e.dist) });
+        e.poisonShown = 0;
+        e.poisonClock -= POISON_TICK;
+      }
+    } else {
+      e.poisonClock = 0;
+      e.poisonShown = 0;
+    }
   }
   fireTowers(game, dt);
   updateZones(game, dt);

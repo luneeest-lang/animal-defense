@@ -94,6 +94,12 @@ export function createEffects(rng = effectRng(Date.now())) {
           kind: 'damage', x: ev.x + (rng() - 0.5) * 0.5, y: ev.y, text: String(Math.max(1, Math.round(ev.amount))),
           t: now, life: LIFE.damage,
         });
+      } else if (ev.type === 'poisonTick') {
+        // 독 피해: 초록 숫자 (render.js가 초록으로 그린다)
+        add({
+          kind: 'damage', poison: true, x: ev.x + (rng() - 0.5) * 0.4, y: ev.y, text: String(Math.max(1, Math.round(ev.amount))),
+          t: now, life: LIFE.damage,
+        });
       } else if (ev.type === 'death' && ev.enemy === 'golden') {
         // 황금 몬스터 처치: 금화 폭죽과 큰 보상 숫자
         burst(ev.x, ev.y, 34, GOLD, 3.4, 0.11, now);

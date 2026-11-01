@@ -899,6 +899,12 @@ export function createRenderer(canvas) {
     ctx.translate(cx, cy - s * 0.12 - bob);
     if (face < 0) ctx.scale(-1, 1);
     ctx.drawImage(frame, -s / 2, -s / 2, s, s);
+    // 펭귄에게 느려진 몬스터: 몸이 얼음빛으로 물든다
+    if (e.slow) {
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(frostTint(look.sprite, frameIndex), -s / 2, -s / 2, s, s);
+      ctx.globalAlpha = 1;
+    }
     // 방금 맞았으면 하얗게 번쩍인다
     if (performance.now() - effects.hitTime(e.id) < HIT_FLASH_MS) {
       ctx.globalAlpha = 0.75;
@@ -906,7 +912,43 @@ export function createRenderer(canvas) {
       ctx.globalAlpha = 1;
     }
     ctx.restore();
+    if (e.slow) drawSnowflakes(e, cx, cy - s * 0.12, s, unit);
+  }
 
+  // 얼음빛 실루엣 (몬스터 그림 모양 그대로 하늘색으로 칠한 것). 처음 쓸 때 만들어 둔다
+  const frostCache = new Map();
+  function frostTint(sprite, frame) {
+    const key = `${sprite}:${frame}`;
+    if (!frostCache.has(key)) {
+      const src = silhouettes[sprite][frame];
+      const c = document.createElement('canvas');
+      c.width = src.width; c.height = src.height;
+      const x = c.getContext('2d');
+      x.drawImage(src, 0, 0);
+      x.globalCompositeOperation = 'source-in';
+      x.fillStyle = '#8fd8ff';
+      x.fillRect(0, 0, c.width, c.height);
+      frostCache.set(key, c);
+    }
+    return frostCache.get(key);
+  }
+
+  // 느려진 몬스터 주위로 도트 눈송이가 천천히 떨어진다
+  function drawSnowflakes(e, cx, cy, s, unit) {
+    if (reduceMotion) return;
+    const now = performance.now();
+    const px = Math.max(1, Math.round(unit * ART_SCALE));
+    for (let i = 0; i < 3; i++) {
+      const k = (now / 1100 + i / 3 + e.id * 0.137) % 1;
+      const x = Math.round(cx + (i - 1) * s * 0.3 + Math.sin(k * 6 + i) * s * 0.05);
+      const y = Math.round(cy - s * 0.42 + k * s * 0.8);
+      ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
+      ctx.fillStyle = i % 2 ? '#ffffff' : '#bff0ff';
+      // 작은 십자 모양 눈송이
+      ctx.fillRect(x - px, y, px * 3, px);
+      ctx.fillRect(x, y - px, px, px * 3);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // 기절: 머리 위(cx, headY)에서 도트 별 세 개가 납작한 원을 그리며 돈다. 앞쪽 별은 크고 진하게
@@ -1084,9 +1126,9 @@ export function createRenderer(canvas) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = Math.max(3, size * 0.16);
-      ctx.strokeStyle = f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
+      ctx.strokeStyle = f.poison ? '#0e2a10' : f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
       // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색. 이모지는 도트 아이콘으로 그린다
-      ctx.fillStyle = damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.stun ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
+      ctx.fillStyle = damage && f.poison ? '#6dff5a' : damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.stun ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
       fillRichText(ctx, f.text, sx, sy - cell * 0.35 - rise, Math.round(size * pop));
     });
   }
