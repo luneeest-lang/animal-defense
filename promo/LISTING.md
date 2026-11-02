@@ -10,14 +10,14 @@
 | `cover-portrait-800x1200.png` | 세로 커버 (2:3) |
 | `cover-square-800x800.png` | 정사각 커버 (1:1) |
 | `preview-1920x1080.mp4` | 가로 미리보기 영상 18초, H.264, 약 11MB, 소리 없음 |
-| `preview-1080x1920.mp4` | 세로 미리보기 영상 18초, H.264, 약 20MB, 소리 없음 (휴대폰 화면) |
+| `preview-1080x1620.mp4` | 세로(2:3) 미리보기 영상 18초, H.264, 약 18MB, 소리 없음 |
 | `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 50개, 약 172KB) |
 | `tiny-mythic-squad-single/index.html` | 게임 파일 하나짜리 (약 350KB). CrazyGames는 zip을 받지 않아서, 폴더를 끌어다 놓기 어려울 때(휴대폰) 이 파일 하나만 올리면 돼요 |
 
 다시 만들기: 저장소에서 `python3 -m http.server 8123`을 켠 뒤
 `node tools/promo/capture.cjs promo && node tools/promo/make.cjs promo` (커버),
 `node tools/promo/video.cjs promo` 후 ffmpeg로 18초 mp4 변환 (가로 영상),
-`node tools/promo/video.cjs promo portrait` 후 ffmpeg로 3초부터 18초를 1080x1920(scale flags=neighbor)으로 변환 (세로 영상),
+`node tools/promo/video.cjs promo portrait` 후 ffmpeg로 2초부터 18초를 1080x1620(scale flags=neighbor)으로 변환 (세로 영상),
 `python3 tools/promo/package.py promo/tiny-mythic-squad-web.zip` (게임 묶음),
 `node tools/promo/single.mjs promo/tiny-mythic-squad-single/index.html` (파일 하나짜리, esbuild 사용).
 
