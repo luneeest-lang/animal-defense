@@ -21,6 +21,8 @@ const swap = (from, to) => {
   if (!html.includes(from)) throw new Error(`index.html에서 못 찾음: ${from}`);
   html = html.replace(from, () => to);
 };
+// CrazyGames에 올리는 파일이라 어느 주소에서 열려도 CrazyGames SDK를 쓴다 (js/platform.js)
+swap('<html lang="ko">', '<html lang="ko" data-platform="crazygames">');
 swap('  <link rel="preload" href="css/fonts/creepster-latin.woff2" as="font" type="font/woff2" crossorigin>\n', '');
 swap('<link rel="stylesheet" href="css/style.css">', `<style>\n${css}\n</style>`);
 swap('<script type="module" src="js/main.js"></script>', `<script type="module">\n${js.replace(/<\/script/gi, '<\\/script')}</script>`);

@@ -8,8 +8,10 @@ export const SDK_URL = 'https://sdk.crazygames.com/crazygames-sdk-v3.js';
 export const GAME_KEYS = ['td-save-v1', 'td-run-v1', 'td-lang', 'td-sound-v2', 'td-tutorial', 'td-seen-enemies'];
 const INIT_TIMEOUT_MS = 3000;
 
-// CrazyGames 주소(crazygames.com과 그 하위 주소)이거나 시험용 ?platform=crazygames
-export function isCrazyGames(hostname, search) {
+// CrazyGames용 파일(tools/promo/single.mjs가 <html data-platform="crazygames">를 붙인다)이거나,
+// CrazyGames 주소(crazygames.com과 그 하위 주소)이거나, 시험용 ?platform=crazygames
+export function isCrazyGames(hostname, search, buildPlatform) {
+  if (buildPlatform === 'crazygames') return true;
   if (/(^|[?&])platform=crazygames(&|$)/.test(search)) return true;
   return hostname === 'crazygames.com' || hostname.endsWith('.crazygames.com');
 }
@@ -56,7 +58,7 @@ function loadScript(src) {
 
 // CrazyGames면 SDK를 불러와 초기화한다. 실패하거나 3초 안에 안 되면 null (브라우저 저장소로 계속)
 export async function initPlatform() {
-  if (typeof window === 'undefined' || !isCrazyGames(window.location.hostname, window.location.search)) return null;
+  if (typeof window === 'undefined' || !isCrazyGames(window.location.hostname, window.location.search, document.documentElement.dataset.platform)) return null;
   try {
     const ready = (async () => {
       await loadScript(SDK_URL);

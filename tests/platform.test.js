@@ -51,3 +51,9 @@ test('gameplayStart/Stop은 SDK 객체에 붙여서 부른다 (진짜 SDK는 thi
   track(true); track(false);
   assert.deepEqual(calls, ['start', 'stop']);
 });
+
+test('CrazyGames용 파일(html에 data-platform="crazygames")은 주소와 상관없이 SDK를 쓴다', () => {
+  assert.equal(isCrazyGames('other-domain.example', '', 'crazygames'), true);
+  assert.equal(isCrazyGames('luneeest-lang.github.io', '', undefined), false);
+  assert.equal(isCrazyGames('luneeest-lang.github.io', '', 'web'), false);
+});
