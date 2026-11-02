@@ -82,6 +82,14 @@
       <main id="stage">
         <canvas id="board" aria-label="게임 화면" data-i18n-label="hud.board"></canvas>
         <div id="pause-label" hidden data-i18n="pause.label">일시정지</div>
+        <div id="enemy-intro" hidden>
+          <canvas class="ei-art" width="32" height="32"></canvas>
+          <div class="ei-body">
+            <div class="ei-tag" data-i18n="intro.new">새 몬스터!</div>
+            <div class="ei-name"></div>
+            <div class="ei-tip"></div>
+          </div>
+        </div>
         <div id="mission" hidden><span class="m-goal"></span><span class="m-meta"></span></div>
         <div id="boss-banner" hidden aria-live="assertive">
           <div class="boss-inner">

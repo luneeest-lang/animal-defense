@@ -603,3 +603,18 @@ button { font: inherit; color: inherit; }
   background: linear-gradient(90deg, rgba(255, 210, 63, 0.28), rgba(255, 210, 63, 0.08)); font-size: 0.85rem; }
 .ach-got b { color: #ffe48a; }
 
+/* 새 몬스터 안내 카드 (맵 아래쪽: 위쪽의 마왕성·미션 띠를 가리지 않게. 게임은 멈추지 않는다) */
+#enemy-intro {
+  position: absolute; left: 50%; bottom: 10px; z-index: 5; translate: -50% 0; width: min(92%, 440px);
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(60, 20, 30, 0.95), rgba(35, 10, 20, 0.95)); border: 2px solid #ff6b5e;
+  box-shadow: var(--raised-panel), 0 0 18px rgba(255, 80, 60, 0.45); cursor: pointer;
+}
+#enemy-intro.show { animation: ei-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.ei-art { width: 56px; height: 56px; image-rendering: pixelated; }
+.ei-tag { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; color: #ff8f7a; }
+.ei-name { font-size: 1.05rem; font-weight: 900; color: #fff; }
+.ei-tip { font-size: 0.8rem; line-height: 1.35; color: #ffe0d8; }
+@keyframes ei-in { from { opacity: 0; transform: translateY(14px) scale(0.92); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #enemy-intro.show { animation: none; } }
+

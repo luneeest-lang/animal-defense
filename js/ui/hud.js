@@ -4,11 +4,12 @@ import { WAVE_COUNT } from '../core/waves.js';
 import { CONFIG, summonCost, emptyCells, upgradeCost, effectiveStats } from '../core/game.js';
 import { CARDS } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
-import { bakeAnimals, bakeMythics } from './pixel.js';
+import { bakeAnimals, bakeMythics, bakeSprites } from './pixel.js';
+import { ENEMY_LOOK } from '../data/sprites.js';
 import { MYTHICS, gradeOf } from '../data/mythics.js';
 import { findMaterials, canCraft, RECIPE_LEVELS } from '../core/mythics.js';
 import {
-  t, lang, towerName, mythicName, mythicDesc, unitName, enemyName, bossSkill, mapName, mapPlace, cardName, cardDesc,
+  t, lang, towerName, enemyTip, mythicName, mythicDesc, unitName, enemyName, bossSkill, mapName, mapPlace, cardName, cardDesc,
   stageName, gradeName, missionLabel,
 } from '../i18n.js';
 import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
@@ -427,6 +428,22 @@ export function createHud(root, handlers) {
       el.info.hidden = true;
     },
     showSaveWarning(on) { el.warning.hidden = !on; },
+    // 새 몬스터 안내 카드: 몬스터 그림(첫 프레임), 이름, 한 줄 설명
+    showEnemyIntro(type) {
+      const box = root.querySelector('#enemy-intro');
+      const art = box.querySelector('.ei-art');
+      const ctx = art.getContext('2d');
+      ctx.clearRect(0, 0, art.width, art.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(bakeSprites()[ENEMY_LOOK[type].sprite][0], 0, 0, art.width, art.height);
+      setText(box.querySelector('.ei-name'), enemyName(type));
+      setText(box.querySelector('.ei-tip'), enemyTip(type));
+      box.hidden = false;
+      box.classList.remove('show');
+      void box.offsetWidth;
+      box.classList.add('show');
+    },
+    hideEnemyIntro() { root.querySelector('#enemy-intro').hidden = true; },
     showTowerInfo(tower) {
       shownTower = tower;
       if (!tower) el.info.hidden = true;

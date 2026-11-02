@@ -95,6 +95,7 @@ export const KO = {
   'ach.reward': ({ common, mythic }) => [common && `동물 카드 ${common}장`, mythic && `신화 카드 ${mythic}장`].filter(Boolean).join(' + '),
   'ach.done': '달성!',
   'ach.unlocked': '🏆 업적 달성!',
+  'intro.new': '새 몬스터!',
   'dex.button': '📖 도감',
   'dex.total': ({ total, max }) => `레벨 합계 ${total}/${max}`,
   'dex.title': '📖 도감',
@@ -256,6 +257,7 @@ export const EN = {
   'ach.reward': ({ common, mythic }) => [common && `${common} animal card${common > 1 ? 's' : ''}`, mythic && `${mythic} mythic card${mythic > 1 ? 's' : ''}`].filter(Boolean).join(' + '),
   'ach.done': 'Done!',
   'ach.unlocked': '🏆 Achievement unlocked!',
+  'intro.new': 'New monster!',
   'dex.button': '📖 Collection',
   'dex.total': ({ total, max }) => `Total level ${total}/${max}`,
   'dex.title': '📖 Collection',
@@ -406,7 +408,17 @@ export const mythicName = (id) => (en() ? EN_MYTHICS[id].name : MYTHICS[id].name
 export const mythicDesc = (id) => (en() ? EN_MYTHICS[id].desc : MYTHICS[id].desc);
 // 동물이면 동물 이름, 신화면 신화 이름
 export const unitName = (id) => (MYTHICS[id] ? mythicName(id) : towerName(id));
-export const enemyName = (id) => (en() ? EN_ENEMIES[id].name : ENEMIES[id].name);
+// 일반 몬스터 이름과 처음 나올 때의 한 줄 안내 (보스 이름은 data/enemies.js)
+const BASIC_ENEMIES = {
+  runner: { ko: ['붉은 도마뱀', '아주 빨라요. 사거리가 긴 동물로 일찍 잡아요.'], en: ['Red Lizard', 'Very fast. Catch it early with long-range animals.'] },
+  splitter: { ko: ['보라 슬라임', '쓰러지면 작은 슬라임 2마리로 나뉘어요.'], en: ['Purple Slime', 'Splits into 2 small slimes when defeated.'] },
+  tank: { ko: ['돌 거인', '느리지만 체력이 아주 많아요. 강한 공격을 모아요.'], en: ['Stone Giant', 'Slow but very tough. Focus your strongest attacks.'] },
+  shield: { ko: ['해골 방패병', '방패로 직접 공격을 반쯤 막아요. 독은 그대로 들어가요.'], en: ['Skeleton Shield', 'Its shield blocks about half of direct damage. Poison still works.'] },
+  bat: { ko: ['박쥐', '날아다녀서 코끼리·뱀은 공격하지 못해요. 다람쥐·펭귄·독수리로 잡아요.'], en: ['Bat', "It flies, so elephants and snakes can't hit it. Use squirrels, penguins or eagles."] },
+  healer: { ko: ['치유사', '3초마다 주변 몬스터를 회복시켜요. 먼저 잡아요!'], en: ['Healer', 'Heals nearby monsters every 3 seconds. Take it out first!'] },
+};
+export const enemyName = (id) => (BASIC_ENEMIES[id] ? BASIC_ENEMIES[id][en() ? 'en' : 'ko'][0] : en() ? EN_ENEMIES[id].name : ENEMIES[id].name);
+export const enemyTip = (id) => BASIC_ENEMIES[id]?.[en() ? 'en' : 'ko'][1] ?? '';
 export const bossSkill = (id) => (en() ? EN_ENEMIES[id].skill : ENEMIES[id].skill);
 export const mapName = (id) => (en() ? EN_MAPS[id].name : MAPS.find((m) => m.id === id).name);
 export const mapPlace = (id) => (en() ? EN_MAPS[id].place : MAPS.find((m) => m.id === id).place);

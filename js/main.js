@@ -20,6 +20,7 @@ import { exportCode, importCode, mergeSaves } from './savecode.js';
 import { createTutorial, advance as advanceTutorial, next as nextTutorial, blocking as tutorialBlocks, shouldStart as tutorialStarts, TUTORIAL_KEY } from './ui/tutorial.js';
 import { createTutorialView } from './ui/tutorialView.js';
 import { mapToScreen } from './ui/input.js';
+import { newEnemies, loadSeen, saveSeen } from './ui/enemyIntro.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -79,6 +80,12 @@ let lastBossWarning = 0;
 // 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
 // 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
 let handledEvents = null;
+// 새 몬스터 안내: 이미 본 몬스터, 안내할 차례를 기다리는 몬스터, 지금 카드가 닫힐 시각
+const seenEnemies = loadSeen(store);
+let introQueue = [];
+let introUntil = 0;
+const ENEMY_INTRO_MS = 5000;
+let lastIntroWave = 0;
 // 첫 판 튜토리얼 (끝나거나 건너뛰면 null)
 let tutorial = null;
 // 튜토리얼이 짚을 곳: 버튼은 화면 사각형, 합성은 두 동물 사이를 오가는 손가락
@@ -265,6 +272,10 @@ function continueRun() {
 }
 
 function enterGame(g) {
+  introQueue = [];
+  introUntil = 0;
+  lastIntroWave = g.waveNumber;
+  hud.hideEnemyIntro();
   mapId = g.map.id;
   game = g;
   lastBossWarning = 0;
@@ -280,6 +291,9 @@ function enterGame(g) {
   renderer.resize();
   lastTs = performance.now();
 }
+
+// 안내 카드를 누르면 바로 닫는다 (다음 안내가 있으면 그다음으로)
+document.getElementById('enemy-intro').addEventListener('pointerdown', () => { introUntil = 0; });
 
 function goMenu() {
   tutorial = null;
@@ -358,6 +372,23 @@ function frame(ts) {
       // 지금 놓으면 붙을 짝 (더 밝게 표시한다)
       snapTargetId: drag ? snapMergeTarget(game, drag.towerId, drag.map)?.id ?? null : null,
     });
+    // 웨이브가 시작되면 처음 보는 몬스터를 하나씩 5초 동안 알려 준다
+    if (game.waveNumber > lastIntroWave) {
+      lastIntroWave = game.waveNumber;
+      const fresh = newEnemies(game.waves[game.waveNumber - 1], seenEnemies);
+      if (fresh.length) {
+        fresh.forEach((type) => seenEnemies.add(type));
+        saveSeen(store, seenEnemies);
+        introQueue.push(...fresh);
+      }
+    }
+    if (introQueue.length && ts >= introUntil) {
+      hud.showEnemyIntro(introQueue.shift());
+      introUntil = ts + ENEMY_INTRO_MS;
+    } else if (!introQueue.length && introUntil && ts >= introUntil) {
+      hud.hideEnemyIntro();
+      introUntil = 0;
+    }
     hud.update(game, ui, ui.mythicOpen);
     drawTutorial();
     if (game.status !== 'running') ui.mythicOpen = false;
