@@ -19,6 +19,9 @@ const out = process.argv[2] || 'promo';
     for (const [type, level, mythic] of army) { const t = summonTower(g, rng); Object.assign(t, { type, level: mythic ? 0 : level }, mythic ? { mythic: true } : {}); }
     Object.assign(g, { gold: 900, lives: 20, waveNumber: 13, clearedWave: 13, countdown: 1 });
     g.schedule = { golden: [], missions: [] };
+    // 튜토리얼과 새 몬스터 안내 카드가 화면을 가리지 않게 이미 본 것으로 둔다
+    localStorage.setItem('td-tutorial', 'done');
+    localStorage.setItem('td-seen-enemies', JSON.stringify(['runner', 'splitter', 'tank', 'shield', 'bat', 'healer']));
     localStorage.setItem('td-save-v1', JSON.stringify({ version: 1, unlocked: 3, records: { meadow: { bestWave: 30, stars: 3 } } }));
     localStorage.setItem('td-run-v1', JSON.stringify(snapshotGame(g)));
   });

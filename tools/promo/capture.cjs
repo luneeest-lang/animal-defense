@@ -21,6 +21,9 @@ async function scene(b, { mapIndex, waveNumber, wait, file, viewport, dpr = 1, t
     }
     Object.assign(g, { gold: 1234, lives: 20, waveNumber, clearedWave: waveNumber, countdown: 1 });
     g.schedule = { golden: [], missions: [] };
+    // 튜토리얼과 새 몬스터 안내 카드가 화면을 가리지 않게 이미 본 것으로 둔다
+    localStorage.setItem('td-tutorial', 'done');
+    localStorage.setItem('td-seen-enemies', JSON.stringify(['runner', 'splitter', 'tank', 'shield', 'bat', 'healer']));
     localStorage.setItem('td-save-v1', JSON.stringify({ version: 1, unlocked: 3, records: { meadow: { bestWave: 30, stars: 3 } } }));
     localStorage.setItem('td-run-v1', JSON.stringify(snapshotGame(g)));
   }, { mapIndex, waveNumber, towers });
@@ -42,7 +45,7 @@ async function scene(b, { mapIndex, waveNumber, wait, file, viewport, dpr = 1, t
     ['haetae', 0, true], ['phoenix', 0, true], ['gumiho', 0, true], ['cheonma', 0, true], ['girin', 0, true],
     ['squirrel', 3], ['eagle', 3], ['penguin', 2], ['elephant', 2], ['snake', 3], ['squirrel', 1], ['eagle', 1], ['penguin', 0],
   ];
-  await scene(b, { mapIndex: 1, waveNumber: 14, wait: 0, file: 'bg-forest.png', viewport: { width: 1920, height: 1080 }, towers: army });
-  await scene(b, { mapIndex: 2, waveNumber: 14, wait: 0, file: 'bg-sea.png', viewport: { width: 1920, height: 1080 }, towers: army });
+  await scene(b, { mapIndex: 1, waveNumber: 3, wait: 0, file: 'bg-forest.png', viewport: { width: 1920, height: 1080 }, towers: army });
+  await scene(b, { mapIndex: 2, waveNumber: 3, wait: 0, file: 'bg-sea.png', viewport: { width: 1920, height: 1080 }, towers: army });
   await b.close();
 })();

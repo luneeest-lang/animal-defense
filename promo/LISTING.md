@@ -10,7 +10,7 @@
 | `cover-portrait-800x1200.png` | 세로 커버 (2:3) |
 | `cover-square-800x800.png` | 정사각 커버 (1:1) |
 | `preview-1920x1080.mp4` | 미리보기 영상 18초, H.264, 약 11MB, 소리 없음 |
-| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 37개, 약 140KB) |
+| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 49개, 약 170KB) |
 
 다시 만들기: 저장소에서 `python3 -m http.server 8123`을 켠 뒤
 `node tools/promo/capture.cjs promo && node tools/promo/make.cjs promo` (커버),
@@ -29,18 +29,20 @@ Merge cute baby animals into legendary beasts and defend the black hole!
 
 Tiny Mythic Squad is a cozy-but-tactical merge tower defense. Summon random baby animals, drag two of the same animal together to grow them, and fuse awakened animals into mythic beasts from Korean folklore: the ground-shaking Haetae, the lightning-fast Girin, the nine-tailed Gumiho, the sky horse Cheonma and the blazing Phoenix.
 
-Monsters march along the path toward a red black hole. Stop them across 30 waves on three maps (Rocky Hill, Forest, Sea), face six different bosses, pick a power-up card after each boss, and chase golden monsters and surprise missions for extra rewards.
+Monsters pour out of the demon castle and march toward a red black hole. Stop them across 30 waves on three maps (Rocky Hill, Forest, Sea): bats that fly over your elephants and snakes, healers that patch up the horde, and six bosses with unique abilities. Pick a power-up card after each boss, and chase golden monsters and surprise missions for extra rewards.
 
-Clear a map to earn collection cards that permanently power up your animals, then test your squad in Endless mode and beat your best wave.
+Clear maps and complete achievements to earn collection cards that permanently power up your animals, then test your squad in Endless mode and beat your best wave. A short tutorial gets you started in under a minute.
 
 Features:
 - Random summon and merge: every merge is a little gamble
 - 5 animals, 4 growth stages and 5 mythic beasts to fuse
-- 3 maps, 6 bosses with unique abilities, 30 waves each
+- 3 maps, 6 bosses with unique abilities, flying bats and healer monsters
+- Quick tutorial and new-monster tips
 - Power-up cards, golden monsters and in-run missions
-- Collection levels that make your favorite animals stronger
+- Collection levels and 12 achievements that make your favorite animals stronger
 - Endless mode with a best-wave record for every map
-- Plays on desktop and mobile, portrait or landscape
+- Plays on desktop and mobile, portrait or landscape, in English and Korean
+- Transfer your progress between devices with a save code
 
 ## 조작법 (Controls)
 
