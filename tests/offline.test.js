@@ -28,3 +28,12 @@ test('BOSS 글자 깜빡임은 은은하다 (글자가 70% 아래로 흐려지�
   assert.ok(values.length > 0);
   assert.ok(Math.min(...values) >= 0.7, `가장 흐릴 때 ${Math.min(...values)}`);
 });
+
+// 보스 글꼴을 경고가 뜰 때 처음 받으면 폰에서 얇은 기본 글꼴이 먼저 보였다가 바뀐다(2026-11-02 신고)
+test('보스 글꼴은 게임을 열 때 미리 받고, 받는 중에는 다른 글꼴로 대신 보여 주지 않는다', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /<link rel="preload" href="css\/fonts\/creepster-latin\.woff2" as="font" type="font\/woff2" crossorigin>/);
+  const css = fs.readFileSync('css/style.css', 'utf8');
+  const face = css.match(/@font-face\s*{[^}]*Creepster[^}]*}/)[0];
+  assert.match(face, /font-display:\s*block/);
+});

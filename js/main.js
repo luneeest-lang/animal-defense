@@ -48,6 +48,8 @@ document.documentElement.lang = lang();
 document.title = t('title');
 document.querySelector('meta[name="description"]')?.setAttribute('content', t('meta.desc'));
 applyStatic(document, setRich);
+// 보스 경고 글꼴을 미리 불러 둔다 (index.html의 preload와 함께, 첫 경고 때 글꼴이 바뀌어 보이지 않게)
+document.fonts?.load('40px Creepster').catch(() => {});
 // 언어 버튼: 선택을 저장하고 새로 불러온다(패널·조합표 같은 글자를 처음부터 다시 만든다)
 document.getElementById('btn-lang').addEventListener('click', () => {
   try {

@@ -3,7 +3,7 @@
   font-family: 'Creepster';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
+  font-display: block; /* 받는 중에 얇은 기본 글꼴로 대신 보여 주지 않는다 */
   src: url('fonts/creepster-latin.woff2') format('woff2');
 }
 
