@@ -1,12 +1,16 @@
-// 미리보기 영상: 1920x1080, 영어 화면. 신화 동물 판에서 소환·웨이브·보스를 2배속으로 약 20초 녹화한다.
-// 사용: (저장소에서 python3 -m http.server 8123 실행 뒤) node tools/promo/video.cjs <출력 폴더>
+// 미리보기 영상: 가로 1920x1080 또는 세로 1080x1920, 영어 화면. 신화 동물 판에서 소환·웨이브·보스를 2배속으로 약 20초 녹화한다.
+// 사용: (저장소에서 python3 -m http.server 8123 실행 뒤) node tools/promo/video.cjs <출력 폴더> [portrait]
+// 세로는 휴대폰 화면(540x960)으로 찍고, ffmpeg로 1080x1920으로 2배 키운다. 결과는 <출력 폴더>/_raw.webm
 // 녹화(webm)는 ffmpeg로 18초 mp4(H.264)로 바꾼다.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const out = process.argv[2] || 'promo';
+const portrait = process.argv[3] === 'portrait';
+const viewport = portrait ? { width: 540, height: 960 } : { width: 1920, height: 1080 };
+const size = viewport;
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ locale: 'en-US', viewport: { width: 1920, height: 1080 }, recordVideo: { dir: `${out}/_rec`, size: { width: 1920, height: 1080 } } });
+  const ctx = await b.newContext({ locale: 'en-US', viewport, hasTouch: portrait, isMobile: portrait, recordVideo: { dir: `${out}/_rec`, size } });
   const p = await ctx.newPage();
   await p.goto('http://localhost:8123/');
   await p.evaluate(async () => {
