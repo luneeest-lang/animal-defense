@@ -83,7 +83,8 @@ let handledEvents = null;
 // 새 몬스터 안내: 이미 본 몬스터, 안내할 차례를 기다리는 몬스터, 지금 카드가 닫힐 시각
 const seenEnemies = loadSeen(store);
 let introQueue = [];
-let introUntil = 0;
+// 지금 카드가 닫힐 시각 (카드가 없으면 null, 누르면 0이 되어 다음 프레임에 닫히거나 다음 카드로 넘어간다)
+let introUntil = null;
 const ENEMY_INTRO_MS = 5000;
 let lastIntroWave = 0;
 // 첫 판 튜토리얼 (끝나거나 건너뛰면 null)
@@ -273,7 +274,7 @@ function continueRun() {
 
 function enterGame(g) {
   introQueue = [];
-  introUntil = 0;
+  introUntil = null;
   lastIntroWave = g.waveNumber;
   hud.hideEnemyIntro();
   mapId = g.map.id;
@@ -293,7 +294,7 @@ function enterGame(g) {
 }
 
 // 안내 카드를 누르면 바로 닫는다 (다음 안내가 있으면 그다음으로)
-document.getElementById('enemy-intro').addEventListener('pointerdown', () => { introUntil = 0; });
+document.getElementById('enemy-intro').addEventListener('pointerdown', () => { if (introUntil !== null) introUntil = 0; });
 
 function goMenu() {
   tutorial = null;
@@ -382,12 +383,14 @@ function frame(ts) {
         introQueue.push(...fresh);
       }
     }
-    if (introQueue.length && ts >= introUntil) {
+    // 카드가 없거나 시간이 다 됐으면(누르면 바로) 다음 카드를 띄우고, 더 없으면 닫는다
+    const cardDone = introUntil === null || ts >= introUntil;
+    if (cardDone && introQueue.length) {
       hud.showEnemyIntro(introQueue.shift());
       introUntil = ts + ENEMY_INTRO_MS;
-    } else if (!introQueue.length && introUntil && ts >= introUntil) {
+    } else if (cardDone && introUntil !== null) {
       hud.hideEnemyIntro();
-      introUntil = 0;
+      introUntil = null;
     }
     hud.update(game, ui, ui.mythicOpen);
     drawTutorial();
