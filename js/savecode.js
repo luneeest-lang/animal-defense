@@ -23,7 +23,9 @@ const check = (s) => {
 };
 
 export function exportCode(save) {
-  const body = toB64(JSON.stringify({ unlocked: save.unlocked, records: save.records, collection: save.collection ?? {} }));
+  const body = toB64(JSON.stringify({
+    unlocked: save.unlocked, records: save.records, collection: save.collection ?? {}, achievements: save.achievements ?? {}, totals: save.totals,
+  }));
   return `${CODE_PREFIX}${body}.${check(body)}`;
 }
 
@@ -36,7 +38,9 @@ export function importCode(code) {
   try {
     const data = JSON.parse(fromB64(body));
     if (!data || typeof data !== 'object' || typeof data.unlocked !== 'number') return null;
-    const raw = JSON.stringify({ version: 1, unlocked: data.unlocked, records: data.records, collection: data.collection });
+    const raw = JSON.stringify({
+      version: 1, unlocked: data.unlocked, records: data.records, collection: data.collection, achievements: data.achievements, totals: data.totals,
+    });
     return loadSave({ getItem: () => raw });
   } catch {
     return null;
@@ -58,5 +62,12 @@ export function mergeSaves(a, b) {
   for (const id of new Set([...Object.keys(a.collection ?? {}), ...Object.keys(b.collection ?? {})])) {
     out.collection[id] = max(a.collection?.[id], b.collection?.[id]);
   }
+  // 업적은 어느 한쪽이라도 이뤘으면, 누적 기록은 더 큰 쪽(싸워 본 신화는 합집합)
+  out.achievements = { ...(a.achievements ?? {}), ...(b.achievements ?? {}) };
+  out.totals = {
+    kills: max(a.totals?.kills, b.totals?.kills),
+    golden: max(a.totals?.golden, b.totals?.golden),
+    mythicsUsed: [...new Set([...(a.totals?.mythicsUsed ?? []), ...(b.totals?.mythicsUsed ?? [])])],
+  };
   return out;
 }

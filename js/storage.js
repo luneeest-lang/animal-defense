@@ -7,7 +7,7 @@ export const SAVE_KEY = 'td-save-v1';
 export const RUN_KEY = 'td-run-v1';
 
 export function defaultSave() {
-  return { version: 1, unlocked: 1, records: {}, collection: {} };
+  return { version: 1, unlocked: 1, records: {}, collection: {}, achievements: {}, totals: { kills: 0, golden: 0, mythicsUsed: [] } };
 }
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -37,6 +37,20 @@ function cleanCollection(raw) {
   return out;
 }
 
+// 업적 { id: true }과 누적 기록. 모르는 업적·이상한 값은 버린다 (업적 목록은 core/achievements.js, 순환 import를 피해 이름만 둔다)
+const ACHIEVEMENT_IDS = ['firstClear', 'allMaps', 'perfect', 'allStars', 'firstAwaken', 'firstMythic', 'allMythics', 'endless40', 'endless60', 'kills1000', 'golden10', 'dexMax'];
+const MYTHIC_IDS = ['phoenix', 'gumiho', 'cheonma', 'haetae', 'girin'];
+function cleanAchievements(raw) {
+  const out = {};
+  if (raw && typeof raw === 'object') for (const id of ACHIEVEMENT_IDS) if (raw[id] === true) out[id] = true;
+  return out;
+}
+function cleanTotals(raw) {
+  const ok = (v) => (isNum(v) && v > 0 ? Math.floor(v) : 0);
+  const used = Array.isArray(raw?.mythicsUsed) ? MYTHIC_IDS.filter((id) => raw.mythicsUsed.includes(id)) : [];
+  return { kills: ok(raw?.kills), golden: ok(raw?.golden), mythicsUsed: used };
+}
+
 export function loadSave(store) {
   try {
     const raw = store.getItem(SAVE_KEY);
@@ -49,6 +63,8 @@ export function loadSave(store) {
       unlocked: clamp(Math.floor(data.unlocked), 1, MAPS.length),
       records: cleanRecords(data.records),
       collection: cleanCollection(data.collection),
+      achievements: cleanAchievements(data.achievements),
+      totals: cleanTotals(data.totals),
     };
   } catch {
     return defaultSave();

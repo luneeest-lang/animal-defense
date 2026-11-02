@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { defaultSave } from '../js/storage.js';
 import { exportCode, importCode, mergeSaves, CODE_PREFIX } from '../js/savecode.js';
 
+const blank = { achievements: {}, totals: { kills: 0, golden: 0, mythicsUsed: [] } };
 const phone = {
-  version: 1, unlocked: 3,
+  ...blank, version: 1, unlocked: 3,
   records: { meadow: { bestWave: 30, stars: 3, endlessBest: 41 }, forest: { bestWave: 30, stars: 1 } },
   collection: { squirrel: 12, phoenix: 2 },
 };
 const pc = {
-  version: 1, unlocked: 2,
+  ...blank, version: 1, unlocked: 2,
   records: { meadow: { bestWave: 30, stars: 2, endlessBest: 55 }, canyon: { bestWave: 7, stars: 0 } },
   collection: { squirrel: 5, eagle: 9 },
 };

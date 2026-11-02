@@ -13,6 +13,7 @@ import {
 } from '../i18n.js';
 import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
 import { setRich, iconize } from './icons.js';
+import { ACHIEVEMENTS, progressOf } from '../core/achievements.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -30,7 +31,8 @@ export function createHud(root, handlers) {
     info: $('tower-info'), infoTitle: $('ti-title'), infoStats: $('ti-stats'),
     btnSell: $('btn-sell'), btnCloseInfo: $('btn-close-info'),
     result: $('result'), resultTitle: $('result-title'), resultStars: $('result-stars'),
-    resultDetail: $('result-detail'), resultStats: $('result-stats'), resultRewards: $('result-rewards'),
+    resultDetail: $('result-detail'), resultStats: $('result-stats'), resultRewards: $('result-rewards'), resultAch: $('result-ach'),
+    btnAch: $('btn-ach'), ach: $('ach'), achList: $('ach-list'), btnCloseAch: $('btn-close-ach'),
     btnDex: $('btn-dex'), dex: $('dex'), dexList: $('dex-list'), btnCloseDex: $('btn-close-dex'), btnRetry: $('btn-retry'), btnResultMenu: $('btn-result-menu'),
   };
   let shownTower = null;
@@ -257,6 +259,44 @@ export function createHud(root, handlers) {
   el.btnCloseDex.addEventListener('click', () => { el.dex.hidden = true; });
   el.dex.addEventListener('click', (e) => { if (e.target === el.dex) el.dex.hidden = true; });
 
+  // 업적 창: 업적마다 아이콘·이름·설명·진행 막대·보상, 이룬 것은 금빛
+  let achSave = null;
+  function renderAch() {
+    el.achList.replaceChildren(...ACHIEVEMENTS.map((a) => {
+      const done = !!achSave.achievements?.[a.id];
+      const { have, goal } = progressOf(achSave, a.id);
+      const row = document.createElement('div');
+      row.className = `ach-row${done ? ' done' : ''}`;
+      row.innerHTML = iconize(`<span class="ach-icon">${a.icon}</span><div class="ach-info">`
+        + `<div class="dex-name">${t(`ach.${a.id}`)}<b class="dex-lv">${done ? t('ach.done') : `${Math.floor(done ? goal : have)}/${goal}`}</b></div>`
+        + `<div class="dex-sub">${t(`ach.${a.id}.desc`)}</div>`
+        + `<div class="dex-bar"><span style="width:${done ? 100 : (have / goal) * 100}%"></span></div>`
+        + `<div class="dex-sub ach-reward">🎁 ${t('ach.reward', a.reward)}</div></div>`);
+      return row;
+    }));
+  }
+  el.btnAch.addEventListener('click', () => { renderAch(); el.ach.hidden = false; });
+  el.btnCloseAch.addEventListener('click', () => { el.ach.hidden = true; });
+  el.ach.addEventListener('click', (e) => { if (e.target === el.ach) el.ach.hidden = true; });
+
+  // 결과 화면의 업적 달성: 이름과 받은 카드
+  function renderAchResult(list) {
+    el.resultAch.replaceChildren();
+    el.resultAch.hidden = !list?.length;
+    if (!list?.length) return;
+    const title = document.createElement('div');
+    title.className = 'rs-title';
+    setText(title, t('ach.unlocked'));
+    el.resultAch.append(title);
+    for (const u of list) {
+      const row = document.createElement('div');
+      row.className = 'ach-got';
+      const cards = Object.entries(u.cards).map(([id, n]) => `${iconOf(id)}×${n}`).join(' ');
+      row.innerHTML = iconize(`<b>${u.icon} ${t(`ach.${u.id}`)}</b><span>${cards}</span>`);
+      el.resultAch.append(row);
+    }
+  }
+
   // 결과 화면의 클리어 보상: 받은 카드와 오른 도감 레벨
   function renderRewards(rewards) {
     el.resultRewards.replaceChildren();
@@ -335,6 +375,10 @@ export function createHud(root, handlers) {
     showMenu(save, run = null) {
       dexCollection = save.collection ?? {};
       const total = DEX_IDS.reduce((s, id) => s + dexProgress(id, dexCollection[id] ?? 0).level, 0);
+      achSave = save;
+      const achDone = ACHIEVEMENTS.filter((a) => save.achievements?.[a.id]).length;
+      el.btnAch.innerHTML = iconize(`<span>${t('ach.button')}</span><small>${t('ach.count', { have: achDone, total: ACHIEVEMENTS.length })}</small>`);
+      el.ach.hidden = true;
       el.btnDex.innerHTML = iconize(`<span>${t('dex.button')}</span><small>${t('dex.total', { total, max: DEX_IDS.length * DEX_MAX })}</small>`);
       el.dex.hidden = true;
       el.game.hidden = true;
@@ -389,8 +433,9 @@ export function createHud(root, handlers) {
     // endless: 무한 모드 결과 { best: 최고 기록, newBest: 이번에 기록을 넘었는지 }
     // stats: core/stats.js의 resultStats (처치·놓침·시간 요약과 동물별 피해량 순위)
     // rewards: 보통 판을 깼을 때 받은 카드 { cards: { id: 장수 }, levelUps: [{ id, from, to }] }
-    showResult({ won, wave, lives, starCount, endless = null, stats = null, rewards = null }) {
+    showResult({ won, wave, lives, starCount, endless = null, stats = null, rewards = null, achievements = null }) {
       renderStats(stats);
+      renderAchResult(achievements);
       renderRewards(rewards);
       if (endless) {
         setText(el.resultTitle, t(endless.newBest ? 'result.newBest' : 'result.endlessOver'));

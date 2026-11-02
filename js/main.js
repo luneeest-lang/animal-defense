@@ -6,6 +6,7 @@ import { craftMythic } from './core/mythics.js';
 import { snapshotGame, restoreGame, isBetweenWaves } from './core/snapshot.js';
 import { resultStats } from './core/stats.js';
 import { clearRewards, addCards, dexLevels, mapIndexOf } from './core/dex.js';
+import { evaluate as evaluateAchievements } from './core/achievements.js';
 import {
   loadSave, writeSave, recordResult, starsFor, loadRun, writeRun, clearRun,
 } from './storage.js';
@@ -310,12 +311,16 @@ function finish() {
     save = added.save;
     rewards = { cards, levelUps: added.levelUps };
   }
+  // 업적: 이번 판까지의 기록으로 새로 이룬 업적을 확인하고 도감 카드를 준다 (core/achievements.js)
+  const ach = evaluateAchievements(save, { game, won, wave, endless: game.endless });
+  save = ach.save;
   hud.showSaveWarning(!writeSave(store, save));
   hud.showResult({
     won, wave, lives: game.lives, starCount: won ? starsFor(game.lives) : 0,
     endless: game.endless ? { best: save.records[mapId].endlessBest, newBest: wave > prevBest } : null,
     stats: resultStats(game),
     rewards,
+    achievements: ach.unlocked,
   });
 }
 

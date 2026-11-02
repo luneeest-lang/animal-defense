@@ -18,6 +18,7 @@
       <button id="btn-continue" class="continue-btn" type="button" hidden></button>
       <div id="map-list"></div>
       <button id="btn-dex" class="dex-btn" type="button"></button>
+      <button id="btn-ach" class="dex-btn ach-btn" type="button"></button>
       <p class="hint" data-i18n="menu.hint">가로 화면에서 하면 더 편해요.</p>
       <div class="menu-small">
         <button id="btn-lang" class="lang-btn" type="button" data-i18n="menu.lang">🌐 English</button>
@@ -39,6 +40,16 @@
           <textarea id="transfer-in" rows="3" spellcheck="false" autocomplete="off"></textarea>
           <button id="btn-import-code" class="btn primary" type="button" data-i18n="transfer.import">불러와서 합치기</button>
           <p id="transfer-msg" class="transfer-msg" aria-live="polite"></p>
+        </div>
+      </div>
+      <div id="ach" class="sheet" hidden>
+        <div class="sheet-inner">
+          <div class="dex-head">
+            <h2 data-i18n="ach.title">🏆 업적</h2>
+            <button id="btn-close-ach" class="btn" type="button" aria-label="닫기" data-i18n-label="common.close">✕</button>
+          </div>
+          <p class="dex-help" data-i18n="ach.help">업적을 이루면 도감 카드를 받아요. 판이 끝날 때 확인해요.</p>
+          <div id="ach-list"></div>
         </div>
       </div>
       <div id="dex" hidden>
@@ -113,6 +124,7 @@
             <div id="result-stars"></div>
             <p id="result-detail"></p>
             <div class="result-scroll">
+              <div id="result-ach" hidden></div>
               <div id="result-rewards" hidden></div>
               <div id="result-stats"></div>
             </div>
