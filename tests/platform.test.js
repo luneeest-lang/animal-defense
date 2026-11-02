@@ -39,3 +39,15 @@ test('게임 중인지가 바뀔 때만 gameplayStart/Stop을 알린다', () => 
   const none = createPlayTracker(null);
   none(true); // SDK가 없으면 아무 일도 없다
 });
+
+test('gameplayStart/Stop은 SDK 객체에 붙여서 부른다 (진짜 SDK는 this를 쓴다)', () => {
+  const calls = [];
+  class FakeGame {
+    constructor() { this.log = calls; }
+    gameplayStart() { this.log.push('start'); }
+    gameplayStop() { this.log.push('stop'); }
+  }
+  const track = createPlayTracker({ game: new FakeGame() });
+  track(true); track(false);
+  assert.deepEqual(calls, ['start', 'stop']);
+});

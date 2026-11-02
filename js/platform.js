@@ -39,7 +39,8 @@ export function createPlayTracker(sdk) {
   return (now) => {
     if (!sdk || now === playing) return;
     playing = now;
-    try { (now ? sdk.game.gameplayStart : sdk.game.gameplayStop)(); } catch { /* 사이트 쪽 오류는 무시 */ }
+    // sdk.game에 붙여서 부른다 (함수만 떼어 부르면 SDK 안의 this가 없어 오류가 난다)
+    try { if (now) sdk.game.gameplayStart(); else sdk.game.gameplayStop(); } catch { /* 사이트 쪽 오류는 무시 */ }
   };
 }
 
