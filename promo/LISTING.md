@@ -10,7 +10,7 @@
 | `cover-portrait-800x1200.png` | 세로 커버 (2:3) |
 | `cover-square-800x800.png` | 정사각 커버 (1:1) |
 | `preview-1920x1080.mp4` | 미리보기 영상 18초, H.264, 약 11MB, 소리 없음 |
-| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 49개, 약 170KB) |
+| `tiny-mythic-squad-web.zip` | 게임 파일 (index.html, css, js / 50개, 약 172KB) |
 
 다시 만들기: 저장소에서 `python3 -m http.server 8123`을 켠 뒤
 `node tools/promo/capture.cjs promo && node tools/promo/make.cjs promo` (커버),
@@ -61,6 +61,12 @@ Features:
 ## 제출 전에 확인할 것 (한국어)
 
 1. **사이트 규격 확인**: 이 환경에서는 CrazyGames 개발자 문서(docs.crazygames.com)에 접속이 막혀 있어서, 커버 크기(1920x1080, 800x1200, 800x800)는 널리 쓰이는 규격으로 만들었어요. 제출 화면에 다른 크기가 적혀 있으면 알려 주세요. 다시 만들어 드릴게요. 검색으로 확인된 규칙은 커버 3종(가로·세로·정사각)과 영상 15~20초·50MB 이하예요.
-2. **외부 요청 없음**: 보스 경고 글꼴(Creepster)도 게임 안(`css/fonts/`)에 넣었어요. 게임은 외부 주소를 전혀 불러오지 않아요. 글꼴 사용 허가서(SIL Open Font License)는 `css/fonts/OFL.txt`에 함께 있어요.
-3. **광고 SDK**: 아직 넣지 않았어요. CrazyGames는 광고 없는 기본 공개로 먼저 올리고, 지표가 좋으면 정식 공개 때 SDK를 붙이는 방식이에요.
-4. **저장**: 기록과 도감은 브라우저 저장소(localStorage)에 저장돼요.
+2. **외부 요청 없음**: 보스 경고 글꼴(Creepster)도 게임 안(`css/fonts/`)에 넣었어요. CrazyGames에서 열렸을 때 그 사이트의 SDK만 불러오고, 다른 곳에서는 외부 주소를 전혀 불러오지 않아요. 글꼴 사용 허가서(SIL Open Font License)는 `css/fonts/OFL.txt`에 함께 있어요.
+3. **CrazyGames SDK (v3)**: 연결했어요 (`js/platform.js`). CrazyGames 주소에서 열렸을 때만 켜져요.
+   - 데이터 모듈: 기록·도감·업적을 CrazyGames 계정에 저장해요. 처음 열 때 브라우저에 남은 기록을 옮겨 담아요.
+   - 오디오 음소거: 사이트가 소리를 끄라고 하면 게임 소리를 꺼요.
+   - 게임 시작·멈춤 알림: 실제로 플레이하는 동안만 gameplayStart, 메뉴·일시정지·카드 고르기·결과에서는 gameplayStop.
+   - 광고는 아직 넣지 않았어요 (정식 공개 때 붙여요).
+   - 시험: 아무 주소 뒤에 `?platform=crazygames`를 붙이면 CrazyGames처럼 SDK를 불러와요.
+4. **제출 양식 고를 것**: 엔진 HTML5, 저장은 "SDK 데이터 모듈", 모바일 지원 체크, SDK로 오디오 음소거 체크.
+5. **저장 (다른 곳)**: CrazyGames 밖에서는 기록과 도감이 브라우저 저장소(localStorage)에 저장돼요.

@@ -499,3 +499,11 @@ PC 보조 단축키: 1~5로 동물 선택, 스페이스로 일시정지, ESC로 
 - 본 몬스터는 td-seen-enemies에 저장해 어느 맵에서든 다시 알리지 않는다(ui/enemyIntro.js). 일반 몬스터 이름·설명은 i18n.js(BASIC_ENEMIES, 한국어·영어).
 - 처음엔 맵 위쪽에 두었는데 세로 화면에서 마왕성(몬스터가 나오는 곳)을 가려 아래쪽으로 옮겼다.
 
+
+## 56. CrazyGames SDK 연결
+
+- js/platform.js. CrazyGames 주소(crazygames.com과 하위 주소)이거나 `?platform=crazygames`일 때만 SDK v3(sdk.crazygames.com/crazygames-sdk-v3.js)를 불러와 init한다. 3초 안에 안 되거나 실패하면 그냥 브라우저 저장소로 계속한다. 그 밖의 주소에서는 외부 요청이 없다.
+- 데이터 모듈: 게임 기록 키(td-save-v1, td-run-v1, td-lang, td-sound-v2, td-tutorial, td-seen-enemies)를 SDK data에 저장한다. SDK 쪽이 비어 있으면 처음 한 번 브라우저 기록을 옮겨 담는다.
+- 오디오 음소거: settings.muteAudio가 켜지면(바뀔 때도) 음악·효과음을 끈다. 게임 안 소리 설정은 그대로 두고 덮어쓰기만 한다.
+- gameplayStart/Stop: 게임이 진행 중이고 일시정지·신화 조합표·카드 고르기가 아닐 때만 플레이로 알린다. 메뉴로 가면 멈춤.
+- 시험: 가짜 SDK를 넣은 브라우저 시험으로 초기화, 기록 옮기기, 시작·멈춤 알림, 일반 주소에서 SDK를 부르지 않는 것을 확인했다.

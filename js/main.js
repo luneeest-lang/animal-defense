@@ -21,6 +21,7 @@ import { createTutorial, advance as advanceTutorial, next as nextTutorial, block
 import { createTutorialView } from './ui/tutorialView.js';
 import { mapToScreen } from './ui/input.js';
 import { newEnemies, loadSeen, saveSeen } from './ui/enemyIntro.js';
+import { initPlatform, sdkStore, createPlayTracker, watchMute } from './platform.js';
 
 const MAX_FRAME_DT = 0.25;
 const SPEEDS = [1, 2];
@@ -39,7 +40,12 @@ function openStore() {
   }
 }
 
-const store = openStore();
+// CrazyGames에서 열렸으면 SDK를 준비하고(최대 3초) 기록을 SDK 데이터 모듈에 저장한다 (platform.js). 그 밖에는 브라우저 저장소
+const platform = await initPlatform();
+const store = platform ? sdkStore(platform, openStore()) : openStore();
+// 사이트가 소리를 끄라고 하면 게임 안 소리 설정과 상관없이 끈다
+let platformMuted = false;
+const trackPlay = createPlayTracker(platform);
 
 // 언어: 저장한 선택이 먼저, 없으면 휴대폰(브라우저) 언어가 한국어일 때만 한국어. 화면을 만들기 전에 정한다
 function readLang() {
@@ -75,8 +81,12 @@ let drag = null;
 // music, sfx: 배경음·효과음을 켰는지 (따로 켜고 끈다)
 const ui = { paused: false, speed: 1, mythicOpen: false, ...loadSoundSettings(store) };
 const sound = createSound();
-sound.setSettings(ui);
+function applySound() {
+  sound.setSettings({ ...ui, music: ui.music && !platformMuted, sfx: ui.sfx && !platformMuted });
+}
+applySound();
 let lastBossWarning = 0;
+platformMuted = watchMute(platform, (muted) => { platformMuted = muted; applySound(); });
 // 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
 // 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
 let handledEvents = null;
@@ -170,7 +180,7 @@ const hud = createHud(document.getElementById('app'), {
 
 function toggleSound(key) {
   ui[key] = !ui[key];
-  sound.setSettings(ui);
+  applySound();
   saveSoundSettings(store, ui);
   sound.unlock();
 }
@@ -297,6 +307,7 @@ function enterGame(g) {
 document.getElementById('enemy-intro').addEventListener('pointerdown', () => { if (introUntil !== null) introUntil = 0; });
 
 function goMenu() {
+  trackPlay(false);
   tutorial = null;
   autosave();
   game = null;
@@ -393,6 +404,8 @@ function frame(ts) {
       introUntil = null;
     }
     hud.update(game, ui, ui.mythicOpen);
+    // 사이트에 실제로 플레이 중인지 알린다 (멈춤·카드 고르기·신화 조합표·결과 화면은 플레이 아님)
+    trackPlay(game.status === 'running' && !ui.paused && !ui.mythicOpen && !game.cardChoices);
     drawTutorial();
     if (game.status !== 'running') ui.mythicOpen = false;
     if (game.status !== 'running' && !finished) finish();
