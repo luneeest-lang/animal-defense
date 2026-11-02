@@ -204,6 +204,7 @@ export function createHud(root, handlers) {
     if (s.slowFactor) parts.push(t('stat.slow', { value: Math.round((1 - s.slowFactor) * 100) }));
     if (s.poisonDps) parts.push(t('stat.poison', { value: Math.round(s.poisonDps * 10) / 10 }));
     if (s.bossMult) parts.push(t('stat.boss', { value: s.bossMult }));
+    if (!tower.mythic && TOWERS[tower.type].groundOnly) parts.push(t('stat.groundOnly'));
     return parts.join(' · ');
   }
 

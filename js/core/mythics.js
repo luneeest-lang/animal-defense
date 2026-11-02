@@ -1,4 +1,5 @@
 import { MYTHICS } from '../data/mythics.js';
+import { ENEMIES } from '../data/enemies.js';
 import { MAX_LEVEL } from './towers.js';
 import { positionAt } from './path.js';
 import { damageEnemy, applySlow, isBoss } from './enemies.js';
@@ -145,7 +146,8 @@ export function updateZones(game, dt) {
   for (const z of game.zones) {
     const t = Math.min(dt, z.left);
     for (const e of game.enemies) {
-      if (e.hp > 0 && dist2(z, positionAt(game.points, e.dist)) <= z.r * z.r) {
+      // 불길은 땅 위에만 (날아다니는 박쥐는 타지 않는다)
+      if (e.hp > 0 && !ENEMIES[e.type].air && dist2(z, positionAt(game.points, e.dist)) <= z.r * z.r) {
         const before = e.hp;
         damageEnemy(e, z.dps * t, 'burn');
         credit(game, e, z.from, before);

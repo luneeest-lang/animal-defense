@@ -14,7 +14,7 @@ import { t, mythicName } from '../i18n.js';
 // 처치 파편 색 (몬스터 도트의 주색)
 export const ENEMY_COLORS = {
   soldier: '#5fbf4a', runner: '#e0453a', tank: '#8d99a3', shield: '#eceff1',
-  splitter: '#a85be0', mini: '#a85be0', boss: '#c8302a', golden: '#ffd23f',
+  splitter: '#a85be0', mini: '#a85be0', boss: '#c8302a', golden: '#ffd23f', bat: '#7a4aa0', healer: '#3f9a52',
   slimeKing: '#5fd35a', lich: '#8a4fd0', lavaGolem: '#ff7a1a', shadowWolf: '#3a3a4a', dragon: '#2a2a36',
 };
 const GOLD = ['#ffd23f', '#fff3b0', '#ffb703'];
@@ -94,6 +94,10 @@ export function createEffects(rng = effectRng(Date.now())) {
           kind: 'damage', x: ev.x + (rng() - 0.5) * 0.5, y: ev.y, text: String(Math.max(1, Math.round(ev.amount))),
           t: now, life: LIFE.damage,
         });
+      } else if (ev.type === 'heal') {
+        // 치유사: 초록 고리가 퍼지고 회복 빛가루가 오른다
+        add({ kind: 'ring', x: ev.x, y: ev.y, color: '#6dff8a', big: false, reach: ev.r ?? 1.5, t: now, life: LIFE.ring * 1.6 });
+        burst(ev.x, ev.y, 8, ['#b8ffb0', '#6dff8a', '#ffffff'], 1, 0.05, now);
       } else if (ev.type === 'poisonTick') {
         // 독 피해: 초록 숫자 (render.js가 초록으로 그린다)
         add({

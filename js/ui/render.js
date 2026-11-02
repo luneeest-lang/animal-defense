@@ -5,6 +5,7 @@ import { isBoss } from '../core/enemies.js';
 import { fitBoard } from './layout.js';
 import { reliefCells } from './relief.js';
 import { ENEMY_LOOK } from '../data/sprites.js';
+import { ENEMIES } from '../data/enemies.js';
 import {
   bakeSprites, bakeTiles, bakeAnimals, bakeSilhouettes, bakeMythics, bakeDecor, bakeProjectiles, bakeCastle, ART_SIZE, ART_SCALE,
 } from './pixel.js';
@@ -987,14 +988,18 @@ export function createRenderer(canvas) {
     ctx.globalAlpha = 1;
   }
 
+  // 날아다니는 몬스터(박쥐)는 그림자를 땅에 두고 몸은 위로 띄워 오르내린다
+  const airLift = (e, cell) => (ENEMIES[e.type].air ? cell * (0.42 + 0.06 * Math.sin(performance.now() / 260 + e.id)) : 0);
+
   function drawEnemyAt(e, look, face, px, py, cell) {
     // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
     const dpr = window.devicePixelRatio || 1;
     const unit = artUnit(look.size * cell, ART_SIZE, dpr);
     const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
-    const cy = Math.round(py * dpr) / dpr;
-    const feet = cy + s * 0.32;
+    const ground = Math.round(py * dpr) / dpr;
+    const feet = ground + s * 0.32;
+    const cy = Math.round((py - airLift(e, cell)) * dpr) / dpr;
 
     // 웨이브가 높을수록 강해진 몬스터: 11웨이브부터 주황, 21웨이브부터 보라 기운
     const tier = e.waveNumber >= 21 ? 'rgba(170, 80, 255, 0.55)' : e.waveNumber >= 11 ? 'rgba(255, 140, 40, 0.5)' : null;
@@ -1117,7 +1122,7 @@ export function createRenderer(canvas) {
     const unit = artUnit(look.size * cell, ART_SIZE, dpr);
     const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
-    const cy = Math.round(py * dpr) / dpr;
+    const cy = Math.round((py - airLift(e, cell)) * dpr) / dpr;
     // 체력바: 두꺼운 빨간 바 (어두운 테두리와 배경)
     const w = Math.round(Math.max(cell * 0.7, s * 0.8));
     const h = Math.max(5, Math.round(cell * 0.16));

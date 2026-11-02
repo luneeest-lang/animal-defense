@@ -7,6 +7,10 @@ export const ENEMIES = {
   shield: { hp: 80, speed: 0.9, reward: 9, leak: 1, directMult: 0.5 },
   splitter: { hp: 60, speed: 1.0, reward: 8, leak: 1, splitInto: { type: 'mini', count: 2 } },
   mini: { hp: 20, speed: 1.4, reward: 2, leak: 1 },
+  // 박쥐: 날아다녀서 코끼리·뱀(땅 공격, towers.js의 groundOnly)과 불사조 불길에 맞지 않는다
+  bat: { hp: 30, speed: 1.6, reward: 6, leak: 1, air: true },
+  // 치유사: every초마다 radius칸 안의 다른 몬스터(보스 제외)를 최대 체력의 pct만큼 회복시킨다
+  healer: { hp: 70, speed: 0.85, reward: 9, leak: 1, heal: { every: 3, radius: 1.5, pct: 0.1 } },
   // 황금 몬스터: 판마다 무작위 웨이브에 가끔 나온다. 아주 빠르고, 잡으면 골드를 크게 주며(core/missions.js의 goldenReward), 놓쳐도 생명은 그대로다
   golden: { name: '황금 몬스터', golden: true, hp: 100, speed: 2.6, reward: 0, leak: 0 },
   // 보스: 5웨이브마다 다른 보스가 1마리 나온다 (boss는 첫 보스 붉은 악마)

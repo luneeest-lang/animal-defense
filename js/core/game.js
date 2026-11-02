@@ -357,13 +357,15 @@ function fireTowers(game, dt) {
     tower.cooldown -= dt;
     if (tower.cooldown > 0) continue;
     const stats = effectiveStats(game, tower);
-    const target = findTarget(tower, targets, game.points, stats.range);
+    // 코끼리·뱀은 날아다니는 적을 겨누지도, 범위 공격으로 맞히지도 못한다
+    const reach = TOWERS[tower.type].groundOnly ? targets.filter((e) => !ENEMIES[e.type].air) : targets;
+    const target = findTarget(tower, reach, game.points, stats.range);
     if (!target) {
       tower.cooldown = 0;
       continue;
     }
     const hpBefore = new Map(targets.map((e) => [e, e.hp]));
-    const hit = fire(tower, target, targets, game.points, stats);
+    const hit = fire(tower, target, reach, game.points, stats);
     // 맞은 적마다 실제로 들어간 피해량 (화면의 데미지 숫자용)
     for (const e of hit) {
       credit(game, e, tower.type, hpBefore.get(e));
@@ -418,6 +420,27 @@ function resolveEnemies(game) {
 // 독 피해 숫자를 띄우는 간격(초)
 const POISON_TICK = 0.5;
 
+// 치유사: 주기마다 주변의 다른 몬스터(보스 제외)를 최대 체력의 일정 비율만큼 회복시킨다
+function updateHealers(game, dt) {
+  for (const h of game.enemies) {
+    const heal = ENEMIES[h.type].heal;
+    if (!heal || h.hp <= 0) continue;
+    h.healClock = (h.healClock ?? 0) + dt;
+    if (h.healClock < heal.every) continue;
+    h.healClock -= heal.every;
+    const at = positionAt(game.points, h.dist);
+    let healed = 0;
+    for (const e of game.enemies) {
+      if (e === h || e.hp <= 0 || e.hp >= e.maxHp || ENEMIES[e.type].boss) continue;
+      const p = positionAt(game.points, e.dist);
+      if ((p.x - at.x) ** 2 + (p.y - at.y) ** 2 > heal.radius ** 2) continue;
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * heal.pct);
+      healed += 1;
+    }
+    game.events.push({ type: 'heal', enemyId: h.id, count: healed, r: heal.radius, ...at });
+  }
+}
+
 function substep(game, dt) {
   game.time += dt;
   game.bossWarning = Math.max(0, game.bossWarning - dt);
@@ -430,6 +453,7 @@ function substep(game, dt) {
     spawnEnemy(game, s.type, s.wave);
   }
   updateBossSkills(game, dt);
+  updateHealers(game, dt);
   for (const e of game.enemies) {
     // 독 피해는 독을 건 동물(뱀) 몫
     const before = e.hp;
