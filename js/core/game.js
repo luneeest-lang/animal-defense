@@ -153,8 +153,17 @@ function placeRandom(game, rng) {
   const cells = emptyCells(game);
   if (cells.length === 0) return null;
   const type = pick(Object.keys(TOWERS), rng);
-  const [col, row] = pick(cells, rng);
+  const [col, row] = pick(nearMates(game, type, cells), rng);
   return addTower(game, type, col, row);
+}
+
+// 같은 종류의 아기 동물(합칠 짝)이 있으면 그 가장 가까운 빈칸들만 후보로 남긴다(§58). 짝이 없으면 모든 빈칸
+function nearMates(game, type, cells) {
+  const mates = game.towers.filter((t) => t.type === type && t.level === 0 && !t.mythic);
+  if (mates.length === 0) return cells;
+  const d = ([c, r]) => Math.min(...mates.map((m) => Math.max(Math.abs(m.col - c), Math.abs(m.row - r))));
+  const best = Math.min(...cells.map(d));
+  return cells.filter((cell) => d(cell) === best);
 }
 
 // 무작위 동물을 무작위 빈 칸에 아기 단계로 소환한다.

@@ -4,7 +4,8 @@
 
 export const TILES = {
   mountainGround: {
-    palette: { a: '#8b8178', b: '#7c736a', c: '#9a9087', g: '#7fae5a', k: '#5e564f', m: '#5f8f4a', p: '#b4aca3' },
+    // 첫 맵 첫인상이 칙칙하지 않게 회색 돌밭 대신 밝은 풀빛 고원(§58). 바위·길은 그대로 둬서 길이 또렷하다
+    palette: { a: '#7ea85a', b: '#71994f', c: '#8cb766', g: '#a8d470', k: '#5b8044', m: '#4f8a3e', p: '#a7c97f' },
     variants: [
       [
         [

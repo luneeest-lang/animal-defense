@@ -24,7 +24,9 @@ const HIT_FLASH_MS = 90;
 const WATER_FRAME_MS = 700;
 const AURA_LEVEL = 3;
 // 타워(동물·신화) 크기 배율 (2026-10-28: 10% 키움)
-const TOWER_SCALE = 1.1;
+// 동물·몬스터를 칸에 비해 크게 그려 맵이 덜 비어 보이게 한다(§58). 그리기만 바뀌고 규칙은 그대로
+const TOWER_SCALE = 1.35;
+const ENEMY_SCALE = 1.2;
 
 const withAlpha = (hex, a) => {
   const n = parseInt(hex.slice(1), 16);
@@ -40,7 +42,7 @@ const cellHash = (c, r) => (((c * 73856093) ^ (r * 19349663)) >>> 0);
 
 // 단차 블록의 앞면 벽 색. wall: 벽 높이(칸 비율), face: 벽, stripe: 벽 무늬, top: 벽 윗단, low: 낮은 칸을 살짝 어둡게
 const RELIEF = {
-  mountain: { wall: 0.4, face: '#544940', stripe: '#3d342d', top: '#a99a88', low: 0.14, strata: '#665a50' },
+  mountain: { wall: 0.4, face: '#5e5247', stripe: '#43392f', top: '#8cb766', low: 0.14, grass: '#5b8a3e', strata: '#6f6256' },
   forest: { wall: 0.4, face: '#6b4529', stripe: '#4d2f1a', top: '#5c9a3a', low: 0.14, grass: '#3d7228', strata: '#7d5535' },
   sea: { wall: 0.24, face: '#6e4522', stripe: '#4d2f14', top: '#a8763f', low: 0, post: '#36210e' },
 };
@@ -994,7 +996,7 @@ export function createRenderer(canvas) {
   function drawEnemyAt(e, look, face, px, py, cell) {
     // 도트가 뭉개지지 않도록 화면 픽셀 기준 정수 배율로 그린다
     const dpr = window.devicePixelRatio || 1;
-    const unit = artUnit(look.size * cell, ART_SIZE, dpr);
+    const unit = artUnit(look.size * ENEMY_SCALE * cell, ART_SIZE, dpr);
     const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
     const ground = Math.round(py * dpr) / dpr;
@@ -1119,7 +1121,7 @@ export function createRenderer(canvas) {
 
   function drawHpBarAt(e, look, px, py, cell) {
     const dpr = window.devicePixelRatio || 1;
-    const unit = artUnit(look.size * cell, ART_SIZE, dpr);
+    const unit = artUnit(look.size * ENEMY_SCALE * cell, ART_SIZE, dpr);
     const s = unit * ART_SIZE;
     const cx = Math.round(px * dpr) / dpr;
     const cy = Math.round((py - airLift(e, cell)) * dpr) / dpr;
@@ -1242,7 +1244,7 @@ export function createRenderer(canvas) {
     if (!look) return;
     const img = sprites[look.sprite][0];
     const dpr = window.devicePixelRatio || 1;
-    const s = artUnit(look.size * cell, ART_SIZE, dpr) * ART_SIZE;
+    const s = artUnit(look.size * ENEMY_SCALE * cell, ART_SIZE, dpr) * ART_SIZE;
     const orbit = Math.sin(k * Math.PI) * cell * 0.3;
     const ang = f.spin * k * Math.PI * 3;
     const shrink = Math.max(0.02, 1 - k * k);
