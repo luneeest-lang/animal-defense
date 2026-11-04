@@ -79,6 +79,10 @@ export function createHud(root, handlers) {
   // 동물별 강화 버튼: 누르면 그 동물 전체가 강해진다
   const upgrades = document.createElement('div');
   upgrades.className = 'upgrades';
+  const upTitle = document.createElement('p');
+  upTitle.className = 'up-title';
+  setText(upTitle, t('hud.upgradesTitle'));
+  upgrades.appendChild(upTitle);
   const upgradeButtons = {};
   for (const id of Object.keys(TOWERS)) {
     const b = document.createElement('button');
@@ -86,8 +90,9 @@ export function createHud(root, handlers) {
     b.className = 'upgrade-btn';
     b.dataset.type = id;
     b.title = t('hud.upgrade', { name: towerName(id) });
-    b.innerHTML = `<span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span>`
-      + `<span class="up-text"><span class="up-name">${towerName(id)}</span><span class="up-level"></span><span class="up-cost"></span></span>`;
+    // 그림 중심 카드(§60): 큰 동물 그림 위에 레벨 딱지, 아래(옆)에 비용. 이름은 넓은 화면에서만 작게
+    b.innerHTML = `<span class="up-art"><span class="icon" style="background-image:url(${icons[id][2].toDataURL()})"></span><span class="up-level"></span></span>`
+      + `<span class="up-text"><span class="up-name">${towerName(id)}</span><span class="up-cost"></span></span>`;
     b.addEventListener('click', () => handlers.onUpgradeAnimal(id));
     upgrades.appendChild(b);
     upgradeButtons[id] = { button: b, level: b.querySelector('.up-level'), cost: b.querySelector('.up-cost') };
@@ -530,6 +535,8 @@ export function createHud(root, handlers) {
         setText(ui2.level, `Lv.${game.upgrades[id]}`);
         setText(ui2.cost, next === null ? 'MAX' : `🪙${next}`);
         ui2.button.disabled = !running || next === null || next > game.gold;
+        // 살 수 있는 강화는 금빛 테두리로 눈에 띄게
+        ui2.button.classList.toggle('can-buy', !ui2.button.disabled);
       }
       refreshInfo(game);
     },
