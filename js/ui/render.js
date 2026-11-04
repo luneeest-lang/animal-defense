@@ -1276,7 +1276,8 @@ export function createRenderer(canvas) {
       ctx.strokeStyle = f.poison ? '#0e2a10' : f.warn ? '#3a0000' : big ? '#5a0d00' : '#2a1c00';
       // 데미지는 노란색, 보상(+골드)은 주황빛 금색, 문구는 금색. 이모지는 도트 아이콘으로 그린다
       ctx.fillStyle = damage && f.poison ? '#6dff5a' : damage ? '#fff200' : f.kind === 'coin' ? '#ffb020' : f.stun ? '#ff8fd0' : f.warn ? '#ff5a3c' : big ? '#ffe066' : '#ffd23f';
-      fillRichText(ctx, f.text, sx, sy - cell * 0.35 - rise, Math.round(size * pop));
+      // dy: 화면 아래쪽으로 몇 칸 내려 그릴지(세로 화면에서 맵이 돌아가도 늘 글자 아래 줄)
+      fillRichText(ctx, f.text, sx, sy - cell * 0.35 - rise + (f.dy ?? 0) * cell, Math.round(size * pop));
     });
   }
 
@@ -1349,13 +1350,13 @@ export function createRenderer(canvas) {
   }
 
   // 소환과 합성 연출 (main.js에서 부른다)
-  function celebrate(kind, tower) {
+  function celebrate(kind, tower, first = false) {
     const now = performance.now();
     const x = tower.col + 0.5;
     const y = tower.row + 0.5;
     if (kind === 'summon') effects.summon(x, y, now);
     else if (kind === 'mythic') effects.fromEvent({ type: 'mythic', mythic: tower.type, x, y }, now);
-    else effects.merge(x, y, tower.level, now, towerName(tower.type));
+    else effects.merge(x, y, tower.level, now, towerName(tower.type), first);
   }
 
   function draw(game, view) {

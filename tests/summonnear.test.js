@@ -38,3 +38,19 @@ test('짝이 없으면(다른 종류이거나 단계가 다르면) 예전처럼 
   }
   assert.ok(seen.size > 1, '여러 자리에 놓여야 한다');
 });
+
+test('종류를 정해 소환할 수 있고(튜토리얼 두 번째 소환), 그 짝 옆에 놓인다', () => {
+  const g = createGame(MAPS[0]);
+  g.gold = 1e6;
+  const cells = emptyCells(g);
+  const first = addTower(g, 'penguin', ...cells[Math.floor(cells.length / 3)]);
+  const t = summonTower(g, () => 0.99, 'penguin');
+  assert.equal(t.type, 'penguin');
+  assert.equal(dist(t, first), 1);
+});
+
+test('종류가 null이면(튜토리얼 첫 소환) 무작위 종류로 소환된다', () => {
+  const g = createGame(MAPS[0]);
+  g.gold = 1e6;
+  assert.ok(summonTower(g, () => 0.3, null));
+});

@@ -86,6 +86,7 @@ function applySound() {
 }
 applySound();
 let lastBossWarning = 0;
+let mergedThisGame = false;
 platformMuted = watchMute(platform, (muted) => { platformMuted = muted; applySound(); });
 // 이미 소리·저장을 처리한 이벤트 목록. 카드를 고르는 동안처럼 게임이 멈추면 step이 이벤트를 비우지 않으므로
 // 같은 목록을 다시 처리하지 않게 기억해 둔다 (예전에는 마지막 처치 소리가 계속 반복됐다)
@@ -100,8 +101,10 @@ let lastIntroWave = 0;
 // 첫 판 튜토리얼 (끝나거나 건너뛰면 null)
 let tutorial = null;
 // 튜토리얼이 짚을 곳: 버튼은 화면 사각형, 합성은 두 동물 사이를 오가는 손가락
+// 합성 축하 문구가 말풍선에 가리지 않게 잠깐 말풍선을 숨긴다
+let tutorialHoldUntil = 0;
 function drawTutorial() {
-  if (!tutorial || !game) { tutorialView.show(null); return; }
+  if (!tutorial || !game || performance.now() < tutorialHoldUntil) { tutorialView.show(null); return; }
   const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
   const target = { summon: '#btn-summon', wave: '#btn-wave', upgrade: '.upgrades', mythic: '#btn-mythic' }[tutorial.step];
   let drag = null;
@@ -205,7 +208,8 @@ function menuRunInfo() {
 }
 
 function summon() {
-  const tower = game && summonTower(game);
+  // 튜토리얼 두 번째 소환은 첫 동물과 같은 종류로, 그 바로 옆에 놓는다
+  const tower = game && summonTower(game, Math.random, tutorial?.step === 'summon' ? tutorial.firstType : undefined);
   if (tower && tutorial) advanceTutorial(tutorial, game, tower);
   if (tower) {
     renderer.celebrate('summon', tower);
@@ -252,7 +256,10 @@ attachInput(document.getElementById('board'), {
     if (drag && game) {
       const target = snapMergeTarget(game, drag.towerId, map);
       if (target && mergeTowers(game, drag.towerId, target.id)) {
-        renderer.celebrate('merge', target);
+        // 그 판의 첫 합성은 크게 축하한다 (합치면 세진다는 걸 바로 느끼게)
+        renderer.celebrate('merge', target, !mergedThisGame);
+        mergedThisGame = true;
+        tutorialHoldUntil = performance.now() + 1500;
         afterAction(target.level >= 3 ? 'awaken' : 'merge');
       }
     }
@@ -283,6 +290,7 @@ function continueRun() {
 }
 
 function enterGame(g) {
+  mergedThisGame = false;
   introQueue = [];
   introUntil = null;
   lastIntroWave = g.waveNumber;

@@ -161,13 +161,17 @@ export function createEffects(rng = effectRng(Date.now())) {
       add({ kind: 'ring', x, y, color: '#ffffff', big: false, t: now, life: LIFE.ring });
       burst(x, y, 6, ['#ffffff', '#fff3b0'], 1.2, 0.07, now);
     },
-    merge(x, y, level, now, name = '') {
+    // first: 그 판의 첫 합성이면 크게 축하하고 "합치면 더 세져요!"를 한 줄 더 띄운다(§59)
+    merge(x, y, level, now, name = '', first = false) {
       const awakened = level >= 3;
-      add({ kind: 'ring', x, y, color: '#ffd23f', big: awakened, t: now, life: LIFE.ring });
-      burst(x, y, awakened ? 22 : 10, GOLD, awakened ? 2.6 : 1.6, awakened ? 0.1 : 0.08, now);
+      const big = awakened || first;
+      add({ kind: 'ring', x, y, color: '#ffd23f', big, t: now, life: LIFE.ring });
+      burst(x, y, awakened ? 22 : first ? 18 : 10, GOLD, big ? 2.6 : 1.6, big ? 0.1 : 0.08, now);
       const word = t(awakened ? 'fx.awaken' : 'fx.grow');
-      add({ kind: 'text', x, y, text: name ? `${word} ${name}` : word, big: awakened, t: now, life: LIFE.text });
+      add({ kind: 'text', x, y, text: name ? `${word} ${name}` : word, big, t: now, life: LIFE.text });
+      if (first) add({ kind: 'text', x, y, dy: 0.75, text: t('fx.firstMerge'), big: false, t: now, life: LIFE.text * 1.6 });
       if (awakened) shake(0.4, now);
+      else if (first) shake(0.2, now);
     },
     waveClear(x, y, bonus, now) {
       add({ kind: 'text', x, y, text: t('fx.waveClear', { bonus }), big: false, t: now, life: LIFE.text });

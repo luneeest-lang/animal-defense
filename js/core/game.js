@@ -149,10 +149,11 @@ export function chooseCard(game, cardId) {
 // 미션 보상의 무료 소환에도 쓴다
 export const placeFree = (game, rng) => placeRandom(game, rng);
 
-function placeRandom(game, rng) {
+// type: 정해진 종류로 소환할 때(튜토리얼의 두 번째 소환). 없으면 무작위
+function placeRandom(game, rng, type = null) {
+  type ??= pick(Object.keys(TOWERS), rng);
   const cells = emptyCells(game);
   if (cells.length === 0) return null;
-  const type = pick(Object.keys(TOWERS), rng);
   const [col, row] = pick(nearMates(game, type, cells), rng);
   return addTower(game, type, col, row);
 }
@@ -172,10 +173,10 @@ export function addLives(game, n) {
   game.lives = Math.max(game.lives, Math.min(CONFIG.startLives, game.lives + n));
 }
 
-export function summonTower(game, rng = Math.random) {
+export function summonTower(game, rng = Math.random, type = undefined) {
   const cost = summonCost(game);
   if (game.status !== 'running' || cost > game.gold) return null;
-  const tower = placeRandom(game, rng);
+  const tower = placeRandom(game, rng, type);
   if (!tower) return null;
   tower.invested = cost;
   game.gold -= cost;

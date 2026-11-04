@@ -195,3 +195,17 @@ test('독 피해는 초록 숫자로 뜬다', () => {
   assert.ok(d && d.poison, '독 숫자');
   assert.equal(d.text, '5');
 });
+
+test('그 판의 첫 합성은 크게 축하한다: 큰 문구 + 안내 한 줄 + 살짝 흔들림 + 더 많은 반짝임', () => {
+  const plain = createEffects(fixed);
+  plain.merge(3, 3, 1, 0, '펭귄');
+  const fx = createEffects(fixed);
+  fx.merge(3, 3, 1, 0, '펭귄', true);
+  const texts = fx.active(0).filter((f) => f.kind === 'text');
+  assert.equal(texts.length, 2);
+  assert.ok(texts[0].big);
+  assert.equal(texts[1].text, '합치면 더 세져요!');
+  assert.ok(fx.shake(0) > 0);
+  const sparks = (f) => f.active(0).filter((e) => e.kind === 'particle').length;
+  assert.ok(sparks(fx) > sparks(plain));
+});
