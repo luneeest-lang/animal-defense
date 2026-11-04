@@ -30,7 +30,10 @@ const particle = (word) => {
 export const KO = {
   'title': '쪼꼬미 신수단 - 합쳐서 지키는 동물 디펜스',
   'meta.desc': '쪼꼬미 신수단: 귀여운 아기 동물을 합쳐 해태·기린·구미호 같은 신수로 키워 블랙홀을 지키는 무료 브라우저 디펜스 게임',
-  'menu.title': '🐯 쪼꼬미 신수단',
+  'menu.title': '쪼꼬미 신수단',
+  'menu.play': '▶ 플레이',
+  'menu.playSub': ({ name, place }) => `${name} · ${place}`,
+  'menu.maps': '맵 고르기',
   'menu.subtitle': '합쳐서 지키는 동물 디펜스',
   'menu.lead': '아기 동물을 합쳐 신수로 키우고, 블랙홀로 가는 몬스터를 막아 보세요.',
   'menu.hint': '가로 화면에서 하면 더 편해요.',
@@ -192,7 +195,10 @@ const pct = (x) => Math.round(x * 100);
 export const EN = {
   'title': 'Tiny Mythic Squad - Merge Animal Defense',
   'meta.desc': 'Tiny Mythic Squad: merge cute baby animals into mythic beasts like Haetae, Girin and Gumiho and guard the black hole. A free browser defense game.',
-  'menu.title': '🐯 Tiny Mythic Squad',
+  'menu.title': 'Tiny Mythic Squad',
+  'menu.play': '▶ PLAY',
+  'menu.playSub': ({ name, place }) => `${name} · ${place}`,
+  'menu.maps': 'Choose a map',
   'menu.subtitle': 'Merge & Defend Animal Defense',
   'menu.lead': 'Merge baby animals into mythic beasts and stop the monsters heading for the black hole.',
   'menu.hint': 'Landscape mode is more comfortable.',

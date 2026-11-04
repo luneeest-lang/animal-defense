@@ -12,13 +12,20 @@
 <body>
   <div id="app">
     <section id="screen-menu" class="screen">
-      <h1 data-i18n="menu.title">🐯 쪼꼬미 신수단</h1>
+      <!-- 첫 화면 그림: 신수 다섯과 아기 동물 (ui/menuHero.js) -->
+      <canvas id="menu-hero" width="520" height="230" aria-hidden="true"></canvas>
+      <h1 class="logo" data-i18n="menu.title">쪼꼬미 신수단</h1>
       <p class="subtitle" data-i18n="menu.subtitle">합쳐서 지키는 동물 디펜스</p>
       <p class="lead" data-i18n="menu.lead">아기 동물을 합쳐 신수로 키우고, 블랙홀로 가는 몬스터를 막아 보세요.</p>
-      <button id="btn-continue" class="continue-btn" type="button" hidden></button>
+      <!-- 큰 버튼 하나로 바로 시작: 이어할 게임이 있으면 이어하기, 없으면 PLAY (ui/menuPlay.js가 맵을 고른다) -->
+      <button id="btn-play" class="continue-btn play-btn" type="button"></button>
+      <button id="btn-continue" class="continue-btn play-btn" type="button" hidden></button>
+      <div class="menu-row">
+        <button id="btn-dex" class="dex-btn" type="button"></button>
+        <button id="btn-ach" class="dex-btn ach-btn" type="button"></button>
+      </div>
+      <h2 class="maps-title" data-i18n="menu.maps">맵 고르기</h2>
       <div id="map-list"></div>
-      <button id="btn-dex" class="dex-btn" type="button"></button>
-      <button id="btn-ach" class="dex-btn ach-btn" type="button"></button>
       <p class="hint" data-i18n="menu.hint">가로 화면에서 하면 더 편해요.</p>
       <div class="menu-small">
         <button id="btn-lang" class="lang-btn" type="button" data-i18n="menu.lang">🌐 English</button>

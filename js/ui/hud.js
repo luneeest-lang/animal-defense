@@ -15,15 +15,18 @@ import {
 import { DEX_IDS, DEX_MAX, DEX_BONUS, dexProgress } from '../core/dex.js';
 import { setRich, iconize } from './icons.js';
 import { ACHIEVEMENTS, progressOf } from '../core/achievements.js';
+import { playTarget } from './menuPlay.js';
+import { createMenuHero } from './menuHero.js';
 
 const stars = (n) => '⭐'.repeat(n) + '☆'.repeat(3 - n);
 
 export function createHud(root, handlers) {
   const $ = (id) => root.querySelector(`#${id}`);
+  const hero = createMenuHero($('menu-hero'), window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   const el = {
     menu: $('screen-menu'), game: $('screen-game'), maps: $('map-list'), warning: $('save-warning'),
     lives: $('stat-lives'), gold: $('stat-gold'), wave: $('stat-wave'),
-    btnContinue: $('btn-continue'), btnSound: $('btn-sound'), btnMusic: $('btn-music'),
+    btnContinue: $('btn-continue'), btnPlay: $('btn-play'), btnSound: $('btn-sound'), btnMusic: $('btn-music'),
     btnWave: $('btn-wave'), btnSpeed: $('btn-speed'), btnPause: $('btn-pause'), btnMenu: $('btn-menu'),
     pauseLabel: $('pause-label'), bossBanner: $('boss-banner'), panel: $('panel'),
     cardPick: $('card-pick'), cardList: $('card-list'), mission: $('mission'),
@@ -181,6 +184,7 @@ export function createHud(root, handlers) {
   }
 
   el.btnContinue.addEventListener('click', () => handlers.onContinue());
+  el.btnPlay.addEventListener('click', () => handlers.onStartMap(el.btnPlay.dataset.map));
   el.btnSound.addEventListener('click', () => handlers.onSound());
   el.btnMusic.addEventListener('click', () => handlers.onMusic());
   el.btnWave.addEventListener('click', () => handlers.onCallWave());
@@ -387,6 +391,12 @@ export function createHud(root, handlers) {
       el.result.hidden = true;
       el.menu.hidden = false;
       el.btnContinue.hidden = !run;
+      // 이어할 게임이 없으면 큰 PLAY 버튼이 아직 못 깬 맵을 바로 시작한다
+      el.btnPlay.hidden = !!run;
+      const target = playTarget(save);
+      el.btnPlay.dataset.map = target;
+      el.btnPlay.innerHTML = iconize(`<span class="c-title">${t('menu.play')}</span><span class="c-sub">${t('menu.playSub', { name: mapName(target), place: mapPlace(target) })}</span>`);
+      hero.start();
       if (run) {
         const vars = { name: mapName(run.mapId), place: mapPlace(run.mapId), wave: run.wave, max: WAVE_COUNT };
         el.btnContinue.innerHTML = iconize(`<span class="c-title">${t('menu.continue')}</span><span class="c-sub">${t(run.endless ? 'menu.runEndless' : 'menu.runNormal', vars)}</span>`);
@@ -417,6 +427,7 @@ export function createHud(root, handlers) {
       }));
     },
     showGame() {
+      hero.stop();
       el.menu.hidden = true;
       el.game.hidden = false;
       el.result.hidden = true;

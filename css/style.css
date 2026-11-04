@@ -618,3 +618,45 @@ button { font: inherit; color: inherit; }
 @keyframes ei-in { from { opacity: 0; transform: translateY(14px) scale(0.92); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { #enemy-intro.show { animation: none; } }
 
+
+/* ── 첫 화면 새 모양 (§57) ── */
+/* 메뉴 바탕: 위는 밤하늘처럼 어둡게, 아래로 갈수록 숲색 */
+#screen-menu {
+  padding-top: 12px;
+  background: radial-gradient(120% 60% at 50% 0%, rgba(80, 70, 160, 0.35), rgba(0, 0, 0, 0) 70%);
+}
+#menu-hero {
+  display: block; width: 100%; max-width: 520px; height: auto; aspect-ratio: 520 / 230;
+  margin: 0 auto; border-radius: 18px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  image-rendering: pixelated;
+}
+/* 커버와 같은 굵은 금색 제목: 진한 갈색 테두리 + 아래 그림자 */
+#screen-menu h1.logo {
+  margin: 10px 0 2px; position: relative;
+  font-size: clamp(2.1rem, 9vw, 2.9rem); font-weight: 900; letter-spacing: 0.01em; line-height: 1.05;
+  color: #ffd23f;
+  background: linear-gradient(180deg, #fff6b0 0%, #ffd23f 50%, #ff9a1f 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0;
+  filter: drop-shadow(0 0 0 #5a2e10) drop-shadow(2px 0 0 #5a2e10) drop-shadow(-2px 0 0 #5a2e10) drop-shadow(0 2px 0 #5a2e10)
+    drop-shadow(0 -2px 0 #5a2e10) drop-shadow(0 4px 0 #2a1408) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
+  text-shadow: none;
+}
+#screen-menu .lead { margin: 0 0 14px; font-size: 0.92rem; }
+/* 큰 PLAY 버튼: 숨 쉬듯 살짝 빛난다 */
+.play-btn { padding: 16px; margin-bottom: 10px; border-radius: 18px; }
+.play-btn .c-title { font-size: 1.6rem; font-weight: 900; letter-spacing: 0.04em; }
+@media (prefers-reduced-motion: no-preference) {
+  .play-btn { animation: play-glow 1.8s ease-in-out infinite; }
+}
+@keyframes play-glow {
+  0%, 100% { box-shadow: var(--bevel), 0 0 0 0 rgba(255, 210, 63, 0); }
+  50% { box-shadow: var(--bevel), 0 0 22px 4px rgba(255, 210, 63, 0.45); }
+}
+/* 도감·업적은 한 줄에 나란히 */
+.menu-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.menu-row .dex-btn { margin-top: 0; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; }
+.maps-title { margin: 18px 0 8px; font-size: 0.85rem; font-weight: 700; opacity: 0.7; letter-spacing: 0.06em; text-transform: uppercase; }
+#map-list { gap: 8px; }
+#map-list .map-card { padding-top: 10px; padding-bottom: 10px; }
+#map-list .map-card .name { font-size: 1.02rem; }
